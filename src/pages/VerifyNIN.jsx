@@ -8,7 +8,7 @@ export default function VerifyNIN() {
 
   // LOAD BALANCE FROM BACKEND
   useEffect(() => {
-    fetch("http://localhost:5000/balance")
+    fetch("https://xcombinator.onrender.com/balance")
       .then(res => res.json())
       .then(data => setBalance(data.balance))
       .catch(err => console.error(err));
@@ -28,7 +28,7 @@ export default function VerifyNIN() {
     setLoading(true);
 
     try {
-      const res = await fetch("http://localhost:5000/verify-nin", {
+      const res = await fetch("https://xcombinator.onrender.com/verify-nin", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

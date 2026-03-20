@@ -5,7 +5,7 @@ export default function Wallet() {
   const [balance, setBalance] = useState(0);
 
   useEffect(() => {
-    fetch("http://localhost:5000/balance")
+    fetch("https://xcombinator.onrender.com/balance")
       .then(res => res.json())
       .then(data => setBalance(data.balance));
   }, []);
@@ -17,7 +17,7 @@ export default function Wallet() {
     }
 
     try {
-      const res = await fetch("http://localhost:5000/fund", {
+      const res = await fetch("https://xcombinator.onrender.com/fund", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

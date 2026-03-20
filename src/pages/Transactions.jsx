@@ -4,7 +4,7 @@ export default function Transactions() {
   const [transactions, setTransactions] = useState([]);
 
   useEffect(() => {
-    fetch("http://localhost:5000/transactions")
+    fetch("https://xcombinator.onrender.com/transactions")
       .then(res => res.json())
       .then(data => setTransactions(data))
       .catch(err => console.error(err));
