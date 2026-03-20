@@ -1,10 +1,10 @@
 {
-  "name": "backend",
+  "name": "nin-backend",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "NIN Verification Backend",
+  "main": "server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node server.js"
   },
   "keywords": [],
   "author": "",
@@ -14,6 +14,6 @@
     "axios": "^1.13.6",
     "cors": "^2.8.6",
     "dotenv": "^17.3.1",
-    "express": "^5.2.1"
+    "express": "^4.18.2"
   }
 }

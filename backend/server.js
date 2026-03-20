@@ -1,10 +1,14 @@
 const express = require("express");
 const cors = require("cors");
 const fs = require("fs");
+const axios = require("axios");
 
 const app = express();
 app.use(cors());
 app.use(express.json());
+
+// 👉 PUT YOUR REAL API KEY HERE
+const API_KEY = "a1fa8f28dc914dbafcd19fbbc703ee4338a6303fdae3f40a708c71804fe912a8";
 
 // READ DB
 function readDB() {
@@ -28,8 +32,8 @@ app.get("/transactions", (req, res) => {
   res.json(db.transactions || []);
 });
 
-// VERIFY NIN + SAVE TRANSACTION
-app.post("/verify-nin", (req, res) => {
+// VERIFY NIN (REAL API) + SAVE TRANSACTION
+app.post("/verify-nin", async (req, res) => {
   const { nin } = req.body;
 
   const db = readDB();
@@ -38,35 +42,56 @@ app.post("/verify-nin", (req, res) => {
     return res.status(400).json({ error: "Insufficient balance" });
   }
 
-  db.balance -= 100;
+  try {
+    // 🔥 CALL REAL API
+    const response = await axios.post(
+      "https://ninbvnportal.com.ng/api/nin-verification",
+      {
+        nin: nin,
+        consent: true,
+      },
+      {
+        headers: {
+          "x-api-key": API_KEY,
+        },
+      }
+    );
 
-  const transaction = {
-    id: Date.now(),
-    type: "NIN",
-    nin,
-    amount: 100,
-    status: "success",
-    date: new Date().toISOString(),
-  };
+    const apiData = response.data;
 
-  db.transactions = db.transactions || [];
-  db.transactions.unshift(transaction);
+    // deduct balance ONLY after success
+    db.balance -= 100;
 
-  writeDB(db);
-
-  res.json({
-    status: "success",
-    data: {
+    const transaction = {
+      id: Date.now(),
+      type: "NIN",
       nin,
-      name: "Test User",
-      phone: "08012345678",
-      dob: "1995-01-01",
-    },
-    balance: db.balance,
-  });
+      amount: 100,
+      status: "success",
+      date: new Date().toISOString(),
+    };
+
+    db.transactions = db.transactions || [];
+    db.transactions.unshift(transaction);
+
+    writeDB(db);
+
+    res.json({
+      status: "success",
+      data: apiData,
+      balance: db.balance,
+    });
+
+  } catch (error) {
+    console.error(error.response?.data || error.message);
+
+    return res.status(500).json({
+      error: "Verification failed",
+    });
+  }
 });
 
-// ADD MONEY
+// ADD MONEY (TEMP - WILL CHANGE LATER WITH PAYSTACK)
 app.post("/fund", (req, res) => {
   const { amount } = req.body;
 
@@ -89,6 +114,8 @@ app.post("/fund", (req, res) => {
   res.json({ balance: db.balance });
 });
 
-app.listen(5000, () => {
-  console.log("Server running on port 5000");
+const PORT = process.env.PORT || 5000;
+
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
 });
