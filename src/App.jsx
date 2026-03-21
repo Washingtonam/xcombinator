@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, useLocation, Navigate } from "react-router-dom";
 import Sidebar from "./components/Sidebar";
 import Login from "./pages/Login";
+import Register from "./pages/Register";
 import Admin from "./pages/Admin";
 
 import Dashboard from "./pages/Dashboard";
@@ -31,7 +32,7 @@ function ProtectedRoute({ children }) {
 function AdminRoute({ children }) {
   const user = getUser();
 
-  if (!user || user.email !== "admin@xcombinator.com") {
+  if (!user || user.email !== "washingtonamedu@gmail.com") {
     return <Navigate to="/" />;
   }
 
@@ -71,10 +72,12 @@ function Layout() {
 function AppRoutes() {
   const location = useLocation();
 
-  if (location.pathname === "/login") {
+  // ✅ AUTH PAGES (NO SIDEBAR)
+  if (location.pathname === "/login" || location.pathname === "/register") {
     return (
       <Routes>
         <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
       </Routes>
     );
   }
