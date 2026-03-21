@@ -8,7 +8,7 @@ export default function Login() {
 
   const handleLogin = async () => {
     try {
-      const res = await fetch("https://xcombinator.onrender.com/login", {
+      const res = await fetch("https://xcombinator.onrender.com/api/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -23,14 +23,17 @@ export default function Login() {
         return;
       }
 
-      // save user
+      // ✅ STORE PROPERLY (CRITICAL)
       localStorage.setItem("user", JSON.stringify(data.user));
+      localStorage.setItem("email", data.user.email);
+      localStorage.setItem("userId", data.user.id);
 
       alert("Login successful");
       navigate("/");
 
     } catch (error) {
       console.error(error);
+      alert("Login failed");
     }
   };
 
@@ -59,6 +62,17 @@ export default function Login() {
         >
           Login
         </button>
+
+        {/* ✅ REGISTER LINK */}
+        <p className="text-sm mt-4 text-center">
+          Don’t have an account?{" "}
+          <span
+            className="text-blue-600 cursor-pointer"
+            onClick={() => navigate("/register")}
+          >
+            Register
+          </span>
+        </p>
       </div>
     </div>
   );
