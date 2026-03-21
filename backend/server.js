@@ -7,7 +7,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// 👉 PUT YOUR REAL API KEY HERE
+// 👉 USE ENV LATER (for now keep as is if you want)
 const API_KEY = "a1fa8f28dc914dbafcd19fbbc703ee4338a6303fdae3f40a708c71804fe912a8";
 
 // READ DB
@@ -20,30 +20,38 @@ function writeDB(data) {
   fs.writeFileSync("./db.json", JSON.stringify(data, null, 2));
 }
 
-// GET BALANCE
+// GET BALANCE (USER BASED)
 app.get("/balance", (req, res) => {
   const db = readDB();
-  res.json({ balance: db.balance });
+  const user = db.users[0]; // TEMP
+
+  res.json({ balance: user.balance });
 });
 
-// GET TRANSACTIONS
+// GET TRANSACTIONS (USER BASED)
 app.get("/transactions", (req, res) => {
   const db = readDB();
-  res.json(db.transactions || []);
+  const user = db.users[0];
+
+  const userTransactions = (db.transactions || []).filter(
+    (tx) => tx.userId === user.id
+  );
+
+  res.json(userTransactions);
 });
 
-// VERIFY NIN (REAL API) + SAVE TRANSACTION
+// VERIFY NIN (USER BASED)
 app.post("/verify-nin", async (req, res) => {
   const { nin } = req.body;
 
   const db = readDB();
+  const user = db.users[0];
 
-  if (db.balance < 100) {
+  if (user.balance < 100) {
     return res.status(400).json({ error: "Insufficient balance" });
   }
 
   try {
-    // 🔥 CALL REAL API
     const response = await axios.post(
       "https://ninbvnportal.com.ng/api/nin-verification",
       {
@@ -59,8 +67,8 @@ app.post("/verify-nin", async (req, res) => {
 
     const apiData = response.data;
 
-    // deduct balance ONLY after success
-    db.balance -= 100;
+    // deduct AFTER success
+    user.balance -= 100;
 
     const transaction = {
       id: Date.now(),
@@ -69,9 +77,9 @@ app.post("/verify-nin", async (req, res) => {
       amount: 100,
       status: "success",
       date: new Date().toISOString(),
+      userId: user.id,
     };
 
-    db.transactions = db.transactions || [];
     db.transactions.unshift(transaction);
 
     writeDB(db);
@@ -79,7 +87,7 @@ app.post("/verify-nin", async (req, res) => {
     res.json({
       status: "success",
       data: apiData,
-      balance: db.balance,
+      balance: user.balance,
     });
 
   } catch (error) {
@@ -91,8 +99,7 @@ app.post("/verify-nin", async (req, res) => {
   }
 });
 
-// ADD MONEY (TEMP - WILL CHANGE LATER WITH PAYSTACK- command deleted)
-
+// VERIFY PAYMENT (USER BASED)
 app.post("/verify-payment", async (req, res) => {
   const { reference, amount } = req.body;
 
@@ -107,9 +114,16 @@ app.post("/verify-payment", async (req, res) => {
     );
 
     if (response.data.data.status === "success") {
-      const db = readDB();
 
-      db.balance += Number(amount);
+      // 🔐 SECURITY CHECK
+      if (response.data.data.amount !== amount * 100) {
+        return res.status(400).json({ error: "Amount mismatch" });
+      }
+
+      const db = readDB();
+      const user = db.users[0];
+
+      user.balance += Number(amount);
 
       const transaction = {
         id: Date.now(),
@@ -117,16 +131,18 @@ app.post("/verify-payment", async (req, res) => {
         amount: Number(amount),
         status: "success",
         date: new Date().toISOString(),
+        userId: user.id,
       };
 
       db.transactions.unshift(transaction);
 
       writeDB(db);
 
-      return res.json({ balance: db.balance });
+      return res.json({ balance: user.balance });
     } else {
       return res.status(400).json({ error: "Payment not verified" });
     }
+
   } catch (error) {
     console.error(error.response?.data || error.message);
     return res.status(500).json({ error: "Verification failed" });
