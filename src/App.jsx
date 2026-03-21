@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import Sidebar from "./components/Sidebar";
 import Login from "./pages/Login";
+import Admin from "./pages/Admin";
 
 import Dashboard from "./pages/Dashboard";
 import VerifyNIN from "./pages/VerifyNIN";
@@ -15,6 +16,7 @@ function Layout() {
 
       <div className="flex-1 p-10">
         <Routes>
+          <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
           <Route path="/" element={<Dashboard />} />
           <Route path="/verify-nin" element={<VerifyNIN />} />
           <Route path="/verify-bvn" element={<VerifyBVN />} />
