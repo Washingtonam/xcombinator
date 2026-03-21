@@ -149,6 +149,33 @@ app.post("/verify-payment", async (req, res) => {
   }
 });
 
+// REGISTER USER
+app.post("/register", (req, res) => {
+  const { email, password } = req.body;
+
+  const db = readDB();
+
+  // check if user exists
+  const existingUser = db.users.find((u) => u.email === email);
+
+  if (existingUser) {
+    return res.status(400).json({ error: "User already exists" });
+  }
+
+  const newUser = {
+    id: Date.now(),
+    email,
+    password,
+    balance: 0,
+  };
+
+  db.users.push(newUser);
+
+  writeDB(db);
+
+  res.json({ message: "User created successfully" });
+});
+
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
