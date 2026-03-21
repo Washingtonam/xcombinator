@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation, Navigate } from "react-router-dom";
 import Sidebar from "./components/Sidebar";
 import Login from "./pages/Login";
 import Admin from "./pages/Admin";
@@ -9,6 +9,19 @@ import VerifyBVN from "./pages/VerifyBVN";
 import Transactions from "./pages/Transactions";
 import Wallet from "./pages/Wallet";
 
+// 🔐 CHECK AUTH
+function isAuthenticated() {
+  return !!localStorage.getItem("user");
+}
+
+// 🔐 PROTECTED ROUTE
+function ProtectedRoute({ children }) {
+  if (!isAuthenticated()) {
+    return <Navigate to="/login" />;
+  }
+  return children;
+}
+
 function Layout() {
   return (
     <div className="flex">
@@ -16,12 +29,12 @@ function Layout() {
 
       <div className="flex-1 p-10">
         <Routes>
+          <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+          <Route path="/verify-nin" element={<ProtectedRoute><VerifyNIN /></ProtectedRoute>} />
+          <Route path="/verify-bvn" element={<ProtectedRoute><VerifyBVN /></ProtectedRoute>} />
+          <Route path="/transactions" element={<ProtectedRoute><Transactions /></ProtectedRoute>} />
+          <Route path="/wallet" element={<ProtectedRoute><Wallet /></ProtectedRoute>} />
           <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
-          <Route path="/" element={<Dashboard />} />
-          <Route path="/verify-nin" element={<VerifyNIN />} />
-          <Route path="/verify-bvn" element={<VerifyBVN />} />
-          <Route path="/transactions" element={<Transactions />} />
-          <Route path="/wallet" element={<Wallet />} />
         </Routes>
       </div>
     </div>
@@ -31,7 +44,6 @@ function Layout() {
 function AppRoutes() {
   const location = useLocation();
 
-  // 👉 if login page, don't show sidebar layout
   if (location.pathname === "/login") {
     return (
       <Routes>
