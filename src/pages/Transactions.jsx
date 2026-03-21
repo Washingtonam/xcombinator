@@ -3,8 +3,16 @@ import { useEffect, useState } from "react";
 export default function Transactions() {
   const [transactions, setTransactions] = useState([]);
 
+  const user = JSON.parse(localStorage.getItem("user"));
+
   useEffect(() => {
-    fetch("https://xcombinator.onrender.com/transactions")
+    fetch("https://xcombinator.onrender.com/transactions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ userId: user.id }),
+    })
       .then(res => res.json())
       .then(data => setTransactions(data))
       .catch(err => console.error(err));
@@ -33,7 +41,7 @@ export default function Transactions() {
               {transactions.map((tx) => (
                 <tr key={tx.id} className="border-b">
                   <td className="py-2">{tx.type}</td>
-                  <td>{tx.nin}</td>
+                  <td>{tx.nin || "-"}</td>
                   <td>₦{tx.amount}</td>
                   <td>{tx.status}</td>
                   <td>{new Date(tx.date).toLocaleString()}</td>

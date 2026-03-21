@@ -5,13 +5,21 @@ export default function Wallet() {
   const [balance, setBalance] = useState(0);
   const [paystackReady, setPaystackReady] = useState(false);
 
+  const user = JSON.parse(localStorage.getItem("user"));
+
   useEffect(() => {
-    // Load balance
-    fetch("https://xcombinator.onrender.com/balance")
+    // Load balance (USER BASED)
+    fetch("https://xcombinator.onrender.com/balance", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ userId: user.id }),
+    })
       .then(res => res.json())
       .then(data => setBalance(data.balance));
 
-    // Load Paystack script properly
+    // Load Paystack script
     const script = document.createElement("script");
     script.src = "https://js.paystack.co/v1/inline.js";
     script.async = true;
@@ -41,7 +49,7 @@ export default function Wallet() {
 
     const handler = window.PaystackPop.setup({
       key: "pk_test_f0a111652a4fc257d0477d0aa29c967e0ab9b2c3",
-      email: "customer@email.com",
+      email: user.email, // 🔥 dynamic user email
       amount: amount * 100,
       currency: "NGN",
 
@@ -54,6 +62,7 @@ export default function Wallet() {
           body: JSON.stringify({
             reference: response.reference,
             amount: amount,
+            userId: user.id, // 🔥 VERY IMPORTANT
           }),
         })
           .then(res => res.json())

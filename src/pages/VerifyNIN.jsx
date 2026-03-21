@@ -6,9 +6,17 @@ export default function VerifyNIN() {
   const [loading, setLoading] = useState(false);
   const [balance, setBalance] = useState(0);
 
-  // LOAD BALANCE FROM BACKEND
+  const user = JSON.parse(localStorage.getItem("user"));
+
+  // LOAD BALANCE FROM BACKEND (USER BASED)
   useEffect(() => {
-    fetch("https://xcombinator.onrender.com/balance")
+    fetch("https://xcombinator.onrender.com/balance", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ userId: user.id }),
+    })
       .then(res => res.json())
       .then(data => setBalance(data.balance))
       .catch(err => console.error(err));
@@ -33,7 +41,10 @@ export default function VerifyNIN() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ nin }),
+        body: JSON.stringify({ 
+          nin,
+          userId: user.id
+        }),
       });
 
       const data = await res.json();
