@@ -176,6 +176,29 @@ app.post("/register", (req, res) => {
   res.json({ message: "User created successfully" });
 });
 
+// LOGIN USER
+app.post("/login", (req, res) => {
+  const { email, password } = req.body;
+
+  const db = readDB();
+
+  const user = db.users.find(
+    (u) => u.email === email && u.password === password
+  );
+
+  if (!user) {
+    return res.status(400).json({ error: "Invalid credentials" });
+  }
+
+  res.json({
+    message: "Login successful",
+    user: {
+      id: user.id,
+      email: user.email,
+    },
+  });
+});
+
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {

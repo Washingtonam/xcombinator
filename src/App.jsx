@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Sidebar from "./components/Sidebar";
+import Login from "./pages/Login";
 
 import Dashboard from "./pages/Dashboard";
 import VerifyNIN from "./pages/VerifyNIN";
@@ -20,6 +21,7 @@ function App() {
             <Route path="/verify-bvn" element={<VerifyBVN />} />
             <Route path="/transactions" element={<Transactions />} />
             <Route path="/wallet" element={<Wallet />} />
+            <Route path="/login" element={<Login />} />
           </Routes>
         </div>
       </div>
