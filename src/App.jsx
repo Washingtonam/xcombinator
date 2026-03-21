@@ -15,11 +15,6 @@ function isAuthenticated() {
   return !!localStorage.getItem("user");
 }
 
-// 🔐 GET CURRENT USER
-function getUser() {
-  return JSON.parse(localStorage.getItem("user"));
-}
-
 // 🔐 PROTECTED ROUTE
 function ProtectedRoute({ children }) {
   if (!isAuthenticated()) {
@@ -28,14 +23,11 @@ function ProtectedRoute({ children }) {
   return children;
 }
 
-// 🔐 ADMIN ONLY ROUTE
+// 🔐 ADMIN ROUTE (frontend only checks login now)
 function AdminRoute({ children }) {
-  const user = getUser();
-
-  if (!user || user.email !== "washingtonamedu@gmail.com") {
-    return <Navigate to="/" />;
+  if (!isAuthenticated()) {
+    return <Navigate to="/login" />;
   }
-
   return children;
 }
 
@@ -52,7 +44,7 @@ function Layout() {
           <Route path="/transactions" element={<ProtectedRoute><Transactions /></ProtectedRoute>} />
           <Route path="/wallet" element={<ProtectedRoute><Wallet /></ProtectedRoute>} />
 
-          {/* 🔥 ADMIN LOCK */}
+          {/* ADMIN */}
           <Route 
             path="/admin" 
             element={
@@ -72,7 +64,6 @@ function Layout() {
 function AppRoutes() {
   const location = useLocation();
 
-  // ✅ AUTH PAGES (NO SIDEBAR)
   if (location.pathname === "/login" || location.pathname === "/register") {
     return (
       <Routes>

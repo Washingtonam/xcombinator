@@ -4,12 +4,12 @@ const router = express.Router();
 
 const dbPath = "./db.json";
 
-// ADMIN CHECK (your real email)
+// ADMIN CHECK (backend authority)
 function isAdmin(req, res, next) {
   const email = req.headers["email"];
 
   if (!email) {
-    return res.status(401).json({ message: "No email provided" });
+    return res.status(401).json({ message: "Unauthorized" });
   }
 
   if (email !== "washingtonamedu@gmail.com") {

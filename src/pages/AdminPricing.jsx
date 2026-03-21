@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 
+const API_BASE = "https://xcombinator.onrender.com";
+
 export default function AdminPricing() {
   const [ninPrice, setNinPrice] = useState("");
   const [bvnPrice, setBvnPrice] = useState("");
@@ -9,7 +11,7 @@ export default function AdminPricing() {
   // Fetch current pricing
   const fetchPricing = async () => {
     try {
-      const res = await axios.get("http://localhost:5000/api/pricing");
+      const res = await axios.get(`${API_BASE}/api/pricing`);
 
       setNinPrice(res.data.nin.price);
       setBvnPrice(res.data.bvn.price);
@@ -28,7 +30,7 @@ export default function AdminPricing() {
 
     try {
       await axios.put(
-        "http://localhost:5000/api/admin/pricing",
+        `${API_BASE}/api/admin/pricing`,
         {
           ninPrice,
           bvnPrice,
