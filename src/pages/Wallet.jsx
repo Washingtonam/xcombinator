@@ -3,11 +3,29 @@ import { useState, useEffect } from "react";
 export default function Wallet() {
   const [amount, setAmount] = useState("");
   const [balance, setBalance] = useState(0);
+  const [paystackReady, setPaystackReady] = useState(false);
 
   useEffect(() => {
+    // Load balance
     fetch("https://xcombinator.onrender.com/balance")
       .then(res => res.json())
       .then(data => setBalance(data.balance));
+
+    // Load Paystack script properly
+    const script = document.createElement("script");
+    script.src = "https://js.paystack.co/v1/inline.js";
+    script.async = true;
+
+    script.onload = () => {
+      console.log("Paystack loaded");
+      setPaystackReady(true);
+    };
+
+    script.onerror = () => {
+      console.log("Paystack failed to load");
+    };
+
+    document.body.appendChild(script);
   }, []);
 
   const handlePay = () => {
@@ -16,14 +34,18 @@ export default function Wallet() {
       return;
     }
 
+    if (!paystackReady || !window.PaystackPop) {
+      alert("Payment system not ready. Refresh page.");
+      return;
+    }
+
     const handler = window.PaystackPop.setup({
-      key: "pk_test_f0a111652a4fc257d0477d0aa29c967e0ab9b2c3", // replace
-      email: "customer@email.com", // dynamic later
-      amount: amount * 100, // Paystack uses kobo
+      key: "pk_test_f0a111652a4fc257d0477d0aa29c967e0ab9b2c3",
+      email: "customer@email.com",
+      amount: amount * 100,
       currency: "NGN",
 
       callback: function (response) {
-        // 👉 send reference to backend for verification
         fetch("https://xcombinator.onrender.com/verify-payment", {
           method: "POST",
           headers: {
