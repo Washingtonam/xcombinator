@@ -2,7 +2,7 @@ const express = require("express");
 const cors = require("cors");
 const fs = require("fs");
 const axios = require("axios");
-const adminRoutes = require("./routes/adminRoutes");
+const adminRoutes = require("./api/adminRoutes");
 const bcrypt = require("bcryptjs");
 
 const app = express();
