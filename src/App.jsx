@@ -14,11 +14,27 @@ function isAuthenticated() {
   return !!localStorage.getItem("user");
 }
 
+// 🔐 GET CURRENT USER
+function getUser() {
+  return JSON.parse(localStorage.getItem("user"));
+}
+
 // 🔐 PROTECTED ROUTE
 function ProtectedRoute({ children }) {
   if (!isAuthenticated()) {
     return <Navigate to="/login" />;
   }
+  return children;
+}
+
+// 🔐 ADMIN ONLY ROUTE
+function AdminRoute({ children }) {
+  const user = getUser();
+
+  if (!user || user.email !== "admin@xcombinator.com") {
+    return <Navigate to="/" />;
+  }
+
   return children;
 }
 
@@ -34,7 +50,18 @@ function Layout() {
           <Route path="/verify-bvn" element={<ProtectedRoute><VerifyBVN /></ProtectedRoute>} />
           <Route path="/transactions" element={<ProtectedRoute><Transactions /></ProtectedRoute>} />
           <Route path="/wallet" element={<ProtectedRoute><Wallet /></ProtectedRoute>} />
-          <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
+
+          {/* 🔥 ADMIN LOCK */}
+          <Route 
+            path="/admin" 
+            element={
+              <ProtectedRoute>
+                <AdminRoute>
+                  <Admin />
+                </AdminRoute>
+              </ProtectedRoute>
+            } 
+          />
         </Routes>
       </div>
     </div>

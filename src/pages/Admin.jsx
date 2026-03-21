@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import AdminPricing from "./AdminPricing";
 
 export default function Admin() {
   const [users, setUsers] = useState([]);
@@ -8,19 +9,21 @@ export default function Admin() {
     // fetch users
     fetch("https://xcombinator.onrender.com/admin/users")
       .then(res => res.json())
-      .then(data => setUsers(data));
+      .then(data => setUsers(data))
+      .catch(err => console.error(err));
 
     // fetch transactions
     fetch("https://xcombinator.onrender.com/admin/transactions")
       .then(res => res.json())
-      .then(data => setTransactions(data));
+      .then(data => setTransactions(data))
+      .catch(err => console.error(err));
   }, []);
 
   const totalBalance = users.reduce((sum, u) => sum + u.balance, 0);
   const totalTransactions = transactions.length;
 
   return (
-    <div>
+    <div className="p-6">
       <h1 className="text-2xl font-bold mb-6">Admin Dashboard</h1>
 
       {/* STATS */}
@@ -67,7 +70,7 @@ export default function Admin() {
       </div>
 
       {/* TRANSACTIONS TABLE */}
-      <div className="bg-white p-6 rounded shadow">
+      <div className="bg-white p-6 rounded shadow mb-10">
         <h2 className="text-lg font-semibold mb-4">All Transactions</h2>
 
         <table className="w-full text-sm">
@@ -91,6 +94,12 @@ export default function Admin() {
             ))}
           </tbody>
         </table>
+      </div>
+
+      {/* PRICING CONTROL */}
+      <div className="bg-white p-6 rounded shadow">
+        <h2 className="text-lg font-semibold mb-4">Pricing Control</h2>
+        <AdminPricing />
       </div>
     </div>
   );

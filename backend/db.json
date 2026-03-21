@@ -32,5 +32,16 @@
       "amount": 100,
       "userId": 1
     }
-  ]
+  ],
+
+  "pricing": {
+    "nin": {
+      "cost": 50,
+      "price": 150
+    },
+    "bvn": {
+      "cost": 50,
+      "price": 150
+    }
+  }
 }

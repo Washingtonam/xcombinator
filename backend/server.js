@@ -2,10 +2,12 @@ const express = require("express");
 const cors = require("cors");
 const fs = require("fs");
 const axios = require("axios");
+const adminRoutes = require("./routes/adminRoutes");
 
 const app = express();
 app.use(cors());
 app.use(express.json());
+app.use("/api/admin", adminRoutes);
 
 const API_KEY = "YOUR_API_KEY";
 
@@ -125,7 +127,18 @@ app.post("/verify-nin", async (req, res) => {
 
   if (!user) return res.status(404).json({ error: "User not found" });
 
-  if (user.balance < 100) {
+  // 🔥 GET PRICING FROM DB
+  const pricing = db.pricing?.nin;
+
+  if (!pricing) {
+    return res.status(500).json({ error: "Pricing not set" });
+  }
+
+  const { cost, price } = pricing;
+  const profit = price - cost;
+
+  // 🔥 CHECK BALANCE USING PRICE
+  if (user.balance < price) {
     return res.status(400).json({ error: "Insufficient balance" });
   }
 
@@ -145,13 +158,16 @@ app.post("/verify-nin", async (req, res) => {
 
     const apiData = response.data;
 
-    user.balance -= 100;
+    // 🔥 DEDUCT SELL PRICE
+    user.balance -= price;
 
     const transaction = {
       id: Date.now(),
       type: "NIN",
       nin,
-      amount: 100,
+      amount: price,     // what user paid
+      cost: cost,        // your cost
+      profit: profit,    // your profit
       status: "success",
       date: new Date().toISOString(),
       userId: user.id,
