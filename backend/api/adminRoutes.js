@@ -4,11 +4,15 @@ const router = express.Router();
 
 const dbPath = "./db.json";
 
-// SIMPLE ADMIN CHECK
+// ADMIN CHECK (your real email)
 function isAdmin(req, res, next) {
-  const email = req.headers["email"]; // temporary approach
+  const email = req.headers["email"];
 
-  if (email !== "admin@xcombinator.com") {
+  if (!email) {
+    return res.status(401).json({ message: "No email provided" });
+  }
+
+  if (email !== "washingtonamedu@gmail.com") {
     return res.status(403).json({ message: "Access denied" });
   }
 

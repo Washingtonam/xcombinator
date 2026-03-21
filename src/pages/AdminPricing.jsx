@@ -35,7 +35,7 @@ export default function AdminPricing() {
         },
         {
           headers: {
-            email: "admin@xcombinator.com",
+            email: localStorage.getItem("email"),
           },
         }
       );

@@ -3,6 +3,7 @@ const cors = require("cors");
 const fs = require("fs");
 const axios = require("axios");
 const adminRoutes = require("./routes/adminRoutes");
+const bcrypt = require("bcryptjs");
 
 const app = express();
 app.use(cors());
@@ -11,9 +12,20 @@ app.use("/api/admin", adminRoutes);
 
 const API_KEY = "YOUR_API_KEY";
 
-const bcrypt = require("bcryptjs");
+// READ DB
+function readDB() {
+  return JSON.parse(fs.readFileSync("./db.json", "utf-8"));
+}
 
-app.post("/register", async (req, res) => {
+// WRITE DB
+function writeDB(data) {
+  fs.writeFileSync("./db.json", JSON.stringify(data, null, 2));
+}
+
+// ================= AUTH =================
+
+// REGISTER (bcrypt)
+app.post("/api/register", async (req, res) => {
   const { email, password } = req.body;
 
   const db = readDB();
@@ -39,7 +51,8 @@ app.post("/register", async (req, res) => {
   res.json({ message: "User created successfully" });
 });
 
-app.post("/login", async (req, res) => {
+// LOGIN (bcrypt)
+app.post("/api/login", async (req, res) => {
   const { email, password } = req.body;
 
   const db = readDB();
@@ -65,13 +78,15 @@ app.post("/login", async (req, res) => {
   });
 });
 
+// ================= ADMIN =================
+
 app.get("/admin/users", (req, res) => {
   const db = readDB();
 
   const users = db.users.map(u => ({
     id: u.id,
     email: u.email,
-    balance: u.balance
+    balance: u.balance,
   }));
 
   res.json(users);
@@ -79,22 +94,13 @@ app.get("/admin/users", (req, res) => {
 
 app.get("/admin/transactions", (req, res) => {
   const db = readDB();
-
   res.json(db.transactions);
 });
 
-// READ DB
-function readDB() {
-  return JSON.parse(fs.readFileSync("./db.json", "utf-8"));
-}
+// ================= USER =================
 
-// WRITE DB
-function writeDB(data) {
-  fs.writeFileSync("./db.json", JSON.stringify(data, null, 2));
-}
-
-// GET BALANCE (NOW POST + USER ID)
-app.post("/balance", (req, res) => {
+// GET BALANCE
+app.post("/api/balance", (req, res) => {
   const { userId } = req.body;
 
   const db = readDB();
@@ -105,8 +111,8 @@ app.post("/balance", (req, res) => {
   res.json({ balance: user.balance });
 });
 
-// GET TRANSACTIONS (NOW POST + USER ID)
-app.post("/transactions", (req, res) => {
+// GET TRANSACTIONS
+app.post("/api/transactions", (req, res) => {
   const { userId } = req.body;
 
   const db = readDB();
@@ -118,8 +124,16 @@ app.post("/transactions", (req, res) => {
   res.json(userTransactions);
 });
 
-// VERIFY NIN
-app.post("/verify-nin", async (req, res) => {
+// ================= PRICING =================
+
+app.get("/api/pricing", (req, res) => {
+  const db = readDB();
+  res.json(db.pricing);
+});
+
+// ================= VERIFY NIN =================
+
+app.post("/api/verify-nin", async (req, res) => {
   const { nin, userId } = req.body;
 
   const db = readDB();
@@ -127,7 +141,6 @@ app.post("/verify-nin", async (req, res) => {
 
   if (!user) return res.status(404).json({ error: "User not found" });
 
-  // 🔥 GET PRICING FROM DB
   const pricing = db.pricing?.nin;
 
   if (!pricing) {
@@ -137,7 +150,6 @@ app.post("/verify-nin", async (req, res) => {
   const { cost, price } = pricing;
   const profit = price - cost;
 
-  // 🔥 CHECK BALANCE USING PRICE
   if (user.balance < price) {
     return res.status(400).json({ error: "Insufficient balance" });
   }
@@ -158,16 +170,15 @@ app.post("/verify-nin", async (req, res) => {
 
     const apiData = response.data;
 
-    // 🔥 DEDUCT SELL PRICE
     user.balance -= price;
 
     const transaction = {
       id: Date.now(),
       type: "NIN",
       nin,
-      amount: price,     // what user paid
-      cost: cost,        // your cost
-      profit: profit,    // your profit
+      amount: price,
+      cost: cost,
+      profit: profit,
       status: "success",
       date: new Date().toISOString(),
       userId: user.id,
@@ -188,8 +199,9 @@ app.post("/verify-nin", async (req, res) => {
   }
 });
 
-// VERIFY PAYMENT
-app.post("/verify-payment", async (req, res) => {
+// ================= VERIFY PAYMENT =================
+
+app.post("/api/verify-payment", async (req, res) => {
   const { reference, amount, userId } = req.body;
 
   try {
@@ -237,54 +249,6 @@ app.post("/verify-payment", async (req, res) => {
     console.error(error.response?.data || error.message);
     return res.status(500).json({ error: "Verification failed" });
   }
-});
-
-// REGISTER
-app.post("/register", (req, res) => {
-  const { email, password } = req.body;
-
-  const db = readDB();
-
-  const existingUser = db.users.find(u => u.email === email);
-
-  if (existingUser) {
-    return res.status(400).json({ error: "User already exists" });
-  }
-
-  const newUser = {
-    id: Date.now(),
-    email,
-    password,
-    balance: 0,
-  };
-
-  db.users.push(newUser);
-  writeDB(db);
-
-  res.json({ message: "User created successfully" });
-});
-
-// LOGIN
-app.post("/login", (req, res) => {
-  const { email, password } = req.body;
-
-  const db = readDB();
-
-  const user = db.users.find(
-    u => u.email === email && u.password === password
-  );
-
-  if (!user) {
-    return res.status(400).json({ error: "Invalid credentials" });
-  }
-
-  res.json({
-    message: "Login successful",
-    user: {
-      id: user.id,
-      email: user.email,
-    },
-  });
 });
 
 const PORT = process.env.PORT || 5000;
