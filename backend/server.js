@@ -91,27 +91,46 @@ app.post("/verify-nin", async (req, res) => {
   }
 });
 
-// ADD MONEY (TEMP - WILL CHANGE LATER WITH PAYSTACK)
-app.post("/fund", (req, res) => {
-  const { amount } = req.body;
+// ADD MONEY (TEMP - WILL CHANGE LATER WITH PAYSTACK- command deleted)
 
-  const db = readDB();
+app.post("/verify-payment", async (req, res) => {
+  const { reference, amount } = req.body;
 
-  db.balance += Number(amount);
+  try {
+    const response = await axios.get(
+      `https://api.paystack.co/transaction/verify/${reference}`,
+      {
+        headers: {
+          Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
+        },
+      }
+    );
 
-  const transaction = {
-    id: Date.now(),
-    type: "FUND",
-    amount: Number(amount),
-    status: "success",
-    date: new Date().toISOString(),
-  };
+    if (response.data.data.status === "success") {
+      const db = readDB();
 
-  db.transactions.unshift(transaction);
+      db.balance += Number(amount);
 
-  writeDB(db);
+      const transaction = {
+        id: Date.now(),
+        type: "FUND",
+        amount: Number(amount),
+        status: "success",
+        date: new Date().toISOString(),
+      };
 
-  res.json({ balance: db.balance });
+      db.transactions.unshift(transaction);
+
+      writeDB(db);
+
+      return res.json({ balance: db.balance });
+    } else {
+      return res.status(400).json({ error: "Payment not verified" });
+    }
+  } catch (error) {
+    console.error(error.response?.data || error.message);
+    return res.status(500).json({ error: "Verification failed" });
+  }
 });
 
 const PORT = process.env.PORT || 5000;
