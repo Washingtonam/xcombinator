@@ -46,6 +46,25 @@ router.put("/pricing", isAdmin, (req, res) => {
   }
 });
 
+// GET USERS
+router.get("/users", isAdmin, (req, res) => {
+  const db = JSON.parse(fs.readFileSync("./db.json", "utf-8"));
+
+  const users = db.users.map(u => ({
+    id: u.id,
+    email: u.email,
+    balance: u.balance,
+  }));
+
+  res.json(users);
+});
+
+// GET TRANSACTIONS
+router.get("/transactions", isAdmin, (req, res) => {
+  const db = JSON.parse(fs.readFileSync("./db.json", "utf-8"));
+  res.json(db.transactions);
+});
+
 router.get("/stats", isAdmin, (req, res) => {
   try {
     const db = JSON.parse(fs.readFileSync("./db.json", "utf-8"));

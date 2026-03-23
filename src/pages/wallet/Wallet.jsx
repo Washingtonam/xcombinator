@@ -7,9 +7,8 @@ export default function Wallet() {
 
   const user = JSON.parse(localStorage.getItem("user"));
 
-  useEffect(() => {
-    // Load balance (USER BASED)
-    fetch("https://xcombinator.onrender.com/balance", {
+  const fetchBalance = () => {
+    fetch("https://xcombinator.onrender.com/api/balance", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -18,63 +17,46 @@ export default function Wallet() {
     })
       .then(res => res.json())
       .then(data => setBalance(data.balance));
+  };
 
-    // Load Paystack script
+  useEffect(() => {
+    fetchBalance();
+
     const script = document.createElement("script");
     script.src = "https://js.paystack.co/v1/inline.js";
     script.async = true;
 
-    script.onload = () => {
-      console.log("Paystack loaded");
-      setPaystackReady(true);
-    };
-
-    script.onerror = () => {
-      console.log("Paystack failed to load");
-    };
+    script.onload = () => setPaystackReady(true);
 
     document.body.appendChild(script);
   }, []);
 
   const handlePay = () => {
-    if (!amount || amount <= 0) {
-      alert("Enter valid amount");
-      return;
-    }
-
-    if (!paystackReady || !window.PaystackPop) {
-      alert("Payment system not ready. Refresh page.");
-      return;
-    }
+    if (!amount || amount <= 0) return alert("Enter valid amount");
 
     const handler = window.PaystackPop.setup({
       key: "pk_test_f0a111652a4fc257d0477d0aa29c967e0ab9b2c3",
-      email: user.email, // 🔥 dynamic user email
+      email: user.email,
       amount: amount * 100,
-      currency: "NGN",
 
       callback: function (response) {
-        fetch("https://xcombinator.onrender.com/verify-payment", {
+        fetch("https://xcombinator.onrender.com/api/verify-payment", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
             reference: response.reference,
-            amount: amount,
-            userId: user.id, // 🔥 VERY IMPORTANT
+            amount,
+            userId: user.id,
           }),
         })
           .then(res => res.json())
-          .then(data => {
-            setBalance(data.balance);
+          .then(() => {
+            fetchBalance(); // 🔥 FORCE REFRESH
             setAmount("");
             alert("Payment successful");
           });
-      },
-
-      onClose: function () {
-        alert("Transaction cancelled");
       },
     });
 

@@ -16,12 +16,14 @@ export default function Admin() {
 
   const fetchData = async () => {
     try {
+      const headers = {
+        email: localStorage.getItem("email"),
+      };
+
       const [usersRes, txRes, statsRes] = await Promise.all([
-        axios.get(`${API_BASE}/admin/users`),
-        axios.get(`${API_BASE}/admin/transactions`),
-        axios.get(`${API_BASE}/api/admin/stats`, {
-          headers: { email: localStorage.getItem("email") },
-        }),
+        axios.get(`${API_BASE}/api/admin/users`, { headers }),
+        axios.get(`${API_BASE}/api/admin/transactions`, { headers }),
+        axios.get(`${API_BASE}/api/admin/stats`, { headers }),
       ]);
 
       setUsers(usersRes.data);
