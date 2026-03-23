@@ -1,91 +1,92 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-export default function Register() {
+export default function Login() {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+
   const navigate = useNavigate();
 
-  const [form, setForm] = useState({
-    firstName: "",
-    lastName: "",
-    nin: "",
-    email: "",
-    password: "",
-    confirmPassword: "",
-  });
-
-  const [showPassword, setShowPassword] = useState(false);
-
-  const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  };
-
-  const handleRegister = async () => {
-    if (form.password !== form.confirmPassword) {
-      return alert("Passwords do not match");
-    }
+  const handleLogin = async () => {
+    setLoading(true);
 
     try {
-      const res = await fetch("https://xcombinator.onrender.com/api/register", {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 20000); // 20s timeout
+
+      const res = await fetch("https://xcombinator.onrender.com/api/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(form),
+        body: JSON.stringify({ email, password }),
+        signal: controller.signal,
       });
+
+      clearTimeout(timeout);
 
       const data = await res.json();
 
-      if (data.error) return alert(data.error);
+      if (data.error) {
+        alert(data.error);
+        setLoading(false);
+        return;
+      }
 
-      alert("Registration successful");
-      navigate("/login");
+      localStorage.setItem("user", JSON.stringify(data.user));
+      localStorage.setItem("email", data.user.email);
+      localStorage.setItem("userId", data.user.id);
+
+      navigate("/");
 
     } catch (error) {
-      alert("Registration failed");
+      if (error.name === "AbortError") {
+        alert("Server is taking too long. Try again.");
+      } else {
+        alert("Network error. Try again.");
+      }
     }
+
+    setLoading(false);
   };
 
   return (
     <div className="flex justify-center items-center h-screen">
-      <div className="bg-white p-6 rounded shadow w-96">
-        <h2 className="text-xl font-bold mb-4">Register</h2>
-
-        <input name="firstName" placeholder="First Name" className="w-full border p-2 mb-3" onChange={handleChange} />
-        <input name="lastName" placeholder="Last Name" className="w-full border p-2 mb-3" onChange={handleChange} />
-        <input name="nin" placeholder="NIN" className="w-full border p-2 mb-3" onChange={handleChange} />
-        <input name="email" placeholder="Email" className="w-full border p-2 mb-3" onChange={handleChange} />
-
-        <div className="relative mb-3">
-          <input
-            type={showPassword ? "text" : "password"}
-            name="password"
-            placeholder="Password"
-            className="w-full border p-2"
-            onChange={handleChange}
-          />
-        </div>
+      <div className="bg-white p-6 rounded shadow w-80">
+        <h2 className="text-xl font-bold mb-4">Login</h2>
 
         <input
-          type={showPassword ? "text" : "password"}
-          name="confirmPassword"
-          placeholder="Confirm Password"
+          type="email"
+          placeholder="Email"
           className="w-full border p-2 mb-3"
-          onChange={handleChange}
+          onChange={(e) => setEmail(e.target.value)}
+        />
+
+        <input
+          type="password"
+          placeholder="Password"
+          className="w-full border p-2 mb-3"
+          onChange={(e) => setPassword(e.target.value)}
         />
 
         <button
-          onClick={() => setShowPassword(!showPassword)}
-          className="text-sm text-blue-600 mb-3"
-        >
-          {showPassword ? "Hide Password" : "Show Password"}
-        </button>
-
-        <button
-          onClick={handleRegister}
+          onClick={handleLogin}
+          disabled={loading}
           className="bg-blue-600 text-white w-full py-2 rounded"
         >
-          Register
+          {loading ? "Processing..." : "Login"}
         </button>
+
+        <p className="text-sm mt-4 text-center">
+          Don’t have an account?{" "}
+          <span
+            className="text-blue-600 cursor-pointer"
+            onClick={() => navigate("/register")}
+          >
+            Register
+          </span>
+        </p>
       </div>
     </div>
   );

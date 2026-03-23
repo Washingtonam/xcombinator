@@ -4,37 +4,51 @@ import { useNavigate } from "react-router-dom";
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+
   const navigate = useNavigate();
 
   const handleLogin = async () => {
+    setLoading(true);
+
     try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 20000); // 20s timeout
+
       const res = await fetch("https://xcombinator.onrender.com/api/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ email, password }),
+        signal: controller.signal,
       });
+
+      clearTimeout(timeout);
 
       const data = await res.json();
 
       if (data.error) {
         alert(data.error);
+        setLoading(false);
         return;
       }
 
-      // ✅ STORE PROPERLY (CRITICAL)
       localStorage.setItem("user", JSON.stringify(data.user));
       localStorage.setItem("email", data.user.email);
       localStorage.setItem("userId", data.user.id);
 
-      alert("Login successful");
       navigate("/");
 
     } catch (error) {
-      console.error(error);
-      alert("Login failed");
+      if (error.name === "AbortError") {
+        alert("Server is taking too long. Try again.");
+      } else {
+        alert("Network error. Try again.");
+      }
     }
+
+    setLoading(false);
   };
 
   return (
@@ -58,12 +72,12 @@ export default function Login() {
 
         <button
           onClick={handleLogin}
+          disabled={loading}
           className="bg-blue-600 text-white w-full py-2 rounded"
         >
-          Login
+          {loading ? "Processing..." : "Login"}
         </button>
 
-        {/* ✅ REGISTER LINK */}
         <p className="text-sm mt-4 text-center">
           Don’t have an account?{" "}
           <span
