@@ -59,6 +59,32 @@ router.get("/users", isAdmin, (req, res) => {
   res.json(users);
 });
 
+// GET SINGLE USER + ACTIVITY
+router.get("/user/:id", isAdmin, (req, res) => {
+  const db = JSON.parse(fs.readFileSync("./db.json", "utf-8"));
+
+  const userId = Number(req.params.id);
+
+  const user = db.users.find(u => u.id === userId);
+
+  if (!user) {
+    return res.status(404).json({ message: "User not found" });
+  }
+
+  const userTransactions = db.transactions.filter(
+    tx => tx.userId === userId
+  );
+
+  res.json({
+    user: {
+      id: user.id,
+      email: user.email,
+      balance: user.balance,
+    },
+    transactions: userTransactions,
+  });
+});
+
 // GET TRANSACTIONS
 router.get("/transactions", isAdmin, (req, res) => {
   const db = JSON.parse(fs.readFileSync("./db.json", "utf-8"));
