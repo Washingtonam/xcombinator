@@ -9,7 +9,17 @@ const adminRoutes = require("./api/adminRoutes");
 
 const app = express();
 
-app.use(cors());
+// ✅ FIXED CORS CONFIG (PRODUCTION SAFE)
+app.use(cors({
+  origin: [
+    "http://localhost:5173",
+    "https://www.xcombinator.com.ng",
+    "https://xcombinator.com.ng"
+  ],
+  methods: ["GET", "POST", "PUT", "DELETE"],
+  credentials: true
+}));
+
 app.use(express.json());
 
 // ROUTES
@@ -19,7 +29,7 @@ app.use("/api", verificationRoutes);
 app.use("/api", paymentRoutes);
 app.use("/api/admin", adminRoutes);
 
-// PRICING (simple route)
+// PRICING
 const { readDB } = require("./utils/db");
 
 app.get("/api/pricing", (req, res) => {
