@@ -1,8 +1,8 @@
 import { BrowserRouter, Routes, Route, useLocation, Navigate } from "react-router-dom";
 import Sidebar from "./components/Sidebar";
-import Login from "./pages/Login";
-import Register from "./pages/Register";
-import Admin from "./pages/Admin";
+import Login from "./pages/auth/Login";
+import Register from "./pages/auth/Register";
+import Admin from "./pages/admin/Admin";
 
 import Dashboard from "./pages/Dashboard";
 import VerifyNIN from "./pages/VerifyNIN";

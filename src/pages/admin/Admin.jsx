@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import AdminPricing from "./AdminPricing";
+import AdminPricing from "../AdminPricing";
 
 export default function Admin() {
   const [users, setUsers] = useState([]);
