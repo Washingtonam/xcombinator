@@ -3,7 +3,11 @@ router.post("/register", async (req, res) => {
 
   const db = readDB();
 
-  const existingUser = db.users.find(u => u.email === email);
+  // 🔥 STRICT EMAIL CHECK (case insensitive)
+  const existingUser = db.users.find(
+    u => u.email.toLowerCase() === email.toLowerCase()
+  );
+
   if (existingUser) {
     return res.status(400).json({ error: "User already exists" });
   }
@@ -15,7 +19,7 @@ router.post("/register", async (req, res) => {
     firstName,
     lastName,
     nin,
-    email,
+    email: email.toLowerCase(),
     password: hashedPassword,
     balance: 0,
   };
