@@ -4,18 +4,21 @@ import Login from "./pages/auth/Login";
 import Register from "./pages/auth/Register";
 import Admin from "./pages/admin/Admin";
 
-import Dashboard from "./pages/Dashboard";
-import VerifyNIN from "./pages/VerifyNIN";
-import VerifyBVN from "./pages/VerifyBVN";
-import Transactions from "./pages/Transactions";
-import Wallet from "./pages/Wallet";
+import Dashboard from "./pages/dashboard/Dashboard";
+import VerifyNIN from "./pages/verification/VerifyNIN";
+import VerifyBVN from "./pages/verification/VerifyBVN";
+import Transactions from "./pages/transactions/Transactions";
+import Wallet from "./pages/wallet/Wallet";
 
-// 🔐 CHECK AUTH
 function isAuthenticated() {
   return !!localStorage.getItem("user");
 }
 
-// 🔐 PROTECTED ROUTE
+function isAdmin() {
+  const user = JSON.parse(localStorage.getItem("user"));
+  return user?.email === "washingtonamedu@gmail.com";
+}
+
 function ProtectedRoute({ children }) {
   if (!isAuthenticated()) {
     return <Navigate to="/login" />;
@@ -23,11 +26,16 @@ function ProtectedRoute({ children }) {
   return children;
 }
 
-// 🔐 ADMIN ROUTE (frontend only checks login now)
+// 🔥 FIXED ADMIN ROUTE
 function AdminRoute({ children }) {
   if (!isAuthenticated()) {
     return <Navigate to="/login" />;
   }
+
+  if (!isAdmin()) {
+    return <Navigate to="/" />;
+  }
+
   return children;
 }
 
@@ -44,7 +52,6 @@ function Layout() {
           <Route path="/transactions" element={<ProtectedRoute><Transactions /></ProtectedRoute>} />
           <Route path="/wallet" element={<ProtectedRoute><Wallet /></ProtectedRoute>} />
 
-          {/* ADMIN */}
           <Route 
             path="/admin" 
             element={
@@ -76,12 +83,10 @@ function AppRoutes() {
   return <Layout />;
 }
 
-function App() {
+export default function App() {
   return (
     <BrowserRouter>
       <AppRoutes />
     </BrowserRouter>
   );
 }
-
-export default App;

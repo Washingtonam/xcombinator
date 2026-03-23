@@ -3,6 +3,9 @@ import { Link, useNavigate } from "react-router-dom";
 export default function Sidebar() {
   const navigate = useNavigate();
 
+  const user = JSON.parse(localStorage.getItem("user"));
+  const isAdmin = user?.email === "washingtonamedu@gmail.com";
+
   const handleLogout = () => {
     localStorage.removeItem("user");
     navigate("/login");
@@ -20,10 +23,12 @@ export default function Sidebar() {
           <li><Link to="/verify-bvn">Verify BVN</Link></li>
           <li><Link to="/transactions">Transactions</Link></li>
           <li><Link to="/wallet">Wallet</Link></li>
+
+          {/* 🔥 ADMIN ONLY */}
+          {isAdmin && <li><Link to="/admin">Admin</Link></li>}
         </ul>
       </div>
 
-      {/* 🔥 Logout Button */}
       <button
         onClick={handleLogout}
         className="bg-red-600 hover:bg-red-700 px-4 py-2 rounded mt-10"
