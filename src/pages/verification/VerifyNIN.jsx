@@ -1,67 +1,52 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import { useUser } from "../../context/UserContext";
 
 export default function VerifyNIN() {
   const [nin, setNin] = useState("");
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [balance, setBalance] = useState(0);
 
-  const user = JSON.parse(localStorage.getItem("user"));
-
-  // LOAD BALANCE FROM BACKEND (USER BASED)
-  useEffect(() => {
-    fetch("https://xcombinator.onrender.com/balance", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ userId: user.id }),
-    })
-      .then(res => res.json())
-      .then(data => setBalance(data.balance))
-      .catch(err => console.error(err));
-  }, []);
+  const { user, balance, setBalance } = useUser();
 
   const handleVerify = async () => {
     if (nin.length !== 11) {
-      alert("NIN must be 11 digits");
-      return;
+      return alert("NIN must be 11 digits");
     }
 
     if (balance < 100) {
-      alert("Insufficient balance");
-      return;
+      return alert("Insufficient balance");
     }
 
     setLoading(true);
 
     try {
-      const res = await fetch("https://xcombinator.onrender.com/verify-nin", {
+      const res = await fetch("https://xcombinator.onrender.com/api/verify-nin", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           nin,
-          userId: user.id
+          userId: user.id,
         }),
       });
 
       const data = await res.json();
 
       if (!res.ok) {
-        alert(data.error || "Error occurred");
+        alert(data.error || "Verification failed");
         setLoading(false);
         return;
       }
 
       setResult(data);
 
-      // UPDATE BALANCE FROM BACKEND RESPONSE
+      // 🔥 GLOBAL BALANCE UPDATE
       setBalance(data.balance);
 
     } catch (error) {
       console.error(error);
+      alert("Network error");
     }
 
     setLoading(false);
@@ -84,6 +69,7 @@ export default function VerifyNIN() {
 
         <button
           onClick={handleVerify}
+          disabled={loading}
           className="bg-blue-600 text-white px-4 py-2 rounded w-full"
         >
           {loading ? "Verifying..." : "Verify NIN"}
