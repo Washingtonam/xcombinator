@@ -29,7 +29,7 @@ export default function Register() {
 
     try {
       const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 20000);
+      const timeout = setTimeout(() => controller.abort(), 90000);
 
       const res = await fetch("https://xcombinator.onrender.com/api/register", {
         method: "POST",
