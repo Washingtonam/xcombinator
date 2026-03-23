@@ -46,4 +46,34 @@ router.put("/pricing", isAdmin, (req, res) => {
   }
 });
 
+router.get("/stats", isAdmin, (req, res) => {
+  try {
+    const db = JSON.parse(fs.readFileSync("./db.json", "utf-8"));
+
+    const transactions = db.transactions || [];
+
+    let totalRevenue = 0;
+    let totalCost = 0;
+    let totalProfit = 0;
+
+    transactions.forEach(tx => {
+      if (tx.type === "NIN") {
+        totalRevenue += tx.amount || 0;
+        totalCost += tx.cost || 0;
+        totalProfit += tx.profit || 0;
+      }
+    });
+
+    res.json({
+      totalRevenue,
+      totalCost,
+      totalProfit,
+      totalTransactions: transactions.length,
+    });
+
+  } catch (error) {
+    res.status(500).json({ message: "Error fetching stats" });
+  }
+});
+
 module.exports = router;

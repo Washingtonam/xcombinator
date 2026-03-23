@@ -1,105 +1,68 @@
 import { useEffect, useState } from "react";
-import AdminPricing from "../AdminPricing";
+import axios from "axios";
+
+const API_BASE = "https://xcombinator.onrender.com";
 
 export default function Admin() {
-  const [users, setUsers] = useState([]);
-  const [transactions, setTransactions] = useState([]);
+  const [stats, setStats] = useState({
+    totalRevenue: 0,
+    totalCost: 0,
+    totalProfit: 0,
+    totalTransactions: 0,
+  });
+
+  const fetchStats = async () => {
+    try {
+      const res = await axios.get(`${API_BASE}/api/admin/stats`, {
+        headers: {
+          email: localStorage.getItem("email"),
+        },
+      });
+
+      setStats(res.data);
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   useEffect(() => {
-    // fetch users
-    fetch("https://xcombinator.onrender.com/admin/users")
-      .then(res => res.json())
-      .then(data => setUsers(data))
-      .catch(err => console.error(err));
-
-    // fetch transactions
-    fetch("https://xcombinator.onrender.com/admin/transactions")
-      .then(res => res.json())
-      .then(data => setTransactions(data))
-      .catch(err => console.error(err));
+    fetchStats();
   }, []);
 
-  const totalBalance = users.reduce((sum, u) => sum + u.balance, 0);
-  const totalTransactions = transactions.length;
-
   return (
-    <div className="p-6">
+    <div>
       <h1 className="text-2xl font-bold mb-6">Admin Dashboard</h1>
 
-      {/* STATS */}
-      <div className="grid grid-cols-2 gap-6 mb-10">
-        <div className="bg-white p-6 rounded shadow">
-          <h2 className="text-lg font-semibold">Total Users</h2>
-          <p className="text-2xl">{users.length}</p>
-        </div>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
 
         <div className="bg-white p-6 rounded shadow">
-          <h2 className="text-lg font-semibold">Total System Balance</h2>
-          <p className="text-2xl">₦{totalBalance}</p>
+          <h2 className="text-sm text-gray-500">Revenue</h2>
+          <p className="text-xl font-bold text-green-600">
+            ₦{stats.totalRevenue}
+          </p>
         </div>
 
-        <div className="bg-white p-6 rounded shadow col-span-2">
-          <h2 className="text-lg font-semibold">Total Transactions</h2>
-          <p className="text-2xl">{totalTransactions}</p>
+        <div className="bg-white p-6 rounded shadow">
+          <h2 className="text-sm text-gray-500">Cost</h2>
+          <p className="text-xl font-bold text-red-500">
+            ₦{stats.totalCost}
+          </p>
         </div>
-      </div>
 
-      {/* USERS TABLE */}
-      <div className="bg-white p-6 rounded shadow mb-10">
-        <h2 className="text-lg font-semibold mb-4">Users</h2>
+        <div className="bg-white p-6 rounded shadow">
+          <h2 className="text-sm text-gray-500">Profit</h2>
+          <p className="text-xl font-bold text-blue-600">
+            ₦{stats.totalProfit}
+          </p>
+        </div>
 
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b text-left">
-              <th>ID</th>
-              <th>Email</th>
-              <th>Balance</th>
-            </tr>
-          </thead>
+        <div className="bg-white p-6 rounded shadow">
+          <h2 className="text-sm text-gray-500">Transactions</h2>
+          <p className="text-xl font-bold">
+            {stats.totalTransactions}
+          </p>
+        </div>
 
-          <tbody>
-            {users.map(user => (
-              <tr key={user.id} className="border-b">
-                <td>{user.id}</td>
-                <td>{user.email}</td>
-                <td>₦{user.balance}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      {/* TRANSACTIONS TABLE */}
-      <div className="bg-white p-6 rounded shadow mb-10">
-        <h2 className="text-lg font-semibold mb-4">All Transactions</h2>
-
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b text-left">
-              <th>Type</th>
-              <th>Amount</th>
-              <th>User ID</th>
-              <th>Date</th>
-            </tr>
-          </thead>
-
-          <tbody>
-            {transactions.map(tx => (
-              <tr key={tx.id} className="border-b">
-                <td>{tx.type}</td>
-                <td>₦{tx.amount}</td>
-                <td>{tx.userId}</td>
-                <td>{new Date(tx.date).toLocaleString()}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      {/* PRICING CONTROL */}
-      <div className="bg-white p-6 rounded shadow">
-        <h2 className="text-lg font-semibold mb-4">Pricing Control</h2>
-        <AdminPricing />
       </div>
     </div>
   );
