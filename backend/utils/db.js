@@ -1,13 +1,14 @@
-const fs = require("fs");
+const mongoose = require("mongoose");
 
-const dbPath = "./db.json";
+const connectDB = async () => {
+  try {
+    await mongoose.connect(process.env.MONGO_URI);
 
-function readDB() {
-  return JSON.parse(fs.readFileSync(dbPath, "utf-8"));
-}
+    console.log("MongoDB Connected");
+  } catch (error) {
+    console.error("MongoDB connection error:", error);
+    process.exit(1);
+  }
+};
 
-function writeDB(data) {
-  fs.writeFileSync(dbPath, JSON.stringify(data, null, 2));
-}
-
-module.exports = { readDB, writeDB };
+module.exports = connectDB;
