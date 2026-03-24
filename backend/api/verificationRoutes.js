@@ -1,61 +1,49 @@
 const express = require("express");
 const axios = require("axios");
-const { readDB, writeDB } = require("../utils/db");
+const User = require("../models/User");
+const Transaction = require("../models/Transaction");
 
 const router = express.Router();
 
-const API_KEY = "YOUR_API_KEY";
-
-// VERIFY NIN
-router.post("/verify-nin", async (req, res) => {
-  const { nin, userId } = req.body;
-
-  const db = readDB();
-  const user = db.users.find(u => u.id === userId);
-
-  if (!user) return res.status(404).json({ error: "User not found" });
-
-  const pricing = db.pricing?.nin;
-  const { cost, price } = pricing;
-  const profit = price - cost;
-
-  if (user.balance < price) {
-    return res.status(400).json({ error: "Insufficient balance" });
-  }
+router.post("/verify-payment", async (req, res) => {
+  const { reference, amount, userId } = req.body;
 
   try {
-    const response = await axios.post(
-      "https://ninbvnportal.com.ng/api/nin-verification",
-      { nin, consent: true },
+    const response = await axios.get(
+      `https://api.paystack.co/transaction/verify/${reference}`,
       {
-        headers: { "x-api-key": API_KEY },
+        headers: {
+          Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
+        },
       }
     );
 
-    user.balance -= price;
+    if (response.data.data.status === "success") {
+      const user = await User.findById(userId);
 
-    db.transactions.unshift({
-      id: Date.now(),
-      type: "NIN",
-      nin,
-      amount: price,
-      cost,
-      profit,
-      status: "success",
-      date: new Date().toISOString(),
-      userId,
-    });
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
 
-    writeDB(db);
+      user.balance += Number(amount);
+      await user.save();
 
-    res.json({
-      status: "success",
-      data: response.data,
-      balance: user.balance,
-    });
+      // ✅ SAVE TRANSACTION (MONGODB)
+      await Transaction.create({
+        type: "FUND",
+        amount: Number(amount),
+        userId: user._id,
+        status: "success",
+      });
+
+      return res.json({ balance: user.balance });
+    }
+
+    res.status(400).json({ error: "Payment not verified" });
 
   } catch (error) {
-    return res.status(500).json({ error: "Verification failed" });
+    console.error(error);
+    res.status(500).json({ error: "Verification failed" });
   }
 });
 

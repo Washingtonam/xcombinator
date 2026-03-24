@@ -1,6 +1,7 @@
 const express = require("express");
 const axios = require("axios");
-const { readDB, writeDB } = require("../utils/db");
+const User = require("../models/User");
+const Transaction = require("../models/Transaction");
 
 const router = express.Router();
 
@@ -18,23 +19,22 @@ router.post("/verify-payment", async (req, res) => {
     );
 
     if (response.data.data.status === "success") {
-      const db = readDB();
-      const user = db.users.find(u => u.id === userId);
+      const user = await User.findById(userId);
 
-      if (!user) return res.status(404).json({ error: "User not found" });
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
 
       user.balance += Number(amount);
+      await user.save();
 
-      db.transactions.unshift({
-        id: Date.now(),
+      // ✅ SAVE TRANSACTION (MONGODB)
+      await Transaction.create({
         type: "FUND",
         amount: Number(amount),
+        userId: user._id,
         status: "success",
-        date: new Date().toISOString(),
-        userId,
       });
-
-      writeDB(db);
 
       return res.json({ balance: user.balance });
     }
@@ -42,6 +42,7 @@ router.post("/verify-payment", async (req, res) => {
     res.status(400).json({ error: "Payment not verified" });
 
   } catch (error) {
+    console.error(error);
     res.status(500).json({ error: "Verification failed" });
   }
 });

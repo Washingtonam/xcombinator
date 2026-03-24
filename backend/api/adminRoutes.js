@@ -1,10 +1,10 @@
 const express = require("express");
-const fs = require("fs");
 const router = express.Router();
 
-const dbPath = "./db.json";
+const User = require("../models/User");
+const Transaction = require("../models/Transaction");
 
-// ADMIN CHECK (backend authority)
+// 🔐 ADMIN CHECK
 function isAdmin(req, res, next) {
   const email = req.headers["email"];
 
@@ -19,83 +19,69 @@ function isAdmin(req, res, next) {
   next();
 }
 
-// UPDATE PRICING
-router.put("/pricing", isAdmin, (req, res) => {
+//
+// 🔥 GET ALL USERS
+//
+router.get("/users", isAdmin, async (req, res) => {
   try {
-    const { ninPrice, bvnPrice } = req.body;
+    const users = await User.find().select("-password");
 
-    const db = JSON.parse(fs.readFileSync(dbPath, "utf-8"));
+    res.json(users);
 
-    if (ninPrice !== undefined) {
-      db.pricing.nin.price = Number(ninPrice);
-    }
-
-    if (bvnPrice !== undefined) {
-      db.pricing.bvn.price = Number(bvnPrice);
-    }
-
-    fs.writeFileSync(dbPath, JSON.stringify(db, null, 2));
-
-    res.json({
-      message: "Pricing updated successfully",
-      pricing: db.pricing,
-    });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ message: "Error fetching users" });
   }
 });
 
-// GET USERS
-router.get("/users", isAdmin, (req, res) => {
-  const db = JSON.parse(fs.readFileSync("./db.json", "utf-8"));
-
-  const users = db.users.map(u => ({
-    id: u.id,
-    email: u.email,
-    balance: u.balance,
-  }));
-
-  res.json(users);
-});
-
-// GET SINGLE USER + ACTIVITY
-router.get("/user/:id", isAdmin, (req, res) => {
-  const db = JSON.parse(fs.readFileSync("./db.json", "utf-8"));
-
-  const userId = Number(req.params.id);
-
-  const user = db.users.find(u => u.id === userId);
-
-  if (!user) {
-    return res.status(404).json({ message: "User not found" });
-  }
-
-  const userTransactions = db.transactions.filter(
-    tx => tx.userId === userId
-  );
-
-  res.json({
-    user: {
-      id: user.id,
-      email: user.email,
-      balance: user.balance,
-    },
-    transactions: userTransactions,
-  });
-});
-
-// GET TRANSACTIONS
-router.get("/transactions", isAdmin, (req, res) => {
-  const db = JSON.parse(fs.readFileSync("./db.json", "utf-8"));
-  res.json(db.transactions);
-});
-
-router.get("/stats", isAdmin, (req, res) => {
+//
+// 🔥 GET ALL TRANSACTIONS
+//
+router.get("/transactions", isAdmin, async (req, res) => {
   try {
-    const db = JSON.parse(fs.readFileSync("./db.json", "utf-8"));
+    const transactions = await Transaction.find()
+      .sort({ createdAt: -1 });
 
-    const transactions = db.transactions || [];
+    res.json(transactions);
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Error fetching transactions" });
+  }
+});
+
+//
+// 🔥 GET SINGLE USER + ACTIVITY
+//
+router.get("/user/:id", isAdmin, async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id).select("-password");
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const transactions = await Transaction.find({
+      userId: user._id,
+    }).sort({ createdAt: -1 });
+
+    res.json({
+      user,
+      transactions,
+    });
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Error fetching user data" });
+  }
+});
+
+//
+// 🔥 GET SYSTEM STATS (REAL MONEY DATA)
+//
+router.get("/stats", isAdmin, async (req, res) => {
+  try {
+    const transactions = await Transaction.find();
 
     let totalRevenue = 0;
     let totalCost = 0;
@@ -110,13 +96,14 @@ router.get("/stats", isAdmin, (req, res) => {
     });
 
     res.json({
+      totalTransactions: transactions.length,
       totalRevenue,
       totalCost,
       totalProfit,
-      totalTransactions: transactions.length,
     });
 
   } catch (error) {
+    console.error(error);
     res.status(500).json({ message: "Error fetching stats" });
   }
 });
