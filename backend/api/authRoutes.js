@@ -1,68 +1,78 @@
 const express = require("express");
 const bcrypt = require("bcryptjs");
-const { readDB, writeDB } = require("../utils/db");
+const User = require("../models/User");
 
 const router = express.Router();
 
 // REGISTER
 router.post("/register", async (req, res) => {
-  const { firstName, lastName, nin, email, password } = req.body;
+  try {
+    const { firstName, lastName, nin, email, password } = req.body;
 
-  const db = readDB();
+    const existingUser = await User.findOne({
+      email: email.toLowerCase()
+    });
 
-  const existingUser = db.users.find(
-    u => u.email.toLowerCase() === email.toLowerCase()
-  );
+    if (existingUser) {
+      return res.status(400).json({ error: "User already exists" });
+    }
 
-  if (existingUser) {
-    return res.status(400).json({ error: "User already exists" });
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const newUser = await User.create({
+      firstName,
+      lastName,
+      nin,
+      email: email.toLowerCase(),
+      password: hashedPassword,
+      balance: 0,
+    });
+
+    res.json({
+      message: "User created successfully",
+      user: {
+        id: newUser._id,
+        email: newUser.email,
+      },
+    });
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Registration failed" });
   }
-
-  const hashedPassword = await bcrypt.hash(password, 10);
-
-  const newUser = {
-    id: Date.now(),
-    firstName,
-    lastName,
-    nin,
-    email: email.toLowerCase(),
-    password: hashedPassword,
-    balance: 0,
-  };
-
-  db.users.push(newUser);
-  writeDB(db);
-
-  res.json({ message: "User created successfully" });
 });
 
 // LOGIN
 router.post("/login", async (req, res) => {
-  const { email, password } = req.body;
+  try {
+    const { email, password } = req.body;
 
-  const db = readDB();
+    const user = await User.findOne({
+      email: email.toLowerCase()
+    });
 
-  const user = db.users.find(
-    u => u.email.toLowerCase() === email.toLowerCase()
-  );
+    if (!user) {
+      return res.status(400).json({ error: "Invalid credentials" });
+    }
 
-  if (!user) {
-    return res.status(400).json({ error: "Invalid credentials" });
+    const isMatch = await bcrypt.compare(password, user.password);
+
+    if (!isMatch) {
+      return res.status(400).json({ error: "Invalid credentials" });
+    }
+
+    res.json({
+      message: "Login successful",
+      user: {
+        id: user._id,
+        email: user.email,
+      },
+    });
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Login failed" });
   }
-
-  const isMatch = await bcrypt.compare(password, user.password);
-
-  if (!isMatch) {
-    return res.status(400).json({ error: "Invalid credentials" });
-  }
-
-  res.json({
-    message: "Login successful",
-    user: {
-      id: user.id,
-      email: user.email,
-    },
-  });
 });
 
 module.exports = router;
