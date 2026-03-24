@@ -7,44 +7,76 @@ const { readDB } = require("../utils/jsonDB"); // for pricing only
 
 const router = express.Router();
 
-const API_KEY = "a1fa8f28dc914dbafcd19fbbc703ee4338a6303fdae3f40a708c71804fe912a8";
+// 🔐 SECURE API KEY (from Render env)
+const API_KEY = process.env.NIN_API_KEY;
 
-// VERIFY NIN
+// ==============================
+// 🔍 VERIFY NIN
+// ==============================
 router.post("/verify-nin", async (req, res) => {
   const { nin, userId } = req.body;
 
   try {
+    // ✅ Validate input
+    if (!nin || nin.length !== 11) {
+      return res.status(400).json({ error: "Invalid NIN" });
+    }
+
+    if (!userId) {
+      return res.status(400).json({ error: "User ID required" });
+    }
+
+    // 👤 Get user from MongoDB
     const user = await User.findById(userId);
 
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
 
-    // 🔥 GET PRICING (still from JSON for now)
+    // 💰 Get pricing (still from JSON for now)
     const db = readDB();
-    const pricing = db.pricing?.nin;
+    const pricing = db?.pricing?.nin;
+
+    if (!pricing) {
+      return res.status(500).json({ error: "Pricing not configured" });
+    }
 
     const { cost, price } = pricing;
     const profit = price - cost;
 
+    // ❌ Check balance
     if (user.balance < price) {
       return res.status(400).json({ error: "Insufficient balance" });
     }
 
-    // 🔌 CALL API
-    const response = await axios.post(
+    // 🔌 CALL NIN API
+    const apiResponse = await axios.post(
       "https://ninbvnportal.com.ng/api/nin-verification",
-      { nin, consent: true },
       {
-        headers: { "x-api-key": API_KEY },
+        nin: nin,
+        consent: true,
+      },
+      {
+        headers: {
+          "x-api-key": API_KEY,
+          "Content-Type": "application/json",
+        },
       }
     );
 
-    // 💰 DEDUCT BALANCE
+    // ⚠️ Validate API response
+    if (!apiResponse.data || apiResponse.data.status !== "success") {
+      return res.status(400).json({
+        error: "API verification failed",
+        details: apiResponse.data,
+      });
+    }
+
+    // 💰 Deduct ONLY after success
     user.balance -= price;
     await user.save();
 
-    // 🧾 SAVE TRANSACTION (MONGODB)
+    // 🧾 Save transaction
     await Transaction.create({
       type: "NIN",
       nin,
@@ -55,15 +87,20 @@ router.post("/verify-nin", async (req, res) => {
       userId: user._id,
     });
 
-    res.json({
+    // ✅ Return success
+    return res.json({
       status: "success",
-      data: response.data,
+      data: apiResponse.data,
       balance: user.balance,
     });
 
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "Verification failed" });
+    console.error("🔥 NIN API ERROR:", error.response?.data || error.message);
+
+    return res.status(500).json({
+      error: "Verification failed",
+      details: error.response?.data || error.message,
+    });
   }
 });
 
