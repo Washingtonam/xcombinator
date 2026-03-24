@@ -1,45 +1,65 @@
 const express = require("express");
 const axios = require("axios");
+
 const User = require("../models/User");
 const Transaction = require("../models/Transaction");
+const { readDB } = require("../utils/jsonDB"); // for pricing only
 
 const router = express.Router();
 
-router.post("/verify-payment", async (req, res) => {
-  const { reference, amount, userId } = req.body;
+const API_KEY = "a1fa8f28dc914dbafcd19fbbc703ee4338a6303fdae3f40a708c71804fe912a8";
+
+// VERIFY NIN
+router.post("/verify-nin", async (req, res) => {
+  const { nin, userId } = req.body;
 
   try {
-    const response = await axios.get(
-      `https://api.paystack.co/transaction/verify/${reference}`,
+    const user = await User.findById(userId);
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    // 🔥 GET PRICING (still from JSON for now)
+    const db = readDB();
+    const pricing = db.pricing?.nin;
+
+    const { cost, price } = pricing;
+    const profit = price - cost;
+
+    if (user.balance < price) {
+      return res.status(400).json({ error: "Insufficient balance" });
+    }
+
+    // 🔌 CALL API
+    const response = await axios.post(
+      "https://ninbvnportal.com.ng/api/nin-verification",
+      { nin, consent: true },
       {
-        headers: {
-          Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
-        },
+        headers: { "x-api-key": API_KEY },
       }
     );
 
-    if (response.data.data.status === "success") {
-      const user = await User.findById(userId);
+    // 💰 DEDUCT BALANCE
+    user.balance -= price;
+    await user.save();
 
-      if (!user) {
-        return res.status(404).json({ error: "User not found" });
-      }
+    // 🧾 SAVE TRANSACTION (MONGODB)
+    await Transaction.create({
+      type: "NIN",
+      nin,
+      amount: price,
+      cost,
+      profit,
+      status: "success",
+      userId: user._id,
+    });
 
-      user.balance += Number(amount);
-      await user.save();
-
-      // ✅ SAVE TRANSACTION (MONGODB)
-      await Transaction.create({
-        type: "FUND",
-        amount: Number(amount),
-        userId: user._id,
-        status: "success",
-      });
-
-      return res.json({ balance: user.balance });
-    }
-
-    res.status(400).json({ error: "Payment not verified" });
+    res.json({
+      status: "success",
+      data: response.data,
+      balance: user.balance,
+    });
 
   } catch (error) {
     console.error(error);

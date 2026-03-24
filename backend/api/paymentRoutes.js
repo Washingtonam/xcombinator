@@ -13,7 +13,7 @@ router.post("/verify-payment", async (req, res) => {
       `https://api.paystack.co/transaction/verify/${reference}`,
       {
         headers: {
-          Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
+          Authorization: `Bearer ${process.env.sk_test_d0a4f4bc436c1be437efdd87ae924b363ceb3880}`,
         },
       }
     );
