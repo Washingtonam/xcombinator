@@ -40,8 +40,6 @@ export default function VerifyNIN() {
       }
 
       setResult(data);
-
-      // 🔥 GLOBAL BALANCE UPDATE
       setBalance(data.balance);
 
     } catch (error) {
@@ -80,11 +78,61 @@ export default function VerifyNIN() {
         <div className="mt-6 bg-white p-6 rounded-xl shadow max-w-md border">
           <h2 className="font-semibold text-lg mb-4">Verification Result</h2>
 
+          {/* 🔥 IMAGE */}
+          {result?.data?.photo && (
+            <div className="flex justify-center mb-4">
+              <img
+                src={`data:image/jpeg;base64,${result.data.photo}`}
+                alt="NIN"
+                className="w-32 h-32 rounded-full object-cover border"
+              />
+            </div>
+          )}
+
           <div className="space-y-2 text-sm">
-            <p><span className="font-medium">Full Name:</span> {result?.data?.name}</p>
-            <p><span className="font-medium">Phone Number:</span> {result?.data?.phone}</p>
-            <p><span className="font-medium">Date of Birth:</span> {result?.data?.dob}</p>
-            <p><span className="font-medium">NIN:</span> {result?.data?.nin}</p>
+
+            <p>
+              <span className="font-medium">Full Name:</span>{" "}
+              {result?.data?.surname}{" "}
+              {result?.data?.firstname}{" "}
+              {result?.data?.middlename}
+            </p>
+
+            <p>
+              <span className="font-medium">Phone Number:</span>{" "}
+              {result?.data?.telephoneno}
+            </p>
+
+            <p>
+              <span className="font-medium">Date of Birth:</span>{" "}
+              {result?.data?.birthdate}
+            </p>
+
+            <p>
+              <span className="font-medium">Gender:</span>{" "}
+              {result?.data?.gender}
+            </p>
+
+            <p>
+              <span className="font-medium">NIN:</span>{" "}
+              {result?.data?.nin}
+            </p>
+
+            <p>
+              <span className="font-medium">State:</span>{" "}
+              {result?.data?.residence_state}
+            </p>
+
+            <p>
+              <span className="font-medium">LGA:</span>{" "}
+              {result?.data?.residence_lga}
+            </p>
+
+            <p>
+              <span className="font-medium">Address:</span>{" "}
+              {result?.data?.residence_address}
+            </p>
+
           </div>
         </div>
       )}
