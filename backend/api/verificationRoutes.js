@@ -57,7 +57,7 @@ router.post("/verify-nin", async (req, res) => {
 
     // 🔥 FIXED API CALL
     const apiResponse = await axios.post(
-      "https://checkmyninbvn.com.ng/api/nin-verification",
+      "https://ninbvnportal.com.ng/api/nin-verification",
       {
         nin,
         consent: true,
