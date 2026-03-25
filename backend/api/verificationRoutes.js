@@ -53,11 +53,11 @@ router.post("/verify-nin", async (req, res) => {
       return res.status(400).json({ error: "Insufficient balance" });
     }
 
-    console.log("🔌 Calling NIN API...");
+    console.log("🔌 Calling NIN API (checkmyninbvn)...");
 
-    // 🔌 CALL EXTERNAL API
+    // 🔥 FIXED API CALL
     const apiResponse = await axios.post(
-      "https://ninbvnportal.com.ng/api/nin-verification",
+      "https://checkmyninbvn.com.ng/api/nin-verification",
       {
         nin,
         consent: true,
@@ -67,18 +67,18 @@ router.post("/verify-nin", async (req, res) => {
           "x-api-key": API_KEY,
           "Content-Type": "application/json",
         },
-        timeout: 20000, // ⏱ prevents hanging
+        timeout: 20000,
       }
     );
 
     console.log("📡 API RESPONSE:", apiResponse.data);
 
-    // ⚠️ FLEXIBLE SUCCESS CHECK
+    // ✅ SUCCESS CHECK
     const isSuccess =
       apiResponse.data &&
       (
         apiResponse.data.status === "success" ||
-        apiResponse.data.data || // some APIs return data directly
+        apiResponse.data.data ||
         apiResponse.status === 200
       );
 
@@ -89,7 +89,7 @@ router.post("/verify-nin", async (req, res) => {
       });
     }
 
-    // 💰 DEDUCT BALANCE AFTER SUCCESS
+    // 💰 DEDUCT BALANCE
     user.balance -= price;
     await user.save();
 
@@ -104,7 +104,6 @@ router.post("/verify-nin", async (req, res) => {
       userId: user._id,
     });
 
-    // ✅ RETURN RESPONSE
     return res.json({
       status: "success",
       data: apiResponse.data,
