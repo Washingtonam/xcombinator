@@ -7,17 +7,12 @@ const { readDB } = require("../utils/jsonDB");
 
 const router = express.Router();
 
-// 🔐 SECURE API KEY
 const API_KEY = process.env.NIN_API_KEY;
 
-// ==============================
-// 🔍 VERIFY NIN
-// ==============================
 router.post("/verify-nin", async (req, res) => {
   const { nin, userId } = req.body;
 
   try {
-    // 🔎 VALIDATION
     if (!nin || nin.length !== 11) {
       return res.status(400).json({ error: "Invalid NIN" });
     }
@@ -30,14 +25,12 @@ router.post("/verify-nin", async (req, res) => {
       return res.status(500).json({ error: "API key not configured" });
     }
 
-    // 👤 GET USER
     const user = await User.findById(userId);
 
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
 
-    // 💰 GET PRICING
     const db = readDB();
     const pricing = db?.pricing?.nin;
 
@@ -48,14 +41,11 @@ router.post("/verify-nin", async (req, res) => {
     const { cost, price } = pricing;
     const profit = price - cost;
 
-    // ❌ BALANCE CHECK
     if (user.balance < price) {
       return res.status(400).json({ error: "Insufficient balance" });
     }
 
-    console.log("🔌 Calling NIN API (checkmyninbvn)...");
-
-    // 🔥 FIXED API CALL
+    // 🔌 CALL API
     const apiResponse = await axios.post(
       "https://ninbvnportal.com.ng/api/nin-verification",
       {
@@ -71,23 +61,17 @@ router.post("/verify-nin", async (req, res) => {
       }
     );
 
-    console.log("📡 API RESPONSE:", apiResponse.data);
+    // 🔥 CLEAN EXTRACTION (THIS IS THE FIX)
+    const apiData = apiResponse.data;
 
-    // ✅ SUCCESS CHECK
-    const isSuccess =
-      apiResponse.data &&
-      (
-        apiResponse.data.status === "success" ||
-        apiResponse.data.data ||
-        apiResponse.status === 200
-      );
-
-    if (!isSuccess) {
+    if (apiData.status !== "success" || !apiData.data) {
       return res.status(400).json({
         error: "API verification failed",
-        details: apiResponse.data,
+        details: apiData,
       });
     }
+
+    const cleanData = apiData.data; // 👈 ONLY THIS MATTERS
 
     // 💰 DEDUCT BALANCE
     user.balance -= price;
@@ -104,9 +88,10 @@ router.post("/verify-nin", async (req, res) => {
       userId: user._id,
     });
 
+    // 🔥 RETURN CLEAN STRUCTURE
     return res.json({
       status: "success",
-      data: apiResponse.data,
+      data: cleanData,   // 👈 NO MORE NESTING
       balance: user.balance,
     });
 

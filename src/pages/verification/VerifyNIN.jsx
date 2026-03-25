@@ -50,8 +50,7 @@ export default function VerifyNIN() {
     setLoading(false);
   };
 
-  // 🔥 REAL DATA ACCESS
-  const info = result?.data?.data;
+  const info = result?.data; // 👈 CLEAN NOW
 
   return (
     <div>
@@ -81,11 +80,15 @@ export default function VerifyNIN() {
         <div className="mt-6 bg-white p-6 rounded-xl shadow max-w-md border">
           <h2 className="font-semibold text-lg mb-4">Verification Result</h2>
 
-          {/* 🔥 IMAGE */}
+          {/* IMAGE */}
           {info.photo && (
             <div className="flex justify-center mb-4">
               <img
-                src={info.photo}
+                src={
+                  info.photo.startsWith("data:")
+                    ? info.photo
+                    : `data:image/jpeg;base64,${info.photo}`
+                }
                 alt="NIN"
                 className="w-32 h-32 rounded-full object-cover border"
               />
@@ -93,21 +96,19 @@ export default function VerifyNIN() {
           )}
 
           <div className="space-y-2 text-sm">
+            <p><b>First Name:</b> {info.firstname}</p>
+            <p><b>Middle Name:</b> {info.middlename}</p>
+            <p><b>Last Name:</b> {info.surname}</p>
 
-            <p><span className="font-medium">First Name:</span> {info.firstname}</p>
-            <p><span className="font-medium">Middle Name:</span> {info.middlename}</p>
-            <p><span className="font-medium">Last Name:</span> {info.surname}</p>
+            <p><b>Phone:</b> {info.telephoneno}</p>
+            <p><b>Date of Birth:</b> {info.birthdate}</p>
+            <p><b>Gender:</b> {info.gender}</p>
 
-            <p><span className="font-medium">Phone:</span> {info.telephoneno}</p>
-            <p><span className="font-medium">Date of Birth:</span> {info.birthdate}</p>
-            <p><span className="font-medium">Gender:</span> {info.gender}</p>
+            <p><b>NIN:</b> {info.nin}</p>
 
-            <p><span className="font-medium">NIN:</span> {info.nin}</p>
-
-            <p><span className="font-medium">State:</span> {info.residence_state}</p>
-            <p><span className="font-medium">LGA:</span> {info.residence_lga}</p>
-            <p><span className="font-medium">Address:</span> {info.residence_address}</p>
-
+            <p><b>State:</b> {info.residence_state}</p>
+            <p><b>LGA:</b> {info.residence_lga}</p>
+            <p><b>Address:</b> {info.residence_address}</p>
           </div>
         </div>
       )}
