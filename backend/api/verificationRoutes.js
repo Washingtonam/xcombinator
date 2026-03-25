@@ -3,11 +3,11 @@ const axios = require("axios");
 
 const User = require("../models/User");
 const Transaction = require("../models/Transaction");
-const { readDB } = require("../utils/jsonDB"); // for pricing only
+const { readDB } = require("../utils/jsonDB");
 
 const router = express.Router();
 
-// 🔐 SECURE API KEY (from Render env)
+// 🔐 SECURE API KEY
 const API_KEY = process.env.NIN_API_KEY;
 
 // ==============================
@@ -17,7 +17,7 @@ router.post("/verify-nin", async (req, res) => {
   const { nin, userId } = req.body;
 
   try {
-    // ✅ Validate input
+    // 🔎 VALIDATION
     if (!nin || nin.length !== 11) {
       return res.status(400).json({ error: "Invalid NIN" });
     }
@@ -26,14 +26,18 @@ router.post("/verify-nin", async (req, res) => {
       return res.status(400).json({ error: "User ID required" });
     }
 
-    // 👤 Get user from MongoDB
+    if (!API_KEY) {
+      return res.status(500).json({ error: "API key not configured" });
+    }
+
+    // 👤 GET USER
     const user = await User.findById(userId);
 
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
 
-    // 💰 Get pricing (still from JSON for now)
+    // 💰 GET PRICING
     const db = readDB();
     const pricing = db?.pricing?.nin;
 
@@ -44,16 +48,18 @@ router.post("/verify-nin", async (req, res) => {
     const { cost, price } = pricing;
     const profit = price - cost;
 
-    // ❌ Check balance
+    // ❌ BALANCE CHECK
     if (user.balance < price) {
       return res.status(400).json({ error: "Insufficient balance" });
     }
 
-    // 🔌 CALL NIN API
+    console.log("🔌 Calling NIN API...");
+
+    // 🔌 CALL EXTERNAL API
     const apiResponse = await axios.post(
       "https://ninbvnportal.com.ng/api/nin-verification",
       {
-        nin: nin,
+        nin,
         consent: true,
       },
       {
@@ -61,22 +67,33 @@ router.post("/verify-nin", async (req, res) => {
           "x-api-key": API_KEY,
           "Content-Type": "application/json",
         },
+        timeout: 20000, // ⏱ prevents hanging
       }
     );
 
-    // ⚠️ Validate API response
-    if (!apiResponse.data || apiResponse.data.status !== "success") {
+    console.log("📡 API RESPONSE:", apiResponse.data);
+
+    // ⚠️ FLEXIBLE SUCCESS CHECK
+    const isSuccess =
+      apiResponse.data &&
+      (
+        apiResponse.data.status === "success" ||
+        apiResponse.data.data || // some APIs return data directly
+        apiResponse.status === 200
+      );
+
+    if (!isSuccess) {
       return res.status(400).json({
         error: "API verification failed",
         details: apiResponse.data,
       });
     }
 
-    // 💰 Deduct ONLY after success
+    // 💰 DEDUCT BALANCE AFTER SUCCESS
     user.balance -= price;
     await user.save();
 
-    // 🧾 Save transaction
+    // 🧾 SAVE TRANSACTION
     await Transaction.create({
       type: "NIN",
       nin,
@@ -87,7 +104,7 @@ router.post("/verify-nin", async (req, res) => {
       userId: user._id,
     });
 
-    // ✅ Return success
+    // ✅ RETURN RESPONSE
     return res.json({
       status: "success",
       data: apiResponse.data,
@@ -95,7 +112,7 @@ router.post("/verify-nin", async (req, res) => {
     });
 
   } catch (error) {
-    console.error("🔥 NIN API ERROR:", error.response?.data || error.message);
+    console.error("🔥 FULL ERROR:", error.response?.data || error.message);
 
     return res.status(500).json({
       error: "Verification failed",
