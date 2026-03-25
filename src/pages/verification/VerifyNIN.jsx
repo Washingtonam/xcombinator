@@ -50,6 +50,9 @@ export default function VerifyNIN() {
     setLoading(false);
   };
 
+  // 🔥 REAL DATA ACCESS
+  const info = result?.data?.data;
+
   return (
     <div>
       <h1 className="text-2xl font-bold mb-6">Verify NIN</h1>
@@ -74,15 +77,15 @@ export default function VerifyNIN() {
         </button>
       </div>
 
-      {result && (
+      {info && (
         <div className="mt-6 bg-white p-6 rounded-xl shadow max-w-md border">
           <h2 className="font-semibold text-lg mb-4">Verification Result</h2>
 
           {/* 🔥 IMAGE */}
-          {result?.data?.photo && (
+          {info.photo && (
             <div className="flex justify-center mb-4">
               <img
-                src={`data:image/jpeg;base64,${result.data.photo}`}
+                src={info.photo}
                 alt="NIN"
                 className="w-32 h-32 rounded-full object-cover border"
               />
@@ -91,47 +94,19 @@ export default function VerifyNIN() {
 
           <div className="space-y-2 text-sm">
 
-            <p>
-              <span className="font-medium">Full Name:</span>{" "}
-              {result?.data?.surname}{" "}
-              {result?.data?.firstname}{" "}
-              {result?.data?.middlename}
-            </p>
+            <p><span className="font-medium">First Name:</span> {info.firstname}</p>
+            <p><span className="font-medium">Middle Name:</span> {info.middlename}</p>
+            <p><span className="font-medium">Last Name:</span> {info.surname}</p>
 
-            <p>
-              <span className="font-medium">Phone Number:</span>{" "}
-              {result?.data?.telephoneno}
-            </p>
+            <p><span className="font-medium">Phone:</span> {info.telephoneno}</p>
+            <p><span className="font-medium">Date of Birth:</span> {info.birthdate}</p>
+            <p><span className="font-medium">Gender:</span> {info.gender}</p>
 
-            <p>
-              <span className="font-medium">Date of Birth:</span>{" "}
-              {result?.data?.birthdate}
-            </p>
+            <p><span className="font-medium">NIN:</span> {info.nin}</p>
 
-            <p>
-              <span className="font-medium">Gender:</span>{" "}
-              {result?.data?.gender}
-            </p>
-
-            <p>
-              <span className="font-medium">NIN:</span>{" "}
-              {result?.data?.nin}
-            </p>
-
-            <p>
-              <span className="font-medium">State:</span>{" "}
-              {result?.data?.residence_state}
-            </p>
-
-            <p>
-              <span className="font-medium">LGA:</span>{" "}
-              {result?.data?.residence_lga}
-            </p>
-
-            <p>
-              <span className="font-medium">Address:</span>{" "}
-              {result?.data?.residence_address}
-            </p>
+            <p><span className="font-medium">State:</span> {info.residence_state}</p>
+            <p><span className="font-medium">LGA:</span> {info.residence_lga}</p>
+            <p><span className="font-medium">Address:</span> {info.residence_address}</p>
 
           </div>
         </div>
