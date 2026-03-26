@@ -13,6 +13,7 @@ router.post("/verify-nin", async (req, res) => {
   const { nin, userId } = req.body;
 
   try {
+    // 🔎 VALIDATION
     if (!nin || nin.length !== 11) {
       return res.status(400).json({ error: "Invalid NIN" });
     }
@@ -25,12 +26,14 @@ router.post("/verify-nin", async (req, res) => {
       return res.status(500).json({ error: "API key not configured" });
     }
 
+    // 👤 GET USER
     const user = await User.findById(userId);
 
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
 
+    // 💰 PRICING
     const db = readDB();
     const pricing = db?.pricing?.nin;
 
@@ -41,11 +44,14 @@ router.post("/verify-nin", async (req, res) => {
     const { cost, price } = pricing;
     const profit = price - cost;
 
+    // ❌ BALANCE CHECK
     if (user.balance < price) {
       return res.status(400).json({ error: "Insufficient balance" });
     }
 
-    // 🔌 CALL API
+    console.log("🔌 Calling NIN API...");
+
+    // 🔌 API CALL
     const apiResponse = await axios.post(
       "https://ninbvnportal.com.ng/api/nin-verification",
       {
@@ -61,17 +67,20 @@ router.post("/verify-nin", async (req, res) => {
       }
     );
 
-    // 🔥 CLEAN EXTRACTION (THIS IS THE FIX)
     const apiData = apiResponse.data;
 
-    if (apiData.status !== "success" || !apiData.data) {
+    console.log("📡 RAW API RESPONSE:", apiData);
+
+    // ❌ FAILURE CHECK
+    if (apiData.status !== "success") {
       return res.status(400).json({
         error: "API verification failed",
         details: apiData,
       });
     }
 
-    const cleanData = apiData.data; // 👈 ONLY THIS MATTERS
+    // 🔥 NORMALIZE DATA (CRITICAL FIX)
+    const cleanData = apiData.data?.data || apiData.data;
 
     // 💰 DEDUCT BALANCE
     user.balance -= price;
@@ -88,10 +97,10 @@ router.post("/verify-nin", async (req, res) => {
       userId: user._id,
     });
 
-    // 🔥 RETURN CLEAN STRUCTURE
+    // ✅ FINAL RESPONSE
     return res.json({
       status: "success",
-      data: cleanData,   // 👈 NO MORE NESTING
+      data: cleanData,
       balance: user.balance,
     });
 

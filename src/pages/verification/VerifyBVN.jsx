@@ -4,6 +4,7 @@ import { useUser } from "../../context/UserContext";
 export default function VerifyBVN() {
   const [bvn, setBvn] = useState("");
   const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState(null);
 
   const { user, balance, setBalance } = useUser();
 
@@ -38,10 +39,8 @@ export default function VerifyBVN() {
         return;
       }
 
-      // 🔥 GLOBAL UPDATE
+      setResult(data);
       setBalance(data.balance);
-
-      alert("BVN Verified Successfully");
 
     } catch (error) {
       console.error(error);
@@ -50,6 +49,11 @@ export default function VerifyBVN() {
 
     setLoading(false);
   };
+
+  const info =
+    result?.data?.data ||
+    result?.data ||
+    null;
 
   return (
     <div>
@@ -74,6 +78,20 @@ export default function VerifyBVN() {
           {loading ? "Verifying..." : "Verify BVN"}
         </button>
       </div>
+
+      {info && (
+        <div className="mt-6 bg-white p-6 rounded-xl shadow max-w-md border">
+          <h2 className="font-semibold text-lg mb-4">BVN Result</h2>
+
+          <p><b>First Name:</b> {info.firstname || "N/A"}</p>
+          <p><b>Middle Name:</b> {info.middlename || "N/A"}</p>
+          <p><b>Last Name:</b> {info.lastname || "N/A"}</p>
+
+          <p><b>Phone:</b> {info.phone || "N/A"}</p>
+          <p><b>DOB:</b> {info.dob || "N/A"}</p>
+          <p><b>BVN:</b> {info.bvn || "N/A"}</p>
+        </div>
+      )}
     </div>
   );
 }

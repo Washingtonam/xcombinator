@@ -50,7 +50,11 @@ export default function VerifyNIN() {
     setLoading(false);
   };
 
-  const info = result?.data; // 👈 CLEAN NOW
+  // 🔥 FLEXIBLE DATA HANDLING (FINAL FIX)
+  const info =
+    result?.data?.data ||
+    result?.data ||
+    null;
 
   return (
     <div>
@@ -96,19 +100,19 @@ export default function VerifyNIN() {
           )}
 
           <div className="space-y-2 text-sm">
-            <p><b>First Name:</b> {info.firstname}</p>
-            <p><b>Middle Name:</b> {info.middlename}</p>
-            <p><b>Last Name:</b> {info.surname}</p>
+            <p><b>First Name:</b> {info.firstname || "N/A"}</p>
+            <p><b>Middle Name:</b> {info.middlename || "N/A"}</p>
+            <p><b>Last Name:</b> {info.surname || "N/A"}</p>
 
-            <p><b>Phone:</b> {info.telephoneno}</p>
-            <p><b>Date of Birth:</b> {info.birthdate}</p>
-            <p><b>Gender:</b> {info.gender}</p>
+            <p><b>Phone:</b> {info.telephoneno || "N/A"}</p>
+            <p><b>Date of Birth:</b> {info.birthdate || "N/A"}</p>
+            <p><b>Gender:</b> {info.gender || "N/A"}</p>
 
-            <p><b>NIN:</b> {info.nin}</p>
+            <p><b>NIN:</b> {info.nin || "N/A"}</p>
 
-            <p><b>State:</b> {info.residence_state}</p>
-            <p><b>LGA:</b> {info.residence_lga}</p>
-            <p><b>Address:</b> {info.residence_address}</p>
+            <p><b>State:</b> {info.residence_state || "N/A"}</p>
+            <p><b>LGA:</b> {info.residence_lga || "N/A"}</p>
+            <p><b>Address:</b> {info.residence_address || "N/A"}</p>
           </div>
         </div>
       )}
