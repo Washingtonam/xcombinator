@@ -51,7 +51,6 @@ function Layout() {
           <Route path="/verify-bvn" element={<ProtectedRoute><VerifyBVN /></ProtectedRoute>} />
           <Route path="/transactions" element={<ProtectedRoute><Transactions /></ProtectedRoute>} />
           <Route path="/wallet" element={<ProtectedRoute><Wallet /></ProtectedRoute>} />
-          <Route path="/admin" element={<AdminDashboard />} />
 
           <Route 
             path="/admin" 
