@@ -1,5 +1,8 @@
 const express = require("express");
 const axios = require("axios");
+const { generateNINSlip } = require("../utils/pdfGenerator");
+
+
 
 const User = require("../models/User");
 const Transaction = require("../models/Transaction");
@@ -113,5 +116,29 @@ router.post("/verify-nin", async (req, res) => {
     });
   }
 });
+
+router.post("/generate-nin-slip", async (req, res) => {
+  try {
+    const { data } = req.body;
+
+    if (!data) {
+      return res.status(400).json({ error: "No data provided" });
+    }
+
+    const pdfBuffer = await generateNINSlip(data);
+
+    res.set({
+      "Content-Type": "application/pdf",
+      "Content-Disposition": "attachment; filename=nin-slip.pdf",
+    });
+
+    return res.send(pdfBuffer);
+
+  } catch (error) {
+    console.error("PDF ERROR:", error);
+    res.status(500).json({ error: "Failed to generate PDF" });
+  }
+});
+
 
 module.exports = router;

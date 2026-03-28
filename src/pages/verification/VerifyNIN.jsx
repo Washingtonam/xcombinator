@@ -50,11 +50,38 @@ export default function VerifyNIN() {
     setLoading(false);
   };
 
-  // 🔥 FLEXIBLE DATA HANDLING (FINAL FIX)
+  // 🔥 FLEXIBLE DATA HANDLING
   const info =
     result?.data?.data ||
     result?.data ||
     null;
+
+  // ✅ DOWNLOAD FUNCTION (ONLY ONCE)
+  const handleDownload = async () => {
+    if (!info) return;
+
+    try {
+      const res = await fetch("https://xcombinator.onrender.com/api/generate-nin-slip", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ data: info }),
+      });
+
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "nin-slip.pdf";
+      a.click();
+
+    } catch (err) {
+      console.error(err);
+      alert("Download failed");
+    }
+  };
 
   return (
     <div>
@@ -114,6 +141,14 @@ export default function VerifyNIN() {
             <p><b>LGA:</b> {info.residence_lga || "N/A"}</p>
             <p><b>Address:</b> {info.residence_address || "N/A"}</p>
           </div>
+
+          {/* ✅ DOWNLOAD BUTTON */}
+          <button
+            onClick={handleDownload}
+            className="mt-4 bg-black text-white px-4 py-2 rounded w-full"
+          >
+            Download Slip
+          </button>
         </div>
       )}
     </div>
