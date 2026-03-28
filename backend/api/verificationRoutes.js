@@ -82,6 +82,11 @@ router.post("/verify-nin", async (req, res) => {
       });
     }
 
+    // 🔥 BLOCK SUSPENDED USERS
+    if (user.status === "suspended") {
+      return res.status(403).json({ error: "Account suspended" });
+    }
+
     // 🔥 NORMALIZE DATA (CRITICAL FIX)
     const cleanData = apiData.data?.data || apiData.data;
 
