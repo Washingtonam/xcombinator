@@ -1,73 +1,166 @@
 const express = require("express");
-const axios = require("axios");
-
-const User = require("../models/User");
-const Transaction = require("../models/Transaction");
-
 const router = express.Router();
 
-// ==============================
-// 💳 VERIFY PAYSTACK PAYMENT
-// ==============================
-router.post("/verify-payment", async (req, res) => {
-  const { reference, amount, userId } = req.body;
+const Transaction = require("../models/Transaction");
+const User = require("../models/User");
+const AuditLog = require("../models/AuditLog");
 
+// ==============================
+// 🔐 ADMIN CHECK
+// ==============================
+function isAdmin(req, res, next) {
+  const email = req.headers["email"];
+
+  if (!email) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+
+  if (email !== "washingtonamedu@gmail.com") {
+    return res.status(403).json({ message: "Access denied" });
+  }
+
+  next();
+}
+
+// ==============================
+// 📤 USER SUBMITS PAYMENT (PROOF)
+// ==============================
+router.post("/submit-payment", async (req, res) => {
   try {
-    if (!reference || !userId) {
-      return res.status(400).json({ error: "Missing payment details" });
+    const { userId, amount, proof } = req.body;
+
+    if (!userId || !amount || !proof) {
+      return res.status(400).json({
+        message: "userId, amount and proof are required",
+      });
     }
 
-    console.log("🔍 Verifying payment with Paystack...");
-
-    // 🔌 VERIFY PAYMENT WITH PAYSTACK
-    const response = await axios.get(
-      `https://api.paystack.co/transaction/verify/${reference}`,
-      {
-        headers: {
-          Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
-        },
-      }
-    );
-
-    const paymentData = response.data.data;
-
-    if (!paymentData || paymentData.status !== "success") {
-      return res.status(400).json({ error: "Payment not verified" });
-    }
-
-    // 👤 FIND USER (MongoDB)
     const user = await User.findById(userId);
-
     if (!user) {
-      return res.status(404).json({ error: "User not found" });
+      return res.status(404).json({ message: "User not found" });
     }
 
-    // 💰 CREDIT USER WALLET
-    user.balance += Number(amount);
-    await user.save();
-
-    console.log("💰 Wallet updated:", user.balance);
-
-    // 🧾 SAVE TRANSACTION
-    await Transaction.create({
+    // 🧾 CREATE PENDING TRANSACTION
+    const payment = await Transaction.create({
       type: "FUND",
-      amount: Number(amount),
-      status: "success",
-      userId: user._id,
+      amount,
+      status: "pending",
+      userId,
+      proof, // 🔥 store image/url
     });
 
-    return res.json({
-      message: "Payment successful",
+    res.json({
+      message: "Payment submitted, awaiting approval",
+      payment,
+    });
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Failed to submit payment" });
+  }
+});
+
+// ==============================
+// 📥 ADMIN GET ALL PAYMENTS
+// ==============================
+router.get("/admin/payments", isAdmin, async (req, res) => {
+  try {
+    const payments = await Transaction.find({
+      type: "FUND",
+    })
+      .populate("userId", "email")
+      .sort({ createdAt: -1 });
+
+    res.json(payments);
+
+  } catch (error) {
+    res.status(500).json({ message: "Failed to fetch payments" });
+  }
+});
+
+// ==============================
+// ✅ APPROVE PAYMENT
+// ==============================
+router.post("/admin/payments/:id/approve", isAdmin, async (req, res) => {
+  try {
+    const adminEmail = req.headers["email"];
+
+    const payment = await Transaction.findById(req.params.id);
+
+    if (!payment) {
+      return res.status(404).json({ message: "Payment not found" });
+    }
+
+    if (payment.status === "approved") {
+      return res.status(400).json({ message: "Already approved" });
+    }
+
+    const user = await User.findById(payment.userId);
+
+    const before = user.balance;
+
+    // 💰 CREDIT USER
+    user.balance += payment.amount;
+    await user.save();
+
+    // ✅ UPDATE TRANSACTION
+    payment.status = "approved";
+    await payment.save();
+
+    // 🧾 AUDIT LOG
+    await AuditLog.create({
+      action: "APPROVE_PAYMENT",
+      performedBy: adminEmail,
+      userId: user._id,
+      amount: payment.amount,
+      balanceBefore: before,
+      balanceAfter: user.balance,
+      note: "Manual payment approved",
+    });
+
+    res.json({
+      message: "Payment approved & wallet credited",
       balance: user.balance,
     });
 
   } catch (error) {
-    console.error("🔥 PAYMENT ERROR:", error.response?.data || error.message);
+    console.error(error);
+    res.status(500).json({ message: "Approval failed" });
+  }
+});
 
-    return res.status(500).json({
-      error: "Payment verification failed",
-      details: error.response?.data || error.message,
+// ==============================
+// ❌ REJECT PAYMENT
+// ==============================
+router.post("/admin/payments/:id/reject", isAdmin, async (req, res) => {
+  try {
+    const adminEmail = req.headers["email"];
+
+    const payment = await Transaction.findById(req.params.id);
+
+    if (!payment) {
+      return res.status(404).json({ message: "Payment not found" });
+    }
+
+    payment.status = "rejected";
+    await payment.save();
+
+    // 🧾 AUDIT LOG
+    await AuditLog.create({
+      action: "REJECT_PAYMENT",
+      performedBy: adminEmail,
+      userId: payment.userId,
+      amount: payment.amount,
+      note: "Payment rejected",
     });
+
+    res.json({
+      message: "Payment rejected",
+    });
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Rejection failed" });
   }
 });
 
