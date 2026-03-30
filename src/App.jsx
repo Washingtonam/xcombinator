@@ -3,6 +3,8 @@ import Sidebar from "./components/Sidebar";
 import Login from "./pages/auth/Login";
 import Register from "./pages/auth/Register";
 import Admin from "./pages/admin/Admin";
+import AdminUsers from "./pages/admin/AdminUsers";
+import AdminPayments from "./pages/admin/AdminPayments";
 
 import Dashboard from "./pages/dashboard/Dashboard";
 import VerifyNIN from "./pages/verification/VerifyNIN";
@@ -26,7 +28,6 @@ function ProtectedRoute({ children }) {
   return children;
 }
 
-// 🔥 FIXED ADMIN ROUTE
 function AdminRoute({ children }) {
   if (!isAuthenticated()) {
     return <Navigate to="/login" />;
@@ -44,14 +45,16 @@ function Layout() {
     <div className="flex">
       <Sidebar />
 
-      <div className="flex-1 p-10">
+      <div className="flex-1 p-6">
         <Routes>
+          {/* USER ROUTES */}
           <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
           <Route path="/verify-nin" element={<ProtectedRoute><VerifyNIN /></ProtectedRoute>} />
           <Route path="/verify-bvn" element={<ProtectedRoute><VerifyBVN /></ProtectedRoute>} />
           <Route path="/transactions" element={<ProtectedRoute><Transactions /></ProtectedRoute>} />
           <Route path="/wallet" element={<ProtectedRoute><Wallet /></ProtectedRoute>} />
 
+          {/* ADMIN ROUTES */}
           <Route 
             path="/admin" 
             element={
@@ -62,6 +65,29 @@ function Layout() {
               </ProtectedRoute>
             } 
           />
+
+          <Route 
+            path="/admin/users" 
+            element={
+              <ProtectedRoute>
+                <AdminRoute>
+                  <AdminUsers />
+                </AdminRoute>
+              </ProtectedRoute>
+            } 
+          />
+
+          <Route 
+            path="/admin/payments" 
+            element={
+              <ProtectedRoute>
+                <AdminRoute>
+                  <AdminPayments />
+                </AdminRoute>
+              </ProtectedRoute>
+            } 
+          />
+
         </Routes>
       </div>
     </div>
