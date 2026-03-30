@@ -76,11 +76,12 @@ export default function Wallet() {
         <div className="bg-gray-100 p-4 rounded space-y-2">
           <p><b>Bank:</b> Moniepoint</p>
           <p><b>Account Number:</b> 8161495298</p>
-          <p><b>Account Name:</b> Xcombinator Limited</p>
+          <p><b>Account Name:</b> Steve Computer Warehouse Limited</p>
         </div>
 
         <p className="text-sm mt-3 text-gray-600">
           After transfer, send proof to admin for approval.
+          Whatsapp: +2348129097599
         </p>
       </div>
 
