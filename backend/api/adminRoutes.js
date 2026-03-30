@@ -3,6 +3,7 @@ const router = express.Router();
 
 const User = require("../models/User");
 const Transaction = require("../models/Transaction");
+const AuditLog = require("../models/AuditLog"); // ✅ NEW
 
 // 🔐 ADMIN CHECK
 function isAdmin(req, res, next) {
@@ -114,44 +115,52 @@ router.delete("/user/:id", isAdmin, async (req, res) => {
 });
 
 // ==============================
-// 💰 WALLET CONTROL (NEW)
+// 💰 WALLET CONTROL (UPGRADED)
 // ==============================
 router.post("/user/:id/wallet", isAdmin, async (req, res) => {
   try {
-    const { amount, action } = req.body;
+    const { amount, action, note } = req.body;
+    const adminEmail = req.headers["email"];
 
     if (!amount || !action) {
       return res.status(400).json({ message: "Amount and action required" });
     }
 
     const user = await User.findById(req.params.id);
+    if (!user) return res.status(404).json({ message: "User not found" });
 
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
-    let newBalance = user.balance;
+    const before = user.balance;
 
     if (action === "add") {
-      newBalance += amount;
+      user.balance += amount;
     }
 
     if (action === "deduct") {
       if (user.balance < amount) {
         return res.status(400).json({ message: "Insufficient balance" });
       }
-      newBalance -= amount;
+      user.balance -= amount;
     }
 
-    user.balance = newBalance;
     await user.save();
 
-    // 🧾 LOG TRANSACTION
+    // 🧾 TRANSACTION
     await Transaction.create({
       type: action === "add" ? "FUND" : "DEDUCT",
       amount,
       status: "success",
       userId: user._id,
+    });
+
+    // 🔥 AUDIT LOG
+    await AuditLog.create({
+      action: action === "add" ? "ADD_FUNDS" : "DEDUCT_FUNDS",
+      performedBy: adminEmail,
+      userId: user._id,
+      amount,
+      balanceBefore: before,
+      balanceAfter: user.balance,
+      note: note || "Manual funding",
     });
 
     res.json({
@@ -180,7 +189,7 @@ router.get("/transactions", isAdmin, async (req, res) => {
 });
 
 // ==============================
-// 🔥 GET SINGLE USER
+// 🔥 GET SINGLE USER + ACTIVITY
 // ==============================
 router.get("/user/:id", isAdmin, async (req, res) => {
   try {
@@ -225,6 +234,21 @@ router.get("/stats", isAdmin, async (req, res) => {
 
   } catch (error) {
     res.status(500).json({ message: "Error fetching stats" });
+  }
+});
+
+// ==============================
+// 📜 AUDIT LOGS
+// ==============================
+router.get("/audit-logs", isAdmin, async (req, res) => {
+  try {
+    const logs = await AuditLog.find()
+      .populate("userId", "email")
+      .sort({ createdAt: -1 });
+
+    res.json(logs);
+  } catch (error) {
+    res.status(500).json({ message: "Failed to fetch audit logs" });
   }
 });
 

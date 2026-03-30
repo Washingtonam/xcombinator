@@ -53,7 +53,7 @@ export default function Wallet() {
         })
           .then(res => res.json())
           .then(() => {
-            fetchBalance(); // 🔥 FORCE REFRESH
+            fetchBalance();
             setAmount("");
             alert("Payment successful");
           });
@@ -69,6 +69,22 @@ export default function Wallet() {
 
       <p className="mb-4 font-medium">Balance: ₦{balance}</p>
 
+      {/* ================= MANUAL FUNDING ================= */}
+      <div className="bg-white p-6 rounded shadow max-w-md mb-6">
+        <h2 className="font-bold mb-2">Manual Funding</h2>
+
+        <div className="bg-gray-100 p-4 rounded space-y-2">
+          <p><b>Bank:</b> Moniepoint</p>
+          <p><b>Account Number:</b> 8161495298</p>
+          <p><b>Account Name:</b> Xcombinator Limited</p>
+        </div>
+
+        <p className="text-sm mt-3 text-gray-600">
+          After transfer, send proof to admin for approval.
+        </p>
+      </div>
+
+      {/* ================= PAYSTACK ================= */}
       <div className="bg-white p-6 rounded shadow max-w-md">
         <input
           type="number"
@@ -82,7 +98,7 @@ export default function Wallet() {
           onClick={handlePay}
           className="bg-green-600 text-white px-4 py-2 rounded w-full"
         >
-          Fund Wallet
+          Fund Wallet (Online)
         </button>
       </div>
     </div>
