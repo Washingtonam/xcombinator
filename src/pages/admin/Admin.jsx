@@ -90,6 +90,32 @@ export default function Admin() {
     fetchData();
   };
 
+  const addMoney = async (id) => {
+    const amount = prompt("Enter amount to ADD:");
+    if (!amount) return;
+
+    await axios.post(
+      `${API_BASE}/api/admin/user/${id}/wallet`,
+      { amount: Number(amount), action: "add" },
+      { headers }
+    );
+
+    fetchData();
+  };
+
+  const deductMoney = async (id) => {
+    const amount = prompt("Enter amount to DEDUCT:");
+    if (!amount) return;
+
+    await axios.post(
+      `${API_BASE}/api/admin/user/${id}/wallet`,
+      { amount: Number(amount), action: "deduct" },
+      { headers }
+    );
+
+    fetchData();
+  };
+
   useEffect(() => {
     fetchData();
   }, []);
@@ -150,7 +176,7 @@ export default function Admin() {
       </div>
 
       {/* ========================= */}
-      {/* USERS */}
+      {/* USERS TABLE */}
       {/* ========================= */}
       <div className="bg-white p-6 rounded shadow mb-10">
 
@@ -194,28 +220,47 @@ export default function Admin() {
 
                 <td className="space-x-2">
 
-                  {u.status === "active" ? (
-                    <button
-                      onClick={() => suspendUser(u._id)}
-                      className="bg-yellow-500 text-white px-2 py-1 rounded text-xs"
-                    >
-                      Suspend
-                    </button>
-                  ) : (
-                    <button
-                      onClick={() => activateUser(u._id)}
-                      className="bg-green-600 text-white px-2 py-1 rounded text-xs"
-                    >
-                      Activate
-                    </button>
-                  )}
+                  {/* 🚫 PROTECT ADMIN ACCOUNT */}
+                  {u.email !== "washingtonamedu@gmail.com" && (
+                    <>
+                      {u.status === "active" ? (
+                        <button
+                          onClick={() => suspendUser(u._id)}
+                          className="bg-yellow-500 text-white px-2 py-1 rounded text-xs"
+                        >
+                          Suspend
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => activateUser(u._id)}
+                          className="bg-green-600 text-white px-2 py-1 rounded text-xs"
+                        >
+                          Activate
+                        </button>
+                      )}
 
-                  <button
-                    onClick={() => deleteUser(u._id)}
-                    className="bg-red-600 text-white px-2 py-1 rounded text-xs"
-                  >
-                    Delete
-                  </button>
+                      <button
+                        onClick={() => deleteUser(u._id)}
+                        className="bg-red-600 text-white px-2 py-1 rounded text-xs"
+                      >
+                        Delete
+                      </button>
+
+                      <button
+                        onClick={() => addMoney(u._id)}
+                        className="bg-blue-600 text-white px-2 py-1 rounded text-xs"
+                      >
+                        +₦
+                      </button>
+
+                      <button
+                        onClick={() => deductMoney(u._id)}
+                        className="bg-gray-800 text-white px-2 py-1 rounded text-xs"
+                      >
+                        -₦
+                      </button>
+                    </>
+                  )}
 
                 </td>
 
