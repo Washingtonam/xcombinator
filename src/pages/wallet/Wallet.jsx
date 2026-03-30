@@ -2,11 +2,15 @@ import { useState, useEffect } from "react";
 
 export default function Wallet() {
   const [amount, setAmount] = useState("");
+  const [proof, setProof] = useState(null);
   const [balance, setBalance] = useState(0);
   const [paystackReady, setPaystackReady] = useState(false);
 
   const user = JSON.parse(localStorage.getItem("user"));
 
+  // =========================
+  // FETCH BALANCE
+  // =========================
   const fetchBalance = () => {
     fetch("https://xcombinator.onrender.com/api/balance", {
       method: "POST",
@@ -22,6 +26,7 @@ export default function Wallet() {
   useEffect(() => {
     fetchBalance();
 
+    // LOAD PAYSTACK
     const script = document.createElement("script");
     script.src = "https://js.paystack.co/v1/inline.js";
     script.async = true;
@@ -31,6 +36,56 @@ export default function Wallet() {
     document.body.appendChild(script);
   }, []);
 
+  // =========================
+  // FILE UPLOAD (BASE64)
+  // =========================
+  const handleFile = (e) => {
+    const file = e.target.files[0];
+
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+
+    reader.onloadend = () => {
+      setProof(reader.result);
+    };
+  };
+
+  // =========================
+  // SUBMIT MANUAL PAYMENT
+  // =========================
+  const submitPayment = async () => {
+    if (!amount || !proof) {
+      return alert("Enter amount and upload proof");
+    }
+
+    try {
+      await fetch("https://xcombinator.onrender.com/api/payment-request", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          userId: user.id,
+          amount: Number(amount),
+          proof,
+        }),
+      });
+
+      alert("Payment submitted. Await admin approval.");
+      setAmount("");
+      setProof(null);
+
+    } catch (error) {
+      console.error(error);
+      alert("Submission failed");
+    }
+  };
+
+  // =========================
+  // PAYSTACK PAYMENT
+  // =========================
   const handlePay = () => {
     if (!amount || amount <= 0) return alert("Enter valid amount");
 
@@ -69,8 +124,11 @@ export default function Wallet() {
 
       <p className="mb-4 font-medium">Balance: ₦{balance}</p>
 
-      {/* ================= MANUAL FUNDING ================= */}
+      {/* ========================= */}
+      {/* MANUAL FUNDING */}
+      {/* ========================= */}
       <div className="bg-white p-6 rounded shadow max-w-md mb-6">
+
         <h2 className="font-bold mb-2">Manual Funding</h2>
 
         <div className="bg-gray-100 p-4 rounded space-y-2">
@@ -80,13 +138,36 @@ export default function Wallet() {
         </div>
 
         <p className="text-sm mt-3 text-gray-600">
-          After transfer, send proof to admin for approval.
-          Whatsapp: +2348129097599
+          Upload proof after transfer (no WhatsApp needed)
         </p>
+
+        <input
+          type="number"
+          placeholder="Amount sent"
+          value={amount}
+          onChange={(e) => setAmount(e.target.value)}
+          className="w-full border p-3 mt-4 rounded"
+        />
+
+        <input
+          type="file"
+          onChange={handleFile}
+          className="mt-3"
+        />
+
+        <button
+          onClick={submitPayment}
+          className="bg-blue-600 text-white px-4 py-2 rounded w-full mt-4"
+        >
+          Submit Payment
+        </button>
       </div>
 
-      {/* ================= PAYSTACK ================= */}
+      {/* ========================= */}
+      {/* PAYSTACK */}
+      {/* ========================= */}
       <div className="bg-white p-6 rounded shadow max-w-md">
+
         <input
           type="number"
           placeholder="Enter amount"
@@ -97,10 +178,12 @@ export default function Wallet() {
 
         <button
           onClick={handlePay}
+          disabled={!paystackReady}
           className="bg-green-600 text-white px-4 py-2 rounded w-full"
         >
           Fund Wallet (Online)
         </button>
+
       </div>
     </div>
   );

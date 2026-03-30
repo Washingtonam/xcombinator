@@ -7,6 +7,7 @@ const API_BASE = "https://xcombinator.onrender.com";
 export default function Admin() {
   const [users, setUsers] = useState([]);
   const [transactions, setTransactions] = useState([]);
+  const [payments, setPayments] = useState([]); // ✅ NEW
   const [selectedUser, setSelectedUser] = useState(null);
   const [userActivity, setUserActivity] = useState([]);
   const [search, setSearch] = useState("");
@@ -28,6 +29,18 @@ export default function Admin() {
       setUsers(usersRes.data);
       setTransactions(txRes.data);
 
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  // =========================
+  // 🔥 FETCH PAYMENT REQUESTS
+  // =========================
+  const fetchPayments = async () => {
+    try {
+      const res = await axios.get(`${API_BASE}/api/admin/payments`, { headers });
+      setPayments(res.data);
     } catch (err) {
       console.error(err);
     }
@@ -71,7 +84,7 @@ export default function Admin() {
   };
 
   // =========================
-  // ACTIONS
+  // USER ACTIONS
   // =========================
   const suspendUser = async (id) => {
     await axios.put(`${API_BASE}/api/admin/user/${id}/suspend`, {}, { headers });
@@ -116,8 +129,23 @@ export default function Admin() {
     fetchData();
   };
 
+  // =========================
+  // 💳 PAYMENT ACTIONS
+  // =========================
+  const approvePayment = async (id) => {
+    await axios.post(`${API_BASE}/api/admin/payments/${id}/approve`, {}, { headers });
+    fetchPayments();
+    fetchData();
+  };
+
+  const rejectPayment = async (id) => {
+    await axios.post(`${API_BASE}/api/admin/payments/${id}/reject`, {}, { headers });
+    fetchPayments();
+  };
+
   useEffect(() => {
     fetchData();
+    fetchPayments(); // ✅ NEW
   }, []);
 
   const totalBalance = users.reduce((sum, u) => sum + u.balance, 0);
@@ -207,56 +235,36 @@ export default function Admin() {
                 <td>₦{u.balance}</td>
 
                 <td>
-                  <span
-                    className={`px-2 py-1 text-white text-xs rounded ${
-                      u.status === "active"
-                        ? "bg-green-500"
-                        : "bg-red-500"
-                    }`}
-                  >
+                  <span className={`px-2 py-1 text-white text-xs rounded ${
+                    u.status === "active" ? "bg-green-500" : "bg-red-500"
+                  }`}>
                     {u.status}
                   </span>
                 </td>
 
                 <td className="space-x-2">
 
-                  {/* 🚫 PROTECT ADMIN ACCOUNT */}
                   {u.email !== "washingtonamedu@gmail.com" && (
                     <>
                       {u.status === "active" ? (
-                        <button
-                          onClick={() => suspendUser(u._id)}
-                          className="bg-yellow-500 text-white px-2 py-1 rounded text-xs"
-                        >
+                        <button onClick={() => suspendUser(u._id)} className="bg-yellow-500 text-white px-2 py-1 rounded text-xs">
                           Suspend
                         </button>
                       ) : (
-                        <button
-                          onClick={() => activateUser(u._id)}
-                          className="bg-green-600 text-white px-2 py-1 rounded text-xs"
-                        >
+                        <button onClick={() => activateUser(u._id)} className="bg-green-600 text-white px-2 py-1 rounded text-xs">
                           Activate
                         </button>
                       )}
 
-                      <button
-                        onClick={() => deleteUser(u._id)}
-                        className="bg-red-600 text-white px-2 py-1 rounded text-xs"
-                      >
+                      <button onClick={() => deleteUser(u._id)} className="bg-red-600 text-white px-2 py-1 rounded text-xs">
                         Delete
                       </button>
 
-                      <button
-                        onClick={() => addMoney(u._id)}
-                        className="bg-blue-600 text-white px-2 py-1 rounded text-xs"
-                      >
+                      <button onClick={() => addMoney(u._id)} className="bg-blue-600 text-white px-2 py-1 rounded text-xs">
                         +₦
                       </button>
 
-                      <button
-                        onClick={() => deductMoney(u._id)}
-                        className="bg-gray-800 text-white px-2 py-1 rounded text-xs"
-                      >
+                      <button onClick={() => deductMoney(u._id)} className="bg-gray-800 text-white px-2 py-1 rounded text-xs">
                         -₦
                       </button>
                     </>
@@ -269,6 +277,49 @@ export default function Admin() {
           </tbody>
 
         </table>
+
+      </div>
+
+      {/* ========================= */}
+      {/* 💳 PAYMENT APPROVAL PANEL */}
+      {/* ========================= */}
+      <div className="bg-white p-6 rounded shadow mb-10">
+
+        <h2 className="font-bold mb-4">Payment Requests</h2>
+
+        {payments.length === 0 && <p>No pending payments</p>}
+
+        {payments.map(p => (
+          <div key={p._id} className="border p-4 mb-4 rounded">
+
+            <p><b>User:</b> {p.userId?.email}</p>
+            <p><b>Amount:</b> ₦{p.amount}</p>
+            <p><b>Status:</b> {p.status}</p>
+
+            <img src={p.proof} className="w-40 mt-2" />
+
+            {p.status === "pending" && (
+              <div className="mt-2 space-x-2">
+
+                <button
+                  onClick={() => approvePayment(p._id)}
+                  className="bg-green-600 text-white px-3 py-1 rounded"
+                >
+                  Approve
+                </button>
+
+                <button
+                  onClick={() => rejectPayment(p._id)}
+                  className="bg-red-600 text-white px-3 py-1 rounded"
+                >
+                  Reject
+                </button>
+
+              </div>
+            )}
+
+          </div>
+        ))}
 
       </div>
 

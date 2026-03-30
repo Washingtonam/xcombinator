@@ -4,6 +4,8 @@ const router = express.Router();
 const User = require("../models/User");
 const Transaction = require("../models/Transaction");
 const AuditLog = require("../models/AuditLog"); // ✅ NEW
+// ADD THIS AT TOP
+const PaymentRequest = require("../models/PaymentRequest");
 
 // 🔐 ADMIN CHECK
 function isAdmin(req, res, next) {
@@ -234,6 +236,85 @@ router.get("/stats", isAdmin, async (req, res) => {
 
   } catch (error) {
     res.status(500).json({ message: "Error fetching stats" });
+  }
+});
+
+// ==============================
+// 📥 GET PAYMENT REQUESTS
+// ==============================
+router.get("/payments", isAdmin, async (req, res) => {
+  try {
+    const payments = await PaymentRequest.find()
+      .populate("userId", "email")
+      .sort({ createdAt: -1 });
+
+    res.json(payments);
+  } catch (error) {
+    res.status(500).json({ message: "Failed to fetch payments" });
+  }
+});
+
+// ==============================
+// ✅ APPROVE PAYMENT
+// ==============================
+router.post("/payments/:id/approve", isAdmin, async (req, res) => {
+  try {
+    const payment = await PaymentRequest.findById(req.params.id);
+
+    if (!payment || payment.status !== "pending") {
+      return res.status(400).json({ message: "Invalid request" });
+    }
+
+    const user = await User.findById(payment.userId);
+
+    const before = user.balance;
+
+    user.balance += payment.amount;
+    await user.save();
+
+    payment.status = "approved";
+    await payment.save();
+
+    // TRANSACTION
+    await Transaction.create({
+      type: "FUND",
+      amount: payment.amount,
+      status: "success",
+      userId: user._id,
+    });
+
+    // AUDIT LOG
+    await AuditLog.create({
+      action: "APPROVE_PAYMENT",
+      performedBy: req.headers["email"],
+      userId: user._id,
+      amount: payment.amount,
+      balanceBefore: before,
+      balanceAfter: user.balance,
+      note: "Manual payment approval",
+    });
+
+    res.json({ message: "Payment approved & wallet credited" });
+
+  } catch (error) {
+    res.status(500).json({ message: "Approval failed" });
+  }
+});
+
+// ==============================
+// ❌ REJECT PAYMENT
+// ==============================
+router.post("/payments/:id/reject", isAdmin, async (req, res) => {
+  try {
+    const payment = await PaymentRequest.findById(req.params.id);
+
+    payment.status = "rejected";
+    await payment.save();
+
+    res.json({ message: "Payment rejected" });
+
+  } catch (error) {
+    res.status(500).json({ message: "Reject failed" });
   }
 });
 
