@@ -88,7 +88,7 @@ export default function Admin() {
       {/* ========================= */}
       {/* QUICK ACTION CARDS */}
       {/* ========================= */}
-      <div className="grid md:grid-cols-2 gap-6">
+      <div className="grid md:grid-cols-3 gap-6">
 
         {/* USERS */}
         <div
@@ -111,7 +111,6 @@ export default function Admin() {
             Approve or reject manual payments
           </p>
 
-          {/* 🔴 NOTIFICATION BADGE */}
           {pendingPayments > 0 && (
             <span className="absolute top-3 right-3 bg-red-600 text-white text-xs px-2 py-1 rounded-full">
               {pendingPayments}
@@ -119,10 +118,21 @@ export default function Admin() {
           )}
         </div>
 
+        {/* 🔥 NEW: PRICING */}
+        <div
+          onClick={() => navigate("/admin/pricing")}
+          className="bg-white p-6 rounded shadow cursor-pointer hover:shadow-lg transition"
+        >
+          <h2 className="text-lg font-bold mb-2">💰 Pricing Control</h2>
+          <p className="text-sm text-gray-500">
+            Update NIN & BVN verification prices
+          </p>
+        </div>
+
       </div>
 
       {/* ========================= */}
-      {/* ALERT SECTION */}
+      {/* ALERT */}
       {/* ========================= */}
       {pendingPayments > 0 && (
         <div className="bg-red-100 border border-red-300 p-4 rounded">
