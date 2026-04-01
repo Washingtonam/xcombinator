@@ -17,7 +17,7 @@ export default function VerifyNIN() {
   const { user, balance, setBalance } = useUser();
 
   // =========================
-  // FETCH PRICING (OPTIONAL EXTENSION)
+  // FETCH PRICING
   // =========================
   useEffect(() => {
     fetch("https://xcombinator.onrender.com/api/pricing")
@@ -33,7 +33,7 @@ export default function VerifyNIN() {
   }, []);
 
   // =========================
-  // VERIFY NIN
+  // VERIFY
   // =========================
   const handleVerify = async () => {
     if (!selectedType) return alert("Select a slip type");
@@ -71,7 +71,6 @@ export default function VerifyNIN() {
       setResult(data);
       setBalance(data.balance);
 
-      // 🔥 AUTO DOWNLOAD AFTER VERIFY
       handleDownload(data, selectedType);
 
     } catch (error) {
@@ -82,7 +81,7 @@ export default function VerifyNIN() {
   };
 
   // =========================
-  // DOWNLOAD SLIP
+  // DOWNLOAD
   // =========================
   const handleDownload = async (data, type) => {
     const info =
@@ -118,48 +117,79 @@ export default function VerifyNIN() {
   };
 
   // =========================
-  // STEP CHECKER
+  // STEP STATUS
   // =========================
   const step1 = !!selectedType;
   const step2 = nin.length === 11;
   const step3 = consent;
 
   return (
-    <div className="max-w-xl mx-auto">
+    <div className="max-w-2xl mx-auto">
 
       <h1 className="text-2xl font-bold mb-6">Verify NIN</h1>
 
       {/* ========================= */}
-      {/* STEP INDICATOR */}
+      {/* STEP BAR */}
       {/* ========================= */}
-      <div className="flex justify-between mb-6 text-sm">
-
+      <div className="flex justify-between mb-6 text-sm font-medium">
         <div className={step1 ? "text-green-600" : ""}>1. Slip</div>
         <div className={step2 ? "text-green-600" : ""}>2. NIN</div>
         <div className={step3 ? "text-green-600" : ""}>3. Consent</div>
         <div className={result ? "text-green-600" : ""}>4. Done</div>
-
       </div>
 
       {/* ========================= */}
-      {/* SLIP SELECTION */}
+      {/* 🔥 SLIP UI (NEW) */}
       {/* ========================= */}
-      <div className="grid grid-cols-3 gap-3 mb-6">
+      <div className="mb-6">
 
-        {["data", "premium", "long"].map(type => (
-          <div
-            key={type}
-            onClick={() => setSelectedType(type)}
-            className={`p-3 border rounded cursor-pointer text-center ${
-              selectedType === type
-                ? "bg-blue-600 text-white"
-                : "bg-white"
-            }`}
-          >
-            <p className="font-semibold capitalize">{type}</p>
-            <p className="text-sm">₦{prices[type]}</p>
+        <h2 className="font-semibold mb-3">Select Slip Type</h2>
+
+        <div className="grid grid-cols-3 gap-4">
+
+          {[
+            { type: "data", label: "Data", price: prices.data },
+            { type: "premium", label: "Premium", price: prices.premium },
+            { type: "long", label: "Long", price: prices.long },
+          ].map(item => (
+
+            <div
+              key={item.type}
+              onClick={() => setSelectedType(item.type)}
+              className={`cursor-pointer rounded-xl border p-4 transition-all duration-300 hover:shadow-lg ${
+                selectedType === item.type
+                  ? "border-blue-600 bg-blue-50 scale-105"
+                  : "bg-white"
+              }`}
+            >
+              <p className="font-semibold">{item.label}</p>
+              <p className="text-sm text-gray-500">₦{item.price}</p>
+            </div>
+
+          ))}
+
+        </div>
+
+        {/* 🔥 PREVIEW */}
+        {selectedType && (
+          <div className="mt-6">
+
+            <p className="text-sm text-gray-600 mb-2">
+              Preview ({selectedType} slip)
+            </p>
+
+            <div className="rounded-xl overflow-hidden shadow-lg border">
+
+              <img
+                src={`/slips/${selectedType}.png`}
+                alt="Slip preview"
+                className="w-full object-cover transition-all duration-500 hover:scale-105"
+              />
+
+            </div>
+
           </div>
-        ))}
+        )}
 
       </div>
 
@@ -184,7 +214,7 @@ export default function VerifyNIN() {
           onChange={() => setConsent(!consent)}
         />
         <p>
-          I confirm that I have obtained proper consent from the NIN owner for this verification.
+          I confirm that I have obtained proper consent from the NIN owner.
         </p>
       </div>
 
