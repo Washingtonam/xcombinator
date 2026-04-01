@@ -3,11 +3,11 @@
   "transactions": [],
   "pricing": {
     "nin": {
-      "cost": 50,
-      "price": 150
+      "data": 350,
+      "premium": 450,
+      "long": 400
     },
     "bvn": {
-      "cost": 50,
       "price": 150
     }
   }

@@ -4,27 +4,27 @@ import axios from "axios";
 const API_BASE = "https://xcombinator.onrender.com";
 
 export default function AdminPricing() {
-  const [ninPrice, setNinPrice] = useState("");
-  const [bvnPrice, setBvnPrice] = useState("");
+  const [dataPrice, setDataPrice] = useState("");
+  const [premiumPrice, setPremiumPrice] = useState("");
+  const [longPrice, setLongPrice] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // Fetch current pricing
-  const fetchPricing = async () => {
-    try {
-      const res = await axios.get(`${API_BASE}/api/pricing`);
+  const headers = {
+    email: localStorage.getItem("email"),
+  };
 
-      setNinPrice(res.data.nin.price);
-      setBvnPrice(res.data.bvn.price);
-    } catch (err) {
-      console.error(err);
-    }
+  const fetchPricing = async () => {
+    const res = await axios.get(`${API_BASE}/api/pricing`);
+
+    setDataPrice(res.data.nin.data);
+    setPremiumPrice(res.data.nin.premium);
+    setLongPrice(res.data.nin.long);
   };
 
   useEffect(() => {
     fetchPricing();
   }, []);
 
-  // Update pricing
   const handleUpdate = async () => {
     setLoading(true);
 
@@ -32,56 +32,55 @@ export default function AdminPricing() {
       await axios.put(
         `${API_BASE}/api/admin/pricing`,
         {
-          ninPrice,
-          bvnPrice,
+          dataPrice,
+          premiumPrice,
+          longPrice,
         },
-        {
-          headers: {
-            email: localStorage.getItem("email"),
-          },
-        }
+        { headers }
       );
 
       alert("Pricing updated successfully");
     } catch (err) {
-      console.error(err);
-      alert("Failed to update pricing");
-    } finally {
-      setLoading(false);
+      alert("Update failed");
     }
+
+    setLoading(false);
   };
 
   return (
     <div className="p-6 bg-white rounded-xl shadow-md max-w-md">
-      <h2 className="text-xl font-bold mb-4">Admin Pricing Control</h2>
 
-      <div className="mb-4">
-        <label className="block mb-1">NIN Price (₦)</label>
-        <input
-          type="number"
-          value={ninPrice}
-          onChange={(e) => setNinPrice(e.target.value)}
-          className="w-full border p-2 rounded"
-        />
-      </div>
+      <h2 className="text-xl font-bold mb-4">NIN Slip Pricing</h2>
 
-      <div className="mb-4">
-        <label className="block mb-1">BVN Price (₦)</label>
-        <input
-          type="number"
-          value={bvnPrice}
-          onChange={(e) => setBvnPrice(e.target.value)}
-          className="w-full border p-2 rounded"
-        />
-      </div>
+      <input
+        placeholder="Data Slip Price"
+        value={dataPrice}
+        onChange={(e) => setDataPrice(e.target.value)}
+        className="w-full border p-2 mb-3 rounded"
+      />
+
+      <input
+        placeholder="Premium Slip Price"
+        value={premiumPrice}
+        onChange={(e) => setPremiumPrice(e.target.value)}
+        className="w-full border p-2 mb-3 rounded"
+      />
+
+      <input
+        placeholder="Long Slip Price"
+        value={longPrice}
+        onChange={(e) => setLongPrice(e.target.value)}
+        className="w-full border p-2 mb-3 rounded"
+      />
 
       <button
         onClick={handleUpdate}
         disabled={loading}
-        className="bg-blue-600 text-white px-4 py-2 rounded"
+        className="bg-blue-600 text-white w-full py-2 rounded"
       >
         {loading ? "Updating..." : "Update Pricing"}
       </button>
+
     </div>
   );
 }

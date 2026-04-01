@@ -23,11 +23,7 @@ export default function VerifyNIN() {
     fetch("https://xcombinator.onrender.com/api/pricing")
       .then(res => res.json())
       .then(data => {
-        setPrices({
-          data: data.nin.price,
-          premium: data.nin.price + 100,
-          long: data.nin.price + 50,
-        });
+        setPrices(data.nin);
       })
       .catch(() => {});
   }, []);
@@ -71,7 +67,11 @@ export default function VerifyNIN() {
       setResult(data);
       setBalance(data.balance);
 
-      handleDownload(data, selectedType);
+      setResult(data);
+
+        setTimeout(() => {
+          handleDownload(data, selectedType);
+        }, 500);
 
     } catch (error) {
       alert("Network error");

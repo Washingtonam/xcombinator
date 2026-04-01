@@ -187,26 +187,27 @@ router.post("/user/:id/wallet", isAdmin, async (req, res) => {
 });
 
 // ==============================
-// 💰 UPDATE PRICING (🔥 MAIN FIX)
+// 💰 UPDATE NIN SLIP PRICING (FIXED)
 // ==============================
 router.put("/pricing", isAdmin, async (req, res) => {
   try {
-    const { ninPrice, bvnPrice } = req.body;
-
-    if (!ninPrice || !bvnPrice) {
-      return res.status(400).json({ message: "Prices required" });
-    }
+    const { dataPrice, premiumPrice, longPrice } = req.body;
 
     const db = readDB();
 
-    db.pricing.nin.price = Number(ninPrice);
-    db.pricing.bvn.price = Number(bvnPrice);
+    if (!db.pricing.nin) {
+      db.pricing.nin = {};
+    }
+
+    db.pricing.nin.data = Number(dataPrice);
+    db.pricing.nin.premium = Number(premiumPrice);
+    db.pricing.nin.long = Number(longPrice);
 
     writeDB(db);
 
     res.json({
       message: "Pricing updated successfully",
-      pricing: db.pricing,
+      pricing: db.pricing.nin,
     });
 
   } catch (error) {
