@@ -2,9 +2,11 @@ import { BrowserRouter, Routes, Route, useLocation, Navigate } from "react-route
 import Sidebar from "./components/Sidebar";
 import Login from "./pages/auth/Login";
 import Register from "./pages/auth/Register";
+
 import Admin from "./pages/admin/Admin";
 import AdminUsers from "./pages/admin/AdminUsers";
 import AdminPayments from "./pages/admin/AdminPayments";
+import AdminPricing from "./pages/admin/AdminPricing"; // ✅ ADD THIS
 
 import Dashboard from "./pages/dashboard/Dashboard";
 import VerifyNIN from "./pages/verification/VerifyNIN";
@@ -47,6 +49,7 @@ function Layout() {
 
       <div className="flex-1 p-6">
         <Routes>
+
           {/* USER ROUTES */}
           <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
           <Route path="/verify-nin" element={<ProtectedRoute><VerifyNIN /></ProtectedRoute>} />
@@ -54,7 +57,7 @@ function Layout() {
           <Route path="/transactions" element={<ProtectedRoute><Transactions /></ProtectedRoute>} />
           <Route path="/wallet" element={<ProtectedRoute><Wallet /></ProtectedRoute>} />
 
-          {/* ADMIN ROUTES */}
+          {/* ADMIN DASHBOARD */}
           <Route 
             path="/admin" 
             element={
@@ -66,6 +69,7 @@ function Layout() {
             } 
           />
 
+          {/* USERS */}
           <Route 
             path="/admin/users" 
             element={
@@ -77,12 +81,25 @@ function Layout() {
             } 
           />
 
+          {/* PAYMENTS */}
           <Route 
             path="/admin/payments" 
             element={
               <ProtectedRoute>
                 <AdminRoute>
                   <AdminPayments />
+                </AdminRoute>
+              </ProtectedRoute>
+            } 
+          />
+
+          {/* 🔥 PRICING (THIS WAS MISSING) */}
+          <Route 
+            path="/admin/pricing" 
+            element={
+              <ProtectedRoute>
+                <AdminRoute>
+                  <AdminPricing />
                 </AdminRoute>
               </ProtectedRoute>
             } 
