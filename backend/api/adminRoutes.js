@@ -4,6 +4,7 @@ const router = express.Router();
 const User = require("../models/User");
 const Transaction = require("../models/Transaction");
 const AuditLog = require("../models/AuditLog");
+const { readDB, writeDB } = require("../utils/jsonDB");
 
 // ==============================
 // 🔐 ADMIN CHECK
@@ -74,8 +75,13 @@ router.put("/user/:id/suspend", isAdmin, async (req, res) => {
     user.status = "suspended";
     await user.save();
 
-    res.json({ message: "User suspended", user });
+    await AuditLog.create({
+      action: "SUSPEND_USER",
+      performedBy: req.headers["email"],
+      userId: user._id,
+    });
 
+    res.json({ message: "User suspended", user });
   } catch (error) {
     res.status(500).json({ message: "Failed to suspend user" });
   }
@@ -91,8 +97,13 @@ router.put("/user/:id/activate", isAdmin, async (req, res) => {
     user.status = "active";
     await user.save();
 
-    res.json({ message: "User activated", user });
+    await AuditLog.create({
+      action: "ACTIVATE_USER",
+      performedBy: req.headers["email"],
+      userId: user._id,
+    });
 
+    res.json({ message: "User activated", user });
   } catch (error) {
     res.status(500).json({ message: "Failed to activate user" });
   }
@@ -112,8 +123,13 @@ router.delete("/user/:id", isAdmin, async (req, res) => {
     await User.findByIdAndDelete(req.params.id);
     await Transaction.deleteMany({ userId: req.params.id });
 
-    res.json({ message: "User deleted successfully" });
+    await AuditLog.create({
+      action: "DELETE_USER",
+      performedBy: req.headers["email"],
+      userId: req.params.id,
+    });
 
+    res.json({ message: "User deleted successfully" });
   } catch (error) {
     res.status(500).json({ message: "Failed to delete user" });
   }
@@ -124,7 +140,7 @@ router.delete("/user/:id", isAdmin, async (req, res) => {
 // ==============================
 router.post("/user/:id/wallet", isAdmin, async (req, res) => {
   try {
-    const { amount, action, note } = req.body;
+    const { amount, action } = req.body;
     const adminEmail = req.headers["email"];
 
     if (!amount || !action) {
@@ -136,9 +152,7 @@ router.post("/user/:id/wallet", isAdmin, async (req, res) => {
 
     const before = user.balance;
 
-    if (action === "add") {
-      user.balance += amount;
-    }
+    if (action === "add") user.balance += amount;
 
     if (action === "deduct") {
       if (user.balance < amount) {
@@ -163,16 +177,40 @@ router.post("/user/:id/wallet", isAdmin, async (req, res) => {
       amount,
       balanceBefore: before,
       balanceAfter: user.balance,
-      note: note || "Manual funding",
     });
 
-    res.json({
-      message: "Wallet updated",
-      balance: user.balance,
-    });
+    res.json({ message: "Wallet updated", balance: user.balance });
 
   } catch (error) {
     res.status(500).json({ message: "Error updating wallet" });
+  }
+});
+
+// ==============================
+// 💰 UPDATE PRICING (🔥 MAIN FIX)
+// ==============================
+router.put("/pricing", isAdmin, async (req, res) => {
+  try {
+    const { ninPrice, bvnPrice } = req.body;
+
+    if (!ninPrice || !bvnPrice) {
+      return res.status(400).json({ message: "Prices required" });
+    }
+
+    const db = readDB();
+
+    db.pricing.nin.price = Number(ninPrice);
+    db.pricing.bvn.price = Number(bvnPrice);
+
+    writeDB(db);
+
+    res.json({
+      message: "Pricing updated successfully",
+      pricing: db.pricing,
+    });
+
+  } catch (error) {
+    res.status(500).json({ message: "Failed to update pricing" });
   }
 });
 
@@ -181,11 +219,8 @@ router.post("/user/:id/wallet", isAdmin, async (req, res) => {
 // ==============================
 router.get("/transactions", isAdmin, async (req, res) => {
   try {
-    const transactions = await Transaction.find()
-      .sort({ createdAt: -1 });
-
+    const transactions = await Transaction.find().sort({ createdAt: -1 });
     res.json(transactions);
-
   } catch (error) {
     res.status(500).json({ message: "Error fetching transactions" });
   }
@@ -203,41 +238,8 @@ router.get("/user/:id", isAdmin, async (req, res) => {
     }).sort({ createdAt: -1 });
 
     res.json({ user, transactions });
-
   } catch (error) {
     res.status(500).json({ message: "Error fetching user data" });
-  }
-});
-
-// ==============================
-// 📊 STATS
-// ==============================
-router.get("/stats", isAdmin, async (req, res) => {
-  try {
-    const transactions = await Transaction.find();
-
-    let totalRevenue = 0;
-    let totalCost = 0;
-    let totalProfit = 0;
-
-    transactions.forEach(tx => {
-      totalRevenue += tx.amount || 0;
-      totalCost += tx.cost || 0;
-      totalProfit += tx.profit || 0;
-    });
-
-    const totalUsers = await User.countDocuments();
-
-    res.json({
-      totalUsers,
-      totalTransactions: transactions.length,
-      totalRevenue,
-      totalCost,
-      totalProfit,
-    });
-
-  } catch (error) {
-    res.status(500).json({ message: "Error fetching stats" });
   }
 });
 
@@ -251,7 +253,6 @@ router.get("/audit-logs", isAdmin, async (req, res) => {
       .sort({ createdAt: -1 });
 
     res.json(logs);
-
   } catch (error) {
     res.status(500).json({ message: "Failed to fetch audit logs" });
   }

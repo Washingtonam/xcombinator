@@ -1,20 +1,41 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useUser } from "../../context/UserContext";
 
 export default function VerifyNIN() {
   const [nin, setNin] = useState("");
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [price, setPrice] = useState(0);
 
   const { user, balance, setBalance } = useUser();
 
+  // =========================
+  // FETCH PRICING
+  // =========================
+  const fetchPricing = async () => {
+    try {
+      const res = await fetch("https://xcombinator.onrender.com/api/pricing");
+      const data = await res.json();
+      setPrice(data.nin.price);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  useEffect(() => {
+    fetchPricing();
+  }, []);
+
+  // =========================
+  // VERIFY NIN
+  // =========================
   const handleVerify = async () => {
     if (nin.length !== 11) {
       return alert("NIN must be 11 digits");
     }
 
-    if (balance < 100) {
-      return alert("Insufficient balance");
+    if (balance < price) {
+      return alert(`Insufficient balance. Required ₦${price}`);
     }
 
     setLoading(true);
@@ -50,13 +71,17 @@ export default function VerifyNIN() {
     setLoading(false);
   };
 
-  // 🔥 FLEXIBLE DATA HANDLING
+  // =========================
+  // NORMALIZE DATA
+  // =========================
   const info =
     result?.data?.data ||
     result?.data ||
     null;
 
-  // ✅ DOWNLOAD FUNCTION (ONLY ONCE)
+  // =========================
+  // DOWNLOAD SLIP
+  // =========================
   const handleDownload = async () => {
     if (!info) return;
 
@@ -87,7 +112,8 @@ export default function VerifyNIN() {
     <div>
       <h1 className="text-2xl font-bold mb-6">Verify NIN</h1>
 
-      <p className="mb-4 font-medium">Balance: ₦{balance}</p>
+      <p className="mb-2 font-medium">Balance: ₦{balance}</p>
+      <p className="mb-4 text-sm text-gray-600">Price: ₦{price}</p>
 
       <div className="bg-white p-6 rounded shadow max-w-md">
         <input
@@ -103,10 +129,11 @@ export default function VerifyNIN() {
           disabled={loading}
           className="bg-blue-600 text-white px-4 py-2 rounded w-full"
         >
-          {loading ? "Verifying..." : "Verify NIN"}
+          {loading ? "Verifying..." : `Verify NIN (₦${price})`}
         </button>
       </div>
 
+      {/* ================= RESULT ================= */}
       {info && (
         <div className="mt-6 bg-white p-6 rounded-xl shadow max-w-md border">
           <h2 className="font-semibold text-lg mb-4">Verification Result</h2>
@@ -142,7 +169,6 @@ export default function VerifyNIN() {
             <p><b>Address:</b> {info.residence_address || "N/A"}</p>
           </div>
 
-          {/* ✅ DOWNLOAD BUTTON */}
           <button
             onClick={handleDownload}
             className="mt-4 bg-black text-white px-4 py-2 rounded w-full"

@@ -1,20 +1,41 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useUser } from "../../context/UserContext";
 
 export default function VerifyBVN() {
   const [bvn, setBvn] = useState("");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
+  const [price, setPrice] = useState(0);
 
   const { user, balance, setBalance } = useUser();
 
+  // =========================
+  // FETCH PRICING
+  // =========================
+  const fetchPricing = async () => {
+    try {
+      const res = await fetch("https://xcombinator.onrender.com/api/pricing");
+      const data = await res.json();
+      setPrice(data.bvn.price);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  useEffect(() => {
+    fetchPricing();
+  }, []);
+
+  // =========================
+  // VERIFY BVN
+  // =========================
   const handleVerify = async () => {
     if (bvn.length !== 11) {
       return alert("BVN must be 11 digits");
     }
 
-    if (balance < 100) {
-      return alert("Insufficient balance");
+    if (balance < price) {
+      return alert(`Insufficient balance. Required ₦${price}`);
     }
 
     setLoading(true);
@@ -59,7 +80,8 @@ export default function VerifyBVN() {
     <div>
       <h1 className="text-2xl font-bold mb-6">Verify BVN</h1>
 
-      <p className="mb-4 font-medium">Balance: ₦{balance}</p>
+      <p className="mb-2 font-medium">Balance: ₦{balance}</p>
+      <p className="mb-4 text-sm text-gray-600">Price: ₦{price}</p>
 
       <div className="bg-white p-6 rounded shadow max-w-md">
         <input
@@ -75,7 +97,7 @@ export default function VerifyBVN() {
           disabled={loading}
           className="bg-green-600 text-white px-4 py-2 rounded w-full"
         >
-          {loading ? "Verifying..." : "Verify BVN"}
+          {loading ? "Verifying..." : `Verify BVN (₦${price})`}
         </button>
       </div>
 
