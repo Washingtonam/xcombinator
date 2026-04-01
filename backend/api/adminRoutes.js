@@ -3,11 +3,11 @@ const router = express.Router();
 
 const User = require("../models/User");
 const Transaction = require("../models/Transaction");
-const AuditLog = require("../models/AuditLog"); // ✅ NEW
-// ADD THIS AT TOP
-const PaymentRequest = require("../models/PaymentRequest");
+const AuditLog = require("../models/AuditLog");
 
+// ==============================
 // 🔐 ADMIN CHECK
+// ==============================
 function isAdmin(req, res, next) {
   const email = req.headers["email"];
 
@@ -75,6 +75,7 @@ router.put("/user/:id/suspend", isAdmin, async (req, res) => {
     await user.save();
 
     res.json({ message: "User suspended", user });
+
   } catch (error) {
     res.status(500).json({ message: "Failed to suspend user" });
   }
@@ -91,6 +92,7 @@ router.put("/user/:id/activate", isAdmin, async (req, res) => {
     await user.save();
 
     res.json({ message: "User activated", user });
+
   } catch (error) {
     res.status(500).json({ message: "Failed to activate user" });
   }
@@ -111,13 +113,14 @@ router.delete("/user/:id", isAdmin, async (req, res) => {
     await Transaction.deleteMany({ userId: req.params.id });
 
     res.json({ message: "User deleted successfully" });
+
   } catch (error) {
     res.status(500).json({ message: "Failed to delete user" });
   }
 });
 
 // ==============================
-// 💰 WALLET CONTROL (UPGRADED)
+// 💰 WALLET CONTROL
 // ==============================
 router.post("/user/:id/wallet", isAdmin, async (req, res) => {
   try {
@@ -146,7 +149,6 @@ router.post("/user/:id/wallet", isAdmin, async (req, res) => {
 
     await user.save();
 
-    // 🧾 TRANSACTION
     await Transaction.create({
       type: action === "add" ? "FUND" : "DEDUCT",
       amount,
@@ -154,7 +156,6 @@ router.post("/user/:id/wallet", isAdmin, async (req, res) => {
       userId: user._id,
     });
 
-    // 🔥 AUDIT LOG
     await AuditLog.create({
       action: action === "add" ? "ADD_FUNDS" : "DEDUCT_FUNDS",
       performedBy: adminEmail,
@@ -171,13 +172,12 @@ router.post("/user/:id/wallet", isAdmin, async (req, res) => {
     });
 
   } catch (error) {
-    console.error(error);
     res.status(500).json({ message: "Error updating wallet" });
   }
 });
 
 // ==============================
-// 🔥 GET ALL TRANSACTIONS
+// 🔥 GET TRANSACTIONS
 // ==============================
 router.get("/transactions", isAdmin, async (req, res) => {
   try {
@@ -185,13 +185,14 @@ router.get("/transactions", isAdmin, async (req, res) => {
       .sort({ createdAt: -1 });
 
     res.json(transactions);
+
   } catch (error) {
     res.status(500).json({ message: "Error fetching transactions" });
   }
 });
 
 // ==============================
-// 🔥 GET SINGLE USER + ACTIVITY
+// 🔥 GET SINGLE USER
 // ==============================
 router.get("/user/:id", isAdmin, async (req, res) => {
   try {
@@ -202,6 +203,7 @@ router.get("/user/:id", isAdmin, async (req, res) => {
     }).sort({ createdAt: -1 });
 
     res.json({ user, transactions });
+
   } catch (error) {
     res.status(500).json({ message: "Error fetching user data" });
   }
@@ -240,85 +242,6 @@ router.get("/stats", isAdmin, async (req, res) => {
 });
 
 // ==============================
-// 📥 GET PAYMENT REQUESTS
-// ==============================
-router.get("/payments", isAdmin, async (req, res) => {
-  try {
-    const payments = await PaymentRequest.find()
-      .populate("userId", "email")
-      .sort({ createdAt: -1 });
-
-    res.json(payments);
-  } catch (error) {
-    res.status(500).json({ message: "Failed to fetch payments" });
-  }
-});
-
-// ==============================
-// ✅ APPROVE PAYMENT
-// ==============================
-router.post("/payments/:id/approve", isAdmin, async (req, res) => {
-  try {
-    const payment = await PaymentRequest.findById(req.params.id);
-
-    if (!payment || payment.status !== "pending") {
-      return res.status(400).json({ message: "Invalid request" });
-    }
-
-    const user = await User.findById(payment.userId);
-
-    const before = user.balance;
-
-    user.balance += payment.amount;
-    await user.save();
-
-    payment.status = "approved";
-    await payment.save();
-
-    // TRANSACTION
-    await Transaction.create({
-      type: "FUND",
-      amount: payment.amount,
-      status: "success",
-      userId: user._id,
-    });
-
-    // AUDIT LOG
-    await AuditLog.create({
-      action: "APPROVE_PAYMENT",
-      performedBy: req.headers["email"],
-      userId: user._id,
-      amount: payment.amount,
-      balanceBefore: before,
-      balanceAfter: user.balance,
-      note: "Manual payment approval",
-    });
-
-    res.json({ message: "Payment approved & wallet credited" });
-
-  } catch (error) {
-    res.status(500).json({ message: "Approval failed" });
-  }
-});
-
-// ==============================
-// ❌ REJECT PAYMENT
-// ==============================
-router.post("/payments/:id/reject", isAdmin, async (req, res) => {
-  try {
-    const payment = await PaymentRequest.findById(req.params.id);
-
-    payment.status = "rejected";
-    await payment.save();
-
-    res.json({ message: "Payment rejected" });
-
-  } catch (error) {
-    res.status(500).json({ message: "Reject failed" });
-  }
-});
-
-// ==============================
 // 📜 AUDIT LOGS
 // ==============================
 router.get("/audit-logs", isAdmin, async (req, res) => {
@@ -328,6 +251,7 @@ router.get("/audit-logs", isAdmin, async (req, res) => {
       .sort({ createdAt: -1 });
 
     res.json(logs);
+
   } catch (error) {
     res.status(500).json({ message: "Failed to fetch audit logs" });
   }

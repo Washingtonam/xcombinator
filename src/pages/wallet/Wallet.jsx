@@ -26,7 +26,6 @@ export default function Wallet() {
   useEffect(() => {
     fetchBalance();
 
-    // LOAD PAYSTACK
     const script = document.createElement("script");
     script.src = "https://js.paystack.co/v1/inline.js";
     script.async = true;
@@ -37,11 +36,10 @@ export default function Wallet() {
   }, []);
 
   // =========================
-  // FILE UPLOAD (BASE64)
+  // FILE → BASE64
   // =========================
   const handleFile = (e) => {
     const file = e.target.files[0];
-
     if (!file) return;
 
     const reader = new FileReader();
@@ -53,7 +51,7 @@ export default function Wallet() {
   };
 
   // =========================
-  // SUBMIT MANUAL PAYMENT
+  // SUBMIT PAYMENT
   // =========================
   const submitPayment = async () => {
     if (!amount || !proof) {
@@ -61,7 +59,7 @@ export default function Wallet() {
     }
 
     try {
-      await fetch("https://xcombinator.onrender.com/api/payment-request", {
+      await fetch("https://xcombinator.onrender.com/api/submit-payment", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -73,18 +71,17 @@ export default function Wallet() {
         }),
       });
 
-      alert("Payment submitted. Await admin approval.");
+      alert("Payment submitted. Await approval.");
       setAmount("");
       setProof(null);
 
     } catch (error) {
-      console.error(error);
       alert("Submission failed");
     }
   };
 
   // =========================
-  // PAYSTACK PAYMENT
+  // PAYSTACK
   // =========================
   const handlePay = () => {
     if (!amount || amount <= 0) return alert("Enter valid amount");
@@ -94,24 +91,9 @@ export default function Wallet() {
       email: user.email,
       amount: amount * 100,
 
-      callback: function (response) {
-        fetch("https://xcombinator.onrender.com/api/verify-payment", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            reference: response.reference,
-            amount,
-            userId: user.id,
-          }),
-        })
-          .then(res => res.json())
-          .then(() => {
-            fetchBalance();
-            setAmount("");
-            alert("Payment successful");
-          });
+      callback: function () {
+        fetchBalance();
+        alert("Payment successful");
       },
     });
 
@@ -124,11 +106,8 @@ export default function Wallet() {
 
       <p className="mb-4 font-medium">Balance: ₦{balance}</p>
 
-      {/* ========================= */}
-      {/* MANUAL FUNDING */}
-      {/* ========================= */}
+      {/* MANUAL */}
       <div className="bg-white p-6 rounded shadow max-w-md mb-6">
-
         <h2 className="font-bold mb-2">Manual Funding</h2>
 
         <div className="bg-gray-100 p-4 rounded space-y-2">
@@ -136,10 +115,6 @@ export default function Wallet() {
           <p><b>Account Number:</b> 8161495298</p>
           <p><b>Account Name:</b> Steve Computer Warehouse Limited</p>
         </div>
-
-        <p className="text-sm mt-3 text-gray-600">
-          Upload proof after transfer (no WhatsApp needed)
-        </p>
 
         <input
           type="number"
@@ -149,11 +124,7 @@ export default function Wallet() {
           className="w-full border p-3 mt-4 rounded"
         />
 
-        <input
-          type="file"
-          onChange={handleFile}
-          className="mt-3"
-        />
+        <input type="file" onChange={handleFile} className="mt-3" />
 
         <button
           onClick={submitPayment}
@@ -163,11 +134,8 @@ export default function Wallet() {
         </button>
       </div>
 
-      {/* ========================= */}
       {/* PAYSTACK */}
-      {/* ========================= */}
       <div className="bg-white p-6 rounded shadow max-w-md">
-
         <input
           type="number"
           placeholder="Enter amount"
@@ -183,7 +151,6 @@ export default function Wallet() {
         >
           Fund Wallet (Online)
         </button>
-
       </div>
     </div>
   );
