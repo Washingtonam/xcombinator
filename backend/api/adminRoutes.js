@@ -27,9 +27,9 @@ function isAdmin(req, res, next) {
 // 🔍 SEARCH USERS
 // ==============================
 router.get("/users/search", isAdmin, async (req, res) => {
-  const { query } = req.query;
-
   try {
+    const { query } = req.query;
+
     const users = await User.find({
       $or: [
         { email: { $regex: query, $options: "i" } },
@@ -40,18 +40,20 @@ router.get("/users/search", isAdmin, async (req, res) => {
 
     res.json(users);
   } catch (error) {
+    console.error(error);
     res.status(500).json({ message: "Search failed" });
   }
 });
 
 // ==============================
-// 🔥 GET ALL USERS
+// 👥 GET ALL USERS
 // ==============================
 router.get("/users", isAdmin, async (req, res) => {
   try {
     const users = await User.find().select("-password");
     res.json(users);
   } catch (error) {
+    console.error(error);
     res.status(500).json({ message: "Error fetching users" });
   }
 });
@@ -62,7 +64,7 @@ router.get("/users", isAdmin, async (req, res) => {
 const ADMIN_EMAIL = "washingtonamedu@gmail.com";
 
 // ==============================
-// 🔥 SUSPEND USER
+// 🔒 SUSPEND USER
 // ==============================
 router.put("/user/:id/suspend", isAdmin, async (req, res) => {
   try {
@@ -83,12 +85,13 @@ router.put("/user/:id/suspend", isAdmin, async (req, res) => {
 
     res.json({ message: "User suspended", user });
   } catch (error) {
+    console.error(error);
     res.status(500).json({ message: "Failed to suspend user" });
   }
 });
 
 // ==============================
-// 🔥 ACTIVATE USER
+// ✅ ACTIVATE USER
 // ==============================
 router.put("/user/:id/activate", isAdmin, async (req, res) => {
   try {
@@ -105,12 +108,13 @@ router.put("/user/:id/activate", isAdmin, async (req, res) => {
 
     res.json({ message: "User activated", user });
   } catch (error) {
+    console.error(error);
     res.status(500).json({ message: "Failed to activate user" });
   }
 });
 
 // ==============================
-// 🔥 DELETE USER
+// 🗑 DELETE USER
 // ==============================
 router.delete("/user/:id", isAdmin, async (req, res) => {
   try {
@@ -131,6 +135,7 @@ router.delete("/user/:id", isAdmin, async (req, res) => {
 
     res.json({ message: "User deleted successfully" });
   } catch (error) {
+    console.error(error);
     res.status(500).json({ message: "Failed to delete user" });
   }
 });
@@ -141,7 +146,6 @@ router.delete("/user/:id", isAdmin, async (req, res) => {
 router.post("/user/:id/wallet", isAdmin, async (req, res) => {
   try {
     const { amount, action } = req.body;
-    const adminEmail = req.headers["email"];
 
     if (!amount || !action) {
       return res.status(400).json({ message: "Amount and action required" });
@@ -172,7 +176,7 @@ router.post("/user/:id/wallet", isAdmin, async (req, res) => {
 
     await AuditLog.create({
       action: action === "add" ? "ADD_FUNDS" : "DEDUCT_FUNDS",
-      performedBy: adminEmail,
+      performedBy: req.headers["email"],
       userId: user._id,
       amount,
       balanceBefore: before,
@@ -182,22 +186,32 @@ router.post("/user/:id/wallet", isAdmin, async (req, res) => {
     res.json({ message: "Wallet updated", balance: user.balance });
 
   } catch (error) {
+    console.error(error);
     res.status(500).json({ message: "Error updating wallet" });
   }
 });
 
 // ==============================
-// 💰 UPDATE NIN SLIP PRICING (FIXED)
+// 💰 UPDATE NIN SLIP PRICING
 // ==============================
 router.put("/pricing", isAdmin, async (req, res) => {
   try {
     const { dataPrice, premiumPrice, longPrice } = req.body;
 
+    if (
+      dataPrice === undefined ||
+      premiumPrice === undefined ||
+      longPrice === undefined
+    ) {
+      return res.status(400).json({
+        message: "All pricing fields are required",
+      });
+    }
+
     const db = readDB();
 
-    if (!db.pricing.nin) {
-      db.pricing.nin = {};
-    }
+    if (!db.pricing) db.pricing = {};
+    if (!db.pricing.nin) db.pricing.nin = {};
 
     db.pricing.nin.data = Number(dataPrice);
     db.pricing.nin.premium = Number(premiumPrice);
@@ -211,24 +225,29 @@ router.put("/pricing", isAdmin, async (req, res) => {
     });
 
   } catch (error) {
-    res.status(500).json({ message: "Failed to update pricing" });
+    console.error("PRICING ERROR:", error);
+    res.status(500).json({
+      message: "Failed to update pricing",
+      error: error.message,
+    });
   }
 });
 
 // ==============================
-// 🔥 GET TRANSACTIONS
+// 📊 GET TRANSACTIONS
 // ==============================
 router.get("/transactions", isAdmin, async (req, res) => {
   try {
     const transactions = await Transaction.find().sort({ createdAt: -1 });
     res.json(transactions);
   } catch (error) {
+    console.error(error);
     res.status(500).json({ message: "Error fetching transactions" });
   }
 });
 
 // ==============================
-// 🔥 GET SINGLE USER
+// 👤 GET SINGLE USER
 // ==============================
 router.get("/user/:id", isAdmin, async (req, res) => {
   try {
@@ -240,6 +259,7 @@ router.get("/user/:id", isAdmin, async (req, res) => {
 
     res.json({ user, transactions });
   } catch (error) {
+    console.error(error);
     res.status(500).json({ message: "Error fetching user data" });
   }
 });
@@ -255,6 +275,7 @@ router.get("/audit-logs", isAdmin, async (req, res) => {
 
     res.json(logs);
   } catch (error) {
+    console.error(error);
     res.status(500).json({ message: "Failed to fetch audit logs" });
   }
 });
