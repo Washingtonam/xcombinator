@@ -5,12 +5,10 @@ export default function Wallet() {
   const [proof, setProof] = useState(null);
   const [balance, setBalance] = useState(0);
   const [paystackReady, setPaystackReady] = useState(false);
+  const [loading, setLoading] = useState(false); // 🔥 NEW
 
   const user = JSON.parse(localStorage.getItem("user"));
 
-  // =========================
-  // FETCH BALANCE
-  // =========================
   const fetchBalance = () => {
     fetch("https://xcombinator.onrender.com/api/balance", {
       method: "POST",
@@ -35,9 +33,6 @@ export default function Wallet() {
     document.body.appendChild(script);
   }, []);
 
-  // =========================
-  // FILE → BASE64
-  // =========================
   const handleFile = (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -50,16 +45,15 @@ export default function Wallet() {
     };
   };
 
-  // =========================
-  // SUBMIT PAYMENT
-  // =========================
   const submitPayment = async () => {
     if (!amount || !proof) {
       return alert("Enter amount and upload proof");
     }
 
+    setLoading(true); // 🔥 LOCK BUTTON
+
     try {
-      await fetch("https://xcombinator.onrender.com/api/submit-payment", {
+      const res = await fetch("https://xcombinator.onrender.com/api/submit-payment", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -71,6 +65,14 @@ export default function Wallet() {
         }),
       });
 
+      const data = await res.json();
+
+      if (!res.ok) {
+        alert(data.message);
+        setLoading(false);
+        return;
+      }
+
       alert("Payment submitted. Await approval.");
       setAmount("");
       setProof(null);
@@ -78,26 +80,8 @@ export default function Wallet() {
     } catch (error) {
       alert("Submission failed");
     }
-  };
 
-  // =========================
-  // PAYSTACK
-  // =========================
-  const handlePay = () => {
-    if (!amount || amount <= 0) return alert("Enter valid amount");
-
-    const handler = window.PaystackPop.setup({
-      key: "pk_test_f0a111652a4fc257d0477d0aa29c967e0ab9b2c3",
-      email: user.email,
-      amount: amount * 100,
-
-      callback: function () {
-        fetchBalance();
-        alert("Payment successful");
-      },
-    });
-
-    handler.openIframe();
+    setLoading(false);
   };
 
   return (
@@ -106,7 +90,6 @@ export default function Wallet() {
 
       <p className="mb-4 font-medium">Balance: ₦{balance}</p>
 
-      {/* MANUAL */}
       <div className="bg-white p-6 rounded shadow max-w-md mb-6">
         <h2 className="font-bold mb-2">Manual Funding</h2>
 
@@ -128,28 +111,12 @@ export default function Wallet() {
 
         <button
           onClick={submitPayment}
-          className="bg-blue-600 text-white px-4 py-2 rounded w-full mt-4"
+          disabled={loading}
+          className={`w-full mt-4 px-4 py-2 rounded text-white ${
+            loading ? "bg-gray-400" : "bg-blue-600"
+          }`}
         >
-          Submit Payment
-        </button>
-      </div>
-
-      {/* PAYSTACK */}
-      <div className="bg-white p-6 rounded shadow max-w-md">
-        <input
-          type="number"
-          placeholder="Enter amount"
-          value={amount}
-          onChange={(e) => setAmount(e.target.value)}
-          className="w-full border p-3 mb-4 rounded"
-        />
-
-        <button
-          onClick={handlePay}
-          disabled={!paystackReady}
-          className="bg-green-600 text-white px-4 py-2 rounded w-full"
-        >
-          Fund Wallet (Online)
+          {loading ? "Submitting..." : "Submit Payment"}
         </button>
       </div>
     </div>

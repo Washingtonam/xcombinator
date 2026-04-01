@@ -34,6 +34,19 @@ router.post("/submit-payment", async (req, res) => {
     const user = await User.findById(userId);
     if (!user) return res.status(404).json({ message: "User not found" });
 
+    // 🚫 BLOCK DUPLICATE PENDING PAYMENTS
+    const existingPending = await Transaction.findOne({
+      userId,
+      type: "FUND",
+      status: "pending",
+    });
+
+    if (existingPending) {
+      return res.status(400).json({
+        message: "You already have a pending payment awaiting approval",
+      });
+    }
+
     const payment = await Transaction.create({
       type: "FUND",
       amount,
@@ -60,7 +73,6 @@ router.get("/admin/payments", isAdmin, async (req, res) => {
   try {
     const payments = await Transaction.find({
       type: "FUND",
-      status: { $in: ["pending", "approved", "rejected"] },
     })
       .populate("userId", "email")
       .sort({ createdAt: -1 });
