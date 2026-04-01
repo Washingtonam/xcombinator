@@ -1,12 +1,14 @@
 import { BrowserRouter, Routes, Route, useLocation, Navigate } from "react-router-dom";
+
 import Sidebar from "./components/Sidebar";
+
 import Login from "./pages/auth/Login";
 import Register from "./pages/auth/Register";
 
 import Admin from "./pages/admin/Admin";
 import AdminUsers from "./pages/admin/AdminUsers";
 import AdminPayments from "./pages/admin/AdminPayments";
-import AdminPricing from "./pages/admin/AdminPricing"; // ✅ ADD THIS
+import AdminPricing from "./pages/admin/AdminPricing"; // 🔥 NEW
 
 import Dashboard from "./pages/dashboard/Dashboard";
 import VerifyNIN from "./pages/verification/VerifyNIN";
@@ -14,6 +16,9 @@ import VerifyBVN from "./pages/verification/VerifyBVN";
 import Transactions from "./pages/transactions/Transactions";
 import Wallet from "./pages/wallet/Wallet";
 
+// ==============================
+// 🔐 AUTH CHECKS
+// ==============================
 function isAuthenticated() {
   return !!localStorage.getItem("user");
 }
@@ -24,24 +29,19 @@ function isAdmin() {
 }
 
 function ProtectedRoute({ children }) {
-  if (!isAuthenticated()) {
-    return <Navigate to="/login" />;
-  }
+  if (!isAuthenticated()) return <Navigate to="/login" />;
   return children;
 }
 
 function AdminRoute({ children }) {
-  if (!isAuthenticated()) {
-    return <Navigate to="/login" />;
-  }
-
-  if (!isAdmin()) {
-    return <Navigate to="/" />;
-  }
-
+  if (!isAuthenticated()) return <Navigate to="/login" />;
+  if (!isAdmin()) return <Navigate to="/" />;
   return children;
 }
 
+// ==============================
+// 📦 LAYOUT
+// ==============================
 function Layout() {
   return (
     <div className="flex">
@@ -69,7 +69,7 @@ function Layout() {
             } 
           />
 
-          {/* USERS */}
+          {/* ADMIN USERS */}
           <Route 
             path="/admin/users" 
             element={
@@ -81,7 +81,7 @@ function Layout() {
             } 
           />
 
-          {/* PAYMENTS */}
+          {/* ADMIN PAYMENTS */}
           <Route 
             path="/admin/payments" 
             element={
@@ -93,7 +93,7 @@ function Layout() {
             } 
           />
 
-          {/* 🔥 PRICING (THIS WAS MISSING) */}
+          {/* 🔥 ADMIN PRICING (THIS WAS MISSING) */}
           <Route 
             path="/admin/pricing" 
             element={
@@ -111,6 +111,9 @@ function Layout() {
   );
 }
 
+// ==============================
+// 🧠 ROUTE SWITCH
+// ==============================
 function AppRoutes() {
   const location = useLocation();
 
@@ -126,6 +129,9 @@ function AppRoutes() {
   return <Layout />;
 }
 
+// ==============================
+// 🚀 MAIN APP
+// ==============================
 export default function App() {
   return (
     <BrowserRouter>
