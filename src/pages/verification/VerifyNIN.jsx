@@ -16,6 +16,8 @@ export default function VerifyNIN() {
 
   const { user, balance, setBalance } = useUser();
 
+  const isAdmin = user?.email === "washingtonamedu@gmail.com";
+
   // =========================
   // FETCH PRICING
   // =========================
@@ -31,21 +33,25 @@ export default function VerifyNIN() {
           });
         }
       })
-      .catch(() => {});
+      .catch(() => {
+        console.log("Pricing fallback used");
+      });
   }, []);
 
   // =========================
   // VERIFY
   // =========================
   const handleVerify = async () => {
+    if (loading) return;
+
     if (!selectedType) return alert("Select a slip type");
     if (nin.length !== 11) return alert("NIN must be 11 digits");
     if (!consent) return alert("You must give consent");
 
     const price = prices[selectedType];
 
-    // 🚫 Skip balance check for MOCK
-    if (nin !== "00000000000" && balance < price) {
+    // 🔥 ADMIN + MOCK BYPASS
+    if (!isAdmin && nin !== "00000000000" && balance < price) {
       return alert(`Insufficient balance. Required ₦${price}`);
     }
 
@@ -66,25 +72,26 @@ export default function VerifyNIN() {
       const data = await res.json();
 
       if (!res.ok) {
-        alert(data.error || "Verification failed");
+        alert(data.error || "Verification failed. Try again.");
         setLoading(false);
         return;
       }
 
       setResult(data);
 
-      // ✅ Only update balance if NOT mock
-      if (nin !== "00000000000") {
+      // 🔥 Update balance only for real paid users
+      if (!isAdmin && nin !== "00000000000") {
         setBalance(data.balance);
       }
 
       // 🔥 AUTO DOWNLOAD
       setTimeout(() => {
         handleDownload(data, selectedType);
-      }, 500);
+      }, 400);
 
     } catch (error) {
-      alert("Network error");
+      console.error(error);
+      alert("Network or server error. Try again.");
     }
 
     setLoading(false);
@@ -99,7 +106,10 @@ export default function VerifyNIN() {
       data?.data ||
       null;
 
-    if (!info) return;
+    if (!info) {
+      alert("No data to generate slip");
+      return;
+    }
 
     try {
       const res = await fetch("https://xcombinator.onrender.com/api/generate-nin-slip", {
@@ -113,15 +123,25 @@ export default function VerifyNIN() {
         }),
       });
 
+      if (!res.ok) {
+        alert("Slip generation failed");
+        return;
+      }
+
       const blob = await res.blob();
       const url = window.URL.createObjectURL(blob);
 
       const a = document.createElement("a");
       a.href = url;
       a.download = `nin-${type}-slip.pdf`;
+      document.body.appendChild(a);
       a.click();
+      a.remove();
+
+      window.URL.revokeObjectURL(url);
 
     } catch (err) {
+      console.error(err);
       alert("Download failed");
     }
   };
@@ -138,9 +158,7 @@ export default function VerifyNIN() {
 
       <h1 className="text-2xl font-bold mb-6">Verify NIN</h1>
 
-      {/* ========================= */}
       {/* STEP BAR */}
-      {/* ========================= */}
       <div className="flex justify-between mb-6 text-sm font-medium">
         <div className={step1 ? "text-green-600" : ""}>1. Slip</div>
         <div className={step2 ? "text-green-600" : ""}>2. NIN</div>
@@ -148,9 +166,7 @@ export default function VerifyNIN() {
         <div className={result ? "text-green-600" : ""}>4. Done</div>
       </div>
 
-      {/* ========================= */}
       {/* SLIP SELECTION */}
-      {/* ========================= */}
       <div className="mb-6">
 
         <h2 className="font-semibold mb-3">Select Slip Type</h2>
@@ -180,34 +196,26 @@ export default function VerifyNIN() {
 
         </div>
 
-        {/* ========================= */}
         {/* PREVIEW */}
-        {/* ========================= */}
         {selectedType && (
           <div className="mt-6">
-
             <p className="text-sm text-gray-600 mb-2">
               Preview ({selectedType} slip)
             </p>
 
             <div className="rounded-xl overflow-hidden shadow-lg border">
-
               <img
                 src={`/slips/${selectedType}.png`}
                 alt="Slip preview"
                 className="w-full object-cover transition-all duration-500 hover:scale-105"
               />
-
             </div>
-
           </div>
         )}
 
       </div>
 
-      {/* ========================= */}
       {/* INPUT */}
-      {/* ========================= */}
       <input
         type="text"
         placeholder="Enter 11-digit NIN"
@@ -216,14 +224,12 @@ export default function VerifyNIN() {
         className="w-full border p-3 rounded mb-2"
       />
 
-      {/* 🔥 MOCK INFO */}
+      {/* MOCK INFO */}
       <p className="text-xs text-gray-400 mb-4">
         👉 Use <b>00000000000</b> for test mode (no charges)
       </p>
 
-      {/* ========================= */}
       {/* CONSENT */}
-      {/* ========================= */}
       <div className="flex items-start gap-2 mb-4 text-sm">
         <input
           type="checkbox"
@@ -235,18 +241,17 @@ export default function VerifyNIN() {
         </p>
       </div>
 
-      {/* ========================= */}
       {/* BUTTON */}
-      {/* ========================= */}
       <button
         onClick={handleVerify}
         disabled={loading}
-        className="bg-black text-white w-full py-3 rounded"
+        className={`w-full py-3 rounded text-white ${
+          loading ? "bg-gray-400" : "bg-black"
+        }`}
       >
-        {loading ? "Verifying..." : "Verify & Generate Slip"}
+        {loading ? "Processing..." : "Verify & Generate Slip"}
       </button>
 
-      {/* ========================= */}
       {/* BALANCE */}
       <p className="mt-4 text-sm text-gray-600">
         Balance: ₦{balance}
