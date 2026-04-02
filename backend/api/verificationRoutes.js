@@ -1,8 +1,5 @@
 const express = require("express");
 const axios = require("axios");
-const { generateNINSlip } = require("../utils/pdfGenerator");
-
-
 
 const User = require("../models/User");
 const Transaction = require("../models/Transaction");
@@ -12,11 +9,31 @@ const router = express.Router();
 
 const API_KEY = process.env.NIN_API_KEY;
 
+// ==============================
+// 🔥 MOCK DATA (FOR TESTING)
+// ==============================
+const mockData = {
+  firstname: "JOHN",
+  middlename: "DOE",
+  surname: "TEST",
+  nin: "00000000000",
+  birthdate: "1995-01-01",
+  gender: "Male",
+  telephoneno: "08000000000",
+  residence_address: "Test Address, Lagos",
+  residence_state: "Lagos",
+  residence_lga: "Ikeja",
+  photo: null,
+};
+
+// ==============================
+// 🔍 VERIFY NIN
+// ==============================
 router.post("/verify-nin", async (req, res) => {
   const { nin, userId } = req.body;
 
   try {
-    // 🔎 VALIDATION
+    // VALIDATION
     if (!nin || nin.length !== 11) {
       return res.status(400).json({ error: "Invalid NIN" });
     }
@@ -25,36 +42,54 @@ router.post("/verify-nin", async (req, res) => {
       return res.status(400).json({ error: "User ID required" });
     }
 
-    if (!API_KEY) {
-      return res.status(500).json({ error: "API key not configured" });
-    }
-
-    // 👤 GET USER
     const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ error: "User not found" });
 
-    if (!user) {
-      return res.status(404).json({ error: "User not found" });
+    if (user.status === "suspended") {
+      return res.status(403).json({ error: "Account suspended" });
     }
 
+    // ==============================
+    // 🔥 MOCK MODE (NO PAYMENT)
+    // ==============================
+    if (nin === "00000000000") {
+      console.log("🧪 MOCK MODE ACTIVE");
+
+      return res.json({
+        status: "success",
+        data: mockData,
+        balance: user.balance, // no deduction
+      });
+    }
+
+    // ==============================
     // 💰 PRICING
+    // ==============================
     const db = readDB();
     const pricing = db?.pricing?.nin;
 
-    if (!pricing) {
+    if (!pricing || !pricing.data) {
       return res.status(500).json({ error: "Pricing not configured" });
     }
 
-    const { cost, price } = pricing;
-    const profit = price - cost;
+    const price = pricing.data; // use base (data price)
+    const cost = 0;
+    const profit = price;
 
-    // ❌ BALANCE CHECK
+    // BALANCE CHECK
     if (user.balance < price) {
       return res.status(400).json({ error: "Insufficient balance" });
     }
 
+    // ==============================
+    // 🔌 API CALL
+    // ==============================
+    if (!API_KEY) {
+      return res.status(500).json({ error: "API key not configured" });
+    }
+
     console.log("🔌 Calling NIN API...");
 
-    // 🔌 API CALL
     const apiResponse = await axios.post(
       "https://ninbvnportal.com.ng/api/nin-verification",
       {
@@ -72,9 +107,6 @@ router.post("/verify-nin", async (req, res) => {
 
     const apiData = apiResponse.data;
 
-    console.log("📡 RAW API RESPONSE:", apiData);
-
-    // ❌ FAILURE CHECK
     if (apiData.status !== "success") {
       return res.status(400).json({
         error: "API verification failed",
@@ -82,19 +114,14 @@ router.post("/verify-nin", async (req, res) => {
       });
     }
 
-    // 🔥 BLOCK SUSPENDED USERS
-    if (user.status === "suspended") {
-      return res.status(403).json({ error: "Account suspended" });
-    }
-
-    // 🔥 NORMALIZE DATA (CRITICAL FIX)
     const cleanData = apiData.data?.data || apiData.data;
 
+    // ==============================
     // 💰 DEDUCT BALANCE
+    // ==============================
     user.balance -= price;
     await user.save();
 
-    // 🧾 SAVE TRANSACTION
     await Transaction.create({
       type: "NIN",
       nin,
@@ -105,7 +132,6 @@ router.post("/verify-nin", async (req, res) => {
       userId: user._id,
     });
 
-    // ✅ FINAL RESPONSE
     return res.json({
       status: "success",
       data: cleanData,
@@ -113,7 +139,7 @@ router.post("/verify-nin", async (req, res) => {
     });
 
   } catch (error) {
-    console.error("🔥 FULL ERROR:", error.response?.data || error.message);
+    console.error("🔥 ERROR:", error.response?.data || error.message);
 
     return res.status(500).json({
       error: "Verification failed",
@@ -121,29 +147,5 @@ router.post("/verify-nin", async (req, res) => {
     });
   }
 });
-
-router.post("/generate-nin-slip", async (req, res) => {
-  try {
-    const { data } = req.body;
-
-    if (!data) {
-      return res.status(400).json({ error: "No data provided" });
-    }
-
-    const pdfBuffer = await generateNINSlip(data);
-
-    res.set({
-      "Content-Type": "application/pdf",
-      "Content-Disposition": "attachment; filename=nin-slip.pdf",
-    });
-
-    return res.send(pdfBuffer);
-
-  } catch (error) {
-    console.error("PDF ERROR:", error);
-    res.status(500).json({ error: "Failed to generate PDF" });
-  }
-});
-
 
 module.exports = router;

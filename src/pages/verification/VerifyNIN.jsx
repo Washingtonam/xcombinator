@@ -23,7 +23,13 @@ export default function VerifyNIN() {
     fetch("https://xcombinator.onrender.com/api/pricing")
       .then(res => res.json())
       .then(data => {
-        setPrices(data.nin);
+        if (data?.nin) {
+          setPrices({
+            data: data.nin.data || 350,
+            premium: data.nin.premium || 450,
+            long: data.nin.long || 400,
+          });
+        }
       })
       .catch(() => {});
   }, []);
@@ -38,7 +44,8 @@ export default function VerifyNIN() {
 
     const price = prices[selectedType];
 
-    if (balance < price) {
+    // 🚫 Skip balance check for MOCK
+    if (nin !== "00000000000" && balance < price) {
       return alert(`Insufficient balance. Required ₦${price}`);
     }
 
@@ -65,13 +72,16 @@ export default function VerifyNIN() {
       }
 
       setResult(data);
-      setBalance(data.balance);
 
-      setResult(data);
+      // ✅ Only update balance if NOT mock
+      if (nin !== "00000000000") {
+        setBalance(data.balance);
+      }
 
-        setTimeout(() => {
-          handleDownload(data, selectedType);
-        }, 500);
+      // 🔥 AUTO DOWNLOAD
+      setTimeout(() => {
+        handleDownload(data, selectedType);
+      }, 500);
 
     } catch (error) {
       alert("Network error");
@@ -139,7 +149,7 @@ export default function VerifyNIN() {
       </div>
 
       {/* ========================= */}
-      {/* 🔥 SLIP UI (NEW) */}
+      {/* SLIP SELECTION */}
       {/* ========================= */}
       <div className="mb-6">
 
@@ -170,7 +180,9 @@ export default function VerifyNIN() {
 
         </div>
 
-        {/* 🔥 PREVIEW */}
+        {/* ========================= */}
+        {/* PREVIEW */}
+        {/* ========================= */}
         {selectedType && (
           <div className="mt-6">
 
@@ -201,8 +213,13 @@ export default function VerifyNIN() {
         placeholder="Enter 11-digit NIN"
         value={nin}
         onChange={(e) => setNin(e.target.value)}
-        className="w-full border p-3 rounded mb-4"
+        className="w-full border p-3 rounded mb-2"
       />
+
+      {/* 🔥 MOCK INFO */}
+      <p className="text-xs text-gray-400 mb-4">
+        👉 Use <b>00000000000</b> for test mode (no charges)
+      </p>
 
       {/* ========================= */}
       {/* CONSENT */}
@@ -231,7 +248,6 @@ export default function VerifyNIN() {
 
       {/* ========================= */}
       {/* BALANCE */}
-      {/* ========================= */}
       <p className="mt-4 text-sm text-gray-600">
         Balance: ₦{balance}
       </p>
