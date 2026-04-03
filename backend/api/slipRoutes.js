@@ -65,36 +65,94 @@ router.post("/generate-nin-slip", async (req, res) => {
 function generateDataSlip(doc, data) {
   const pageWidth = doc.page.width;
 
-  doc.rect(0, 0, pageWidth, doc.page.height).fill("#f5f0dc");
+  // =========================
+  // 🎨 BACKGROUND
+  // =========================
+  doc.rect(0, 0, pageWidth, doc.page.height).fill("#eeeeee");
   doc.fillColor("black");
 
+  // =========================
+  // 🏢 HEADER (COAT + NIMC)
+  // =========================
   const coat = path.join(__dirname, "../assets/coat.png");
   const nimc = path.join(__dirname, "../assets/nimc-logo.png");
 
-  try { doc.image(coat, 40, 30, { width: 60 }); } catch {}
-  try { doc.image(nimc, pageWidth - 120, 30, { width: 70 }); } catch {}
+  try {
+    doc.image(coat, 120, 30, { width: 50 });
+  } catch {}
 
-  doc.fontSize(18).font("Helvetica-Bold")
-    .text("Federal Republic of Nigeria", 0, 40, { align: "center" });
+  try {
+    doc.image(nimc, pageWidth - 180, 30, { width: 80 });
+  } catch {}
 
-  doc.moveDown().fontSize(20)
-    .text("Verified NIN Details", { align: "center" });
+  // =========================
+  // 🇳🇬 TITLE
+  // =========================
+  doc
+    .font("Helvetica-Bold")
+    .fontSize(20)
+    .fillColor("#555")
+    .text("Federal Republic of Nigeria", 0, 40, {
+      align: "center",
+    });
 
-  // Passport
+  // =========================
+  // 🧾 SUBTITLE
+  // =========================
+  doc
+    .moveDown()
+    .fontSize(22)
+    .fillColor("#777")
+    .text("Verified NIN Details", {
+      align: "center",
+    });
+
+  // =========================
+  // 📷 PASSPORT (CENTER)
+  // =========================
   if (data.photo) {
     try {
-      const img = Buffer.from(data.photo.replace(/^data:image\/\w+;base64,/, ""), "base64");
-      doc.image(img, pageWidth / 2 - 60, 120, { width: 120, height: 130 });
+      const img = Buffer.from(
+        data.photo.replace(/^data:image\/\w+;base64,/, ""),
+        "base64"
+      );
+
+      doc.image(img, pageWidth / 2 - 70, 120, {
+        width: 140,
+        height: 150,
+      });
     } catch {}
   }
 
+  // =========================
+  // ✍ SIGNATURE (UNDER PHOTO)
+  // =========================
+  const signature = path.join(__dirname, "../assets/signature.png");
+
+  try {
+    doc.image(signature, pageWidth / 2 - 60, 280, {
+      width: 120,
+    });
+  } catch {}
+
+  // =========================
+  // 👤 LEFT DETAILS
+  // =========================
   let y = 140;
-  const leftX = 40;
+  const leftX = 60;
 
   const draw = (label, value) => {
-    doc.font("Helvetica-Bold").text(label, leftX, y);
-    doc.font("Helvetica").text(value || "N/A", leftX + 150, y);
-    y += 25;
+    doc
+      .font("Helvetica-Bold")
+      .fontSize(12)
+      .fillColor("black")
+      .text(label, leftX, y);
+
+    doc
+      .font("Helvetica")
+      .text(value || "N/A", leftX + 160, y);
+
+    y += 35;
   };
 
   draw("First Name:", data.firstname);
@@ -103,24 +161,67 @@ function generateDataSlip(doc, data) {
   draw("Date of Birth:", data.birthdate);
   draw("Gender:", data.gender);
 
-  doc.fontSize(14).font("Helvetica-Bold")
+  // =========================
+  // 🔢 NIN NUMBER (BIG)
+  // =========================
+  const formattedNIN = (data.nin || "")
+    .replace(/(\d{4})(\d{3})(\d{4})/, "$1   $2   $3");
+
+  doc
+    .font("Helvetica-Bold")
+    .fontSize(16)
+    .fillColor("#888")
     .text("NIN NUMBER:", leftX, y + 10);
 
-  doc.fontSize(20)
-    .text((data.nin || "").replace(/(\d{4})(\d{3})(\d{4})/, "$1 $2 $3"), leftX + 150, y + 5);
+  doc
+    .fontSize(20)
+    .fillColor("#555")
+    .text(formattedNIN, leftX + 180, y + 5);
 
-  y += 50;
+  y += 60;
 
   draw("Tracking ID:", data.trackingId);
   draw("Residence State:", data.residence_state);
   draw("Birth State:", data.birth_state);
   draw("Address:", data.residence_address);
 
-  const rightX = pageWidth - 260;
+  // =========================
+  // 📄 RIGHT SIDE (VERIFIED BLOCK)
+  // =========================
+  const rightX = pageWidth - 300;
 
-  doc.fillColor("green").fontSize(22).text("Verified", rightX, 160);
-  doc.fillColor("black").fontSize(9)
-    .text("Official NIMC document. Valid for lifetime.", rightX, 200, { width: 220 });
+  doc
+    .font("Helvetica-Bold")
+    .fontSize(26)
+    .fillColor("green")
+    .text("Verified", rightX, 150);
+
+  doc
+    .font("Helvetica")
+    .fontSize(10)
+    .fillColor("#444")
+    .text(
+      "This is a property of National Identity Management Commission (NIMC), Nigeria. If found, please return to the nearest NIMC office.",
+      rightX,
+      200,
+      { width: 240 }
+    );
+
+  doc.moveDown();
+
+  doc
+    .text(
+      "1. This NIN slip remains the property of the Federal Republic of Nigeria.\n" +
+      "2. This NIN slip does not confer citizenship.\n" +
+      "3. This slip is valid for lifetime and ",
+      rightX,
+      270,
+      { width: 240 }
+    );
+
+  doc
+    .fillColor("red")
+    .text("DOES NOT EXPIRE", rightX + 130, 330);
 }
 
 
@@ -131,46 +232,162 @@ async function generatePremiumSlip(doc, data) {
   const pageWidth = doc.page.width;
   const pageHeight = doc.page.height;
 
+  // =========================
+  // 🖼 FRONT SIDE (CARD)
+  // =========================
   const bg = path.join(__dirname, "../assets/premium-bg.png");
 
   try {
-    doc.image(bg, 0, 0, { width: pageWidth, height: pageHeight });
+    doc.image(bg, 0, 0, {
+      width: pageWidth,
+      height: pageHeight / 2,
+    });
   } catch {}
 
-  // Passport
+  // =========================
+  // 📷 PASSPORT
+  // =========================
   if (data.photo) {
     try {
-      const img = Buffer.from(data.photo.replace(/^data:image\/\w+;base64,/, ""), "base64");
-      doc.image(img, 60, 150, { width: 130, height: 150 });
+      const img = Buffer.from(
+        data.photo.replace(/^data:image\/\w+;base64,/, ""),
+        "base64"
+      );
+
+      doc.image(img, 50, 70, {
+        width: 130,
+        height: 150,
+      });
     } catch {}
   }
 
-  // QR
-  const qr = await QRCode.toDataURL(JSON.stringify({
-    nin: data.nin,
-    name: `${data.firstname} ${data.surname}`
-  }));
+  // =========================
+  // 🔳 QR CODE
+  // =========================
+  const qr = await QRCode.toDataURL(
+    JSON.stringify({
+      nin: data.nin,
+      name: `${data.firstname} ${data.surname}`,
+    })
+  );
 
-  const qrBuffer = Buffer.from(qr.replace(/^data:image\/png;base64,/, ""), "base64");
-  doc.image(qrBuffer, pageWidth - 170, 80, { width: 120 });
+  const qrBuffer = Buffer.from(
+    qr.replace(/^data:image\/png;base64,/, ""),
+    "base64"
+  );
 
-  // Text
-  doc.fontSize(12).fillColor("black");
-  doc.text(data.surname, 260, 170);
-  doc.text(`${data.firstname}, ${data.middlename}`, 260, 210);
-  doc.text(data.birthdate, 260, 260);
-  doc.text(data.gender, 450, 260);
+  doc.image(qrBuffer, pageWidth - 170, 40, { width: 120 });
 
-  // NIN
-  const formatted = (data.nin || "").replace(/(\d{4})(\d{3})(\d{4})/, "$1   $2   $3");
+  // =========================
+  // 🧾 TEXT DETAILS
+  // =========================
+  doc.fillColor("#333");
 
-  doc.fontSize(28).font("Helvetica-Bold")
-    .text(formatted, 180, pageHeight - 120);
+  doc.fontSize(11).text("SURNAME/NOM", 220, 70);
+  doc.font("Helvetica-Bold").text(data.surname || "N/A", 220, 90);
 
-  doc.fontSize(14).text("NGA", pageWidth - 150, 220);
+  doc.font("Helvetica").text("GIVEN NAMES/PRENOMS", 220, 120);
+  doc.font("Helvetica-Bold").text(
+    `${data.firstname || ""}, ${data.middlename || ""}`,
+    220,
+    140
+  );
+
+  doc.font("Helvetica").text("DATE OF BIRTH", 220, 180);
+  doc.font("Helvetica-Bold").text(data.birthdate || "N/A", 220, 200);
+
+  doc.font("Helvetica").text("SEX/SEXE", 400, 180);
+  doc.font("Helvetica-Bold").text(data.gender || "N/A", 400, 200);
+
+  // =========================
+  // 🌍 COUNTRY + DATE
+  // =========================
+  doc.fontSize(18).font("Helvetica-Bold").text("NGA", pageWidth - 140, 150);
 
   const today = new Date().toLocaleDateString("en-GB");
-  doc.text(today, pageWidth - 160, 270);
+  doc.fontSize(12).font("Helvetica").text("ISSUE DATE", pageWidth - 150, 180);
+  doc.font("Helvetica-Bold").text(today, pageWidth - 150, 200);
+
+  // =========================
+  // 🔢 MAIN NIN (BIG)
+  // =========================
+  const formattedNIN = (data.nin || "")
+    .replace(/(\d{4})(\d{3})(\d{4})/, "$1   $2   $3");
+
+  doc
+    .fontSize(28)
+    .font("Helvetica-Bold")
+    .fillColor("#444")
+    .text(formattedNIN, 180, pageHeight / 2 - 60);
+
+  // =========================
+  // 🔁 SMALL NIN (REPEATED)
+  // =========================
+  doc.fontSize(10).fillColor("#888");
+
+  const smallNIN = data.nin || "";
+
+  doc.text(smallNIN, 40, 40, { rotate: 30 });
+  doc.text(smallNIN, 40, 180, { rotate: -30 });
+
+  doc.text(smallNIN, pageWidth - 200, 60, { rotate: 30 });
+  doc.text(smallNIN, pageWidth - 200, 200, { rotate: -30 });
+
+  // =========================
+  // 🔻 BACK SIDE (DISCLAIMER)
+  // =========================
+
+  const startY = pageHeight / 2 + 40;
+
+  doc
+    .save()
+    .rotate(180, {
+      origin: [pageWidth / 2, startY + 100],
+    });
+
+  doc
+    .fontSize(22)
+    .font("Helvetica-Bold")
+    .fillColor("black")
+    .text("DISCLAIMER", 0, startY, {
+      align: "center",
+    });
+
+  doc
+    .fontSize(12)
+    .font("Helvetica-Oblique")
+    .text("Trust, but verify", 0, startY + 30, {
+      align: "center",
+    });
+
+  doc
+    .fontSize(10)
+    .font("Helvetica")
+    .text(
+      "Kindly ensure each time this ID is presented, that you verify the credentials using a Government-approved verification resource. The details on the front of this NIN slip must EXACTLY match the verification result.",
+      80,
+      startY + 60,
+      { width: pageWidth - 160, align: "center" }
+    );
+
+  doc
+    .fontSize(12)
+    .font("Helvetica-Bold")
+    .text("CAUTION!", 0, startY + 120, {
+      align: "center",
+    });
+
+  doc
+    .fontSize(10)
+    .font("Helvetica")
+    .text(
+      "If this NIN was not issued to the person presenting it, please DO NOT attempt to scan, photocopy or replicate personal data contained herein. You are only permitted to scan the barcode for identity verification.",
+      80,
+      startY + 150,
+      { width: pageWidth - 160, align: "center" }
+    );
+
+  doc.restore();
 }
 
 
@@ -178,67 +395,175 @@ async function generatePremiumSlip(doc, data) {
 // 🔵 LONG SLIP (TABLE STRUCTURE)
 // =======================================================
 function generateLongSlip(doc, data) {
-  const margin = 40;
-  const width = doc.page.width - margin * 2;
-  let y = 40;
+  const margin = 30;
+  const pageWidth = doc.page.width - margin * 2;
 
+  let y = 30;
+
+  // =========================
+  // 🏢 HEADER (LOGOS + TITLES)
+  // =========================
   const coat = path.join(__dirname, "../assets/coat.png");
   const nimc = path.join(__dirname, "../assets/nimc-logo.png");
 
-  try { doc.image(coat, margin, y, { width: 50 }); } catch {}
-  try { doc.image(nimc, margin + width - 80, y, { width: 60 }); } catch {}
+  try {
+    doc.image(coat, margin, y, { width: 50 });
+  } catch {}
 
-  doc.fontSize(16).font("Helvetica-Bold")
-    .text("National Identity Management System", margin, y, { align: "center", width });
+  try {
+    doc.image(nimc, margin + pageWidth - 70, y, { width: 60 });
+  } catch {}
 
-  y += 20;
+  doc
+    .font("Helvetica-Bold")
+    .fontSize(18)
+    .text("National Identity Management System", margin, y, {
+      align: "center",
+      width: pageWidth,
+    });
 
-  doc.fontSize(12).text("Federal Republic of Nigeria", { align: "center" });
-  y += 15;
-  doc.fontSize(11).text("National Identification Number Slip (NINS)", { align: "center" });
+  y += 22;
 
-  y += 30;
+  doc
+    .fontSize(12)
+    .font("Helvetica")
+    .text("Federal Republic of Nigeria", {
+      align: "center",
+    });
 
-  const draw = (x, y, w, h, label, value) => {
+  y += 18;
+
+  doc
+    .fontSize(11)
+    .text("National Identification Number Slip (NINS)", {
+      align: "center",
+    });
+
+  y += 25;
+
+  // =========================
+  // 📦 TABLE SETUP
+  // =========================
+  const rowHeight = 45;
+
+  const col1 = margin;
+  const col2 = margin + 220;
+  const col3 = margin + 440;
+  const col4 = margin + 660;
+
+  const drawCell = (x, y, w, h, label, value) => {
     doc.rect(x, y, w, h).stroke();
-    doc.fontSize(9).font("Helvetica-Bold").text(label, x + 5, y + 5);
-    doc.font("Helvetica").text(value || "N/A", x + 5, y + 20);
+
+    doc
+      .fontSize(10)
+      .font("Helvetica-Bold")
+      .text(label, x + 5, y + 5);
+
+    doc
+      .font("Helvetica")
+      .text(value || "N/A", x + 5, y + 22);
   };
 
-  draw(margin, y, 200, 40, "Tracking ID:", data.trackingId);
-  draw(margin + 200, y, 200, 40, "Surname:", data.surname);
-  draw(margin + 400, y, 200, 160, "Address:", data.residence_address);
+  // =========================
+  // ROW 1
+  // =========================
+  drawCell(col1, y, 220, rowHeight, "Tracking ID:", data.trackingId);
+  drawCell(col2, y, 220, rowHeight, "Surname:", data.surname);
 
-  y += 40;
+  doc.rect(col3, y, 220, rowHeight * 3).stroke();
+  doc.font("Helvetica-Bold").text("Address:", col3 + 5, y + 5);
+  doc.font("Helvetica").text(data.residence_address || "N/A", col3 + 5, y + 25);
 
-  draw(margin, y, 200, 40, "NIN:", data.nin);
-  draw(margin + 200, y, 200, 40, "First Name:", data.firstname);
-
-  y += 40;
-
-  draw(margin + 200, y, 200, 40, "Middle Name:", data.middlename);
-
-  y += 40;
-
-  draw(margin + 200, y, 200, 40, "Gender:", data.gender);
-
+  // =========================
+  // PASSPORT (RIGHT SIDE)
+  // =========================
   if (data.photo) {
     try {
-      const img = Buffer.from(data.photo.replace(/^data:image\/\w+;base64,/, ""), "base64");
-      doc.image(img, margin + 420, y - 120, { width: 120, height: 140 });
+      const img = Buffer.from(
+        data.photo.replace(/^data:image\/\w+;base64,/, ""),
+        "base64"
+      );
+
+      doc.image(img, col4, y, {
+        width: 120,
+        height: 140,
+      });
     } catch {}
   }
 
-  y += 80;
+  y += rowHeight;
 
-  doc.rect(margin, y, width, 80).stroke();
+  // =========================
+  // ROW 2
+  // =========================
+  drawCell(col1, y, 220, rowHeight, "NIN:", data.nin);
+  drawCell(col2, y, 220, rowHeight, "First Name:", data.firstname);
 
-  doc.fontSize(9).text(
-    "Note: The National Identification Number (NIN) is your identity.",
-    margin + 10,
-    y + 10,
-    { width: width - 20 }
-  );
+  y += rowHeight;
+
+  // =========================
+  // ROW 3
+  // =========================
+  drawCell(col2, y, 220, rowHeight, "Middle Name:", data.middlename);
+
+  y += rowHeight;
+
+  // =========================
+  // ROW 4
+  // =========================
+  drawCell(col2, y, 220, rowHeight, "Gender:", data.gender);
+
+  y += rowHeight + 10;
+
+  // =========================
+  // 📝 NOTE SECTION
+  // =========================
+  doc.rect(margin, y, pageWidth, 80).stroke();
+
+  doc
+    .font("Helvetica")
+    .fontSize(10)
+    .text(
+      "Note: The National Identification Number (NIN) is your identity. It is confidential and may only be released for legitimate transactions.",
+      margin + 10,
+      y + 10,
+      { width: pageWidth - 20 }
+    );
+
+  doc
+    .text(
+      "You will be notified when your National Identity Card is ready (for any enquiries please contact)",
+      margin + 10,
+      y + 35,
+      { width: pageWidth - 20 }
+    );
+
+  y += 100;
+
+  // =========================
+  // 📞 FOOTER (4 BOXES)
+  // =========================
+  const boxWidth = pageWidth / 4;
+
+  const footer = [
+    "helpdesk@nimc.gov.ng",
+    "www.nimc.gov.ng",
+    "0700-CALL-NIMC\n(0700-2255-646)",
+    "National Identity Management Commission\n11, Sokode Crescent, Off Dalaba Street, Zone 5 Wuse, Abuja Nigeria",
+  ];
+
+  footer.forEach((text, i) => {
+    const x = margin + i * boxWidth;
+
+    doc.rect(x, y, boxWidth, 70).stroke();
+
+    doc
+      .fontSize(9)
+      .font("Helvetica")
+      .text(text, x + 10, y + 20, {
+        width: boxWidth - 20,
+      });
+  });
 }
 
 
