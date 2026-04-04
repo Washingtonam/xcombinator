@@ -1,16 +1,24 @@
 const mongoose = require("mongoose");
 
 const pricingSchema = new mongoose.Schema({
-  nin: { type: Number, default: 350 },
-  bvn: { type: Number, default: 100 },
-  premium: { type: Number, default: 500 },
+  nin: {
+    unitPrice: {
+      type: Number,
+      default: 250, // 🔥 price per verification
+    },
+    agentPrice: {
+      type: Number,
+      default: 150, // 🔥 agent bulk price
+    },
+  },
+
+  bvn: {
+    unitPrice: {
+      type: Number,
+      default: 200,
+    },
+  },
+
 }, { timestamps: true });
 
 module.exports = mongoose.model("Pricing", pricingSchema);
-
-module.exports = {
-  nin: {
-    unitPrice: 250,
-    agentPrice: 200,
-  }
-};
