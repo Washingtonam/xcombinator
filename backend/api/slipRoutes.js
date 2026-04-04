@@ -246,177 +246,201 @@ function generateDataHTML(data) {
 // 🟢 PREMIUM SLIP
 // =======================================================
 
-
-async function generatePremiumSlip(doc, data) {
+async function generatePremiumSlipHTML(data) {
   const QRCode = require("qrcode");
-  const path = require("path");
 
-  // =========================
-  // 📏 CARD SIZE (EXACT)
-  // =========================
-  const CARD_WIDTH = 9.1 * 28.35;
-  const CARD_HEIGHT = 5.4 * 28.35;
-
-  const startX = 40;
-  const frontY = 40;
-  const backY = frontY + CARD_HEIGHT + 20;
-
-  // =========================
-  // 🖼 BACKGROUND (LOCAL FILE ONLY)
-  // =========================
-  const bgPath = path.join(__dirname, "../public/assets/premium-bg.png");
-
-  try {
-    doc.image(bgPath, startX, frontY, {
-      width: CARD_WIDTH,
-      height: CARD_HEIGHT,
-    });
-  } catch (err) {
-    console.log("BG ERROR:", err.message);
-  }
-
-  // =========================
-  // 📷 PASSPORT
-  // =========================
-  if (data.photo) {
-    try {
-      const img = Buffer.from(
-        data.photo.replace(/^data:image\/\w+;base64,/, ""),
-        "base64"
-      );
-
-      doc.image(img, startX + 10, frontY + 35, {
-        width: 60,
-        height: 70,
-      });
-    } catch (err) {
-      console.log("PHOTO ERROR:", err.message);
-    }
-  }
-
-  // =========================
-  // 🔳 QR CODE
-  // =========================
-  let qrBuffer;
-  try {
-    const qr = await QRCode.toDataURL(
-      JSON.stringify({
-        nin: data.nin,
-        name: `${data.firstname} ${data.surname}`,
-      })
-    );
-
-    qrBuffer = Buffer.from(
-      qr.replace(/^data:image\/png;base64,/, ""),
-      "base64"
-    );
-
-    doc.image(qrBuffer, startX + CARD_WIDTH - 70, frontY + 10, {
-      width: 60,
-    });
-  } catch (err) {
-    console.log("QR ERROR:", err.message);
-  }
-
-  // =========================
-  // 🧾 TEXT DETAILS
-  // =========================
-  doc.fillColor("black");
-
-  doc.fontSize(8).text("SURNAME/NOM", startX + 80, frontY + 35);
-  doc.font("Helvetica-Bold").text(data.surname || "", startX + 80, frontY + 45);
-
-  doc.font("Helvetica").text("GIVEN NAMES", startX + 80, frontY + 60);
-  doc.font("Helvetica-Bold").text(
-    `${data.firstname || ""}, ${data.middlename || ""}`,
-    startX + 80,
-    frontY + 70
+  const qr = await QRCode.toDataURL(
+    JSON.stringify({
+      nin: data.nin,
+      name: `${data.firstname} ${data.surname}`,
+    })
   );
 
-  doc.font("Helvetica").text("DATE OF BIRTH", startX + 80, frontY + 85);
-  doc.text(data.birthdate || "", startX + 80, frontY + 95);
-
-  doc.text("SEX", startX + 150, frontY + 85);
-  doc.text(data.gender || "", startX + 150, frontY + 95);
-
-  // =========================
-  // 🌍 NGA + ISSUE DATE
-  // =========================
-  doc.font("Helvetica-Bold").fontSize(10)
-    .text("NGA", startX + CARD_WIDTH - 70, frontY + 80);
-
-  doc.fontSize(7).text("ISSUE DATE", startX + CARD_WIDTH - 75, frontY + 95);
-
-  doc.text(
-    new Date().toLocaleDateString("en-GB"),
-    startX + CARD_WIDTH - 75,
-    frontY + 105
-  );
-
-  // =========================
-  // 🔢 NIN DISPLAY
-  // =========================
   const formattedNIN = (data.nin || "")
     .replace(/(\d{4})(\d{3})(\d{4})/, "$1 $2 $3");
 
-  doc.fontSize(8).text(
-    "National Identification Number (NIN)",
-    startX + 40,
-    frontY + CARD_HEIGHT - 35
-  );
+  return `
+  <html>
+  <head>
+    <style>
+      body {
+        margin: 0;
+        font-family: Arial;
+      }
 
-  doc.fontSize(14).font("Helvetica-Bold").text(
-    formattedNIN,
-    startX + 40,
-    frontY + CARD_HEIGHT - 20
-  );
+      .page {
+        width: 9.1cm;
+        margin: auto;
+      }
 
-  // =========================
-  // 🔁 SMALL NIN (SIDE)
-  // =========================
-  doc.fontSize(6).fillColor("#666");
+      .card {
+        width: 9.1cm;
+        height: 5.4cm;
+        position: relative;
+        overflow: hidden;
+      }
 
-  doc.text(data.nin || "", startX + 5, frontY + 20, { rotate: 25 });
-  doc.text(data.nin || "", startX + CARD_WIDTH - 60, frontY + 120, { rotate: -25 });
+      .front {
+        background: url('https://xcombinator.com.ng/assets/premium-bg.png') no-repeat center/cover;
+      }
 
-  // =========================
-  // ⚪ BACK SIDE (DISCLAIMER)
-  // =========================
-  doc.rect(startX, backY, CARD_WIDTH, CARD_HEIGHT).stroke();
+      .back {
+        background: white;
+        border-top: 2px solid black;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 10px;
+        box-sizing: border-box;
+      }
 
-  doc.fillColor("black");
+      .text-small { font-size: 8px; }
+      .text-medium { font-size: 10px; }
+      .text-big { font-size: 14px; font-weight: bold; }
 
-  doc.font("Helvetica-Bold").fontSize(10)
-    .text("DISCLAIMER", startX, backY + 20, {
-      align: "center",
-      width: CARD_WIDTH,
-    });
+    </style>
+  </head>
 
-  doc.font("Helvetica-Oblique").fontSize(8)
-    .text("Trust, but verify", startX, backY + 35, {
-      align: "center",
-      width: CARD_WIDTH,
-    });
+  <body>
 
-  doc.font("Helvetica").fontSize(7).text(
-    "Kindly ensure each time this ID is presented, verify using approved sources.",
-    startX + 10,
-    backY + 50,
-    { width: CARD_WIDTH - 20, align: "center" }
-  );
+    <div class="page">
 
-  doc.font("Helvetica-Bold").fontSize(9)
-    .text("CAUTION!", startX, backY + 80, {
-      align: "center",
-      width: CARD_WIDTH,
-    });
+      <!-- ================= FRONT ================= -->
+      <div class="card front">
 
-  doc.font("Helvetica").fontSize(7).text(
-    "Do not scan or copy if not authorized. Use only for verification.",
-    startX + 10,
-    backY + 95,
-    { width: CARD_WIDTH - 20, align: "center" }
-  );
+        <!-- PASSPORT -->
+        <img src="${data.photo}" style="
+          position:absolute;
+          left:8px;
+          top:35px;
+          width:50px;
+          height:60px;
+          object-fit:cover;
+        "/>
+
+        <!-- QR -->
+        <img src="${qr}" style="
+          position:absolute;
+          right:8px;
+          top:8px;
+          width:50px;
+        "/>
+
+        <!-- TEXT -->
+        <div style="position:absolute; left:65px; top:35px;" class="text-small">
+          <div>SURNAME/NOM</div>
+          <div class="text-medium">${data.surname || ""}</div>
+
+          <div style="margin-top:4px;">GIVEN NAMES</div>
+          <div class="text-medium">
+            ${data.firstname || ""}, ${data.middlename || ""}
+          </div>
+
+          <div style="margin-top:4px;">
+            DOB: ${data.birthdate || ""} &nbsp;&nbsp;
+            SEX: ${data.gender || ""}
+          </div>
+        </div>
+
+        <!-- NGA -->
+        <div style="
+          position:absolute;
+          right:30px;
+          top:70px;
+          font-size:12px;
+          font-weight:bold;
+        ">NGA</div>
+
+        <!-- DATE -->
+        <div style="
+          position:absolute;
+          right:15px;
+          top:85px;
+          font-size:7px;
+        ">
+          ${new Date().toLocaleDateString("en-GB")}
+        </div>
+
+        <!-- NIN LABEL -->
+        <div style="
+          position:absolute;
+          bottom:25px;
+          left:40px;
+          font-size:7px;
+        ">
+          National Identification Number (NIN)
+        </div>
+
+        <!-- MAIN NIN -->
+        <div style="
+          position:absolute;
+          bottom:8px;
+          left:40px;
+          font-size:12px;
+          font-weight:bold;
+          letter-spacing:2px;
+        ">
+          ${formattedNIN}
+        </div>
+
+        <!-- SMALL NIN WATERMARK -->
+        <div style="
+          position:absolute;
+          left:5px;
+          top:10px;
+          font-size:6px;
+          transform:rotate(-25deg);
+          opacity:0.4;
+        ">
+          ${data.nin}
+        </div>
+
+        <div style="
+          position:absolute;
+          right:5px;
+          bottom:20px;
+          font-size:6px;
+          transform:rotate(25deg);
+          opacity:0.4;
+        ">
+          ${data.nin}
+        </div>
+
+      </div>
+
+      <!-- ================= BACK ================= -->
+      <div class="card back">
+
+        <div>
+          <div style="font-size:12px; font-weight:bold;">
+            DISCLAIMER
+          </div>
+
+          <div style="font-size:8px; margin-top:3px;">
+            Trust, but verify
+          </div>
+
+          <div style="font-size:7px; margin-top:6px;">
+            Verify credentials using approved systems.
+          </div>
+
+          <div style="font-size:9px; font-weight:bold; margin-top:8px;">
+            CAUTION!
+          </div>
+
+          <div style="font-size:7px; margin-top:5px;">
+            Do not copy or misuse this identity.
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+  </body>
+  </html>
+  `;
 }
 
 // =======================================================
