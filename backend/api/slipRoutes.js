@@ -1,136 +1,12 @@
 const express = require("express");
 const router = express.Router();
-const puppeteer = require("puppeteer");
+const pdf = require("html-pdf-node");
 
 // ==============================
-// 🔢 TRACKING ID
+// 🔢 GENERATOR
 // ==============================
 const generateTrackingId = () => {
   return "TRK-" + Math.random().toString(36).substring(2, 10).toUpperCase();
-};
-
-// ==============================
-// 🧠 HTML GENERATOR
-// ==============================
-const generateHTML = (data, type) => {
-  const fullName = `${data.firstname || ""} ${data.middlename || ""} ${data.surname || ""}`;
-  const formattedNIN = (data.nin || "").replace(/(\d{4})(\d{3})(\d{4})/, "$1 $2 $3");
-
-  // =========================
-  // 🟡 DATA SLIP
-  // =========================
-  if (type === "data") {
-    return `
-    <html>
-    <body style="font-family: Arial; background:#eeeeee; padding:40px;">
-
-      <div style="text-align:center;">
-        <h2 style="margin:0;">Federal Republic of Nigeria</h2>
-        <h3 style="margin-top:5px;">Verified NIN Details</h3>
-      </div>
-
-      <div style="text-align:center; margin:20px;">
-        <img src="${data.photo || ""}" width="140"/>
-      </div>
-
-      <div style="margin-top:30px; font-size:14px;">
-        <p><b>First Name:</b> ${data.firstname}</p>
-        <p><b>Middle Name:</b> ${data.middlename}</p>
-        <p><b>Surname:</b> ${data.surname}</p>
-        <p><b>Date of Birth:</b> ${data.birthdate}</p>
-        <p><b>Gender:</b> ${data.gender}</p>
-      </div>
-
-      <h2 style="margin-top:30px;">NIN: ${formattedNIN}</h2>
-
-    </body>
-    </html>
-    `;
-  }
-
-  // =========================
-  // 🟢 PREMIUM SLIP (CARD)
-  // =========================
-  if (type === "premium") {
-    return `
-    <html>
-    <body style="font-family: Arial; margin:0; padding:20px;">
-
-      <div style="width:700px; border:1px solid #000; padding:20px;">
-
-        <div style="display:flex; justify-content:space-between;">
-          <img src="${data.photo || ""}" width="130"/>
-          
-          <div style="text-align:right;">
-            <p><b>NGA</b></p>
-            <p>${new Date().toLocaleDateString("en-GB")}</p>
-          </div>
-        </div>
-
-        <div style="margin-top:20px;">
-          <p><b>SURNAME:</b> ${data.surname}</p>
-          <p><b>GIVEN NAMES:</b> ${fullName}</p>
-          <p><b>DOB:</b> ${data.birthdate}</p>
-          <p><b>GENDER:</b> ${data.gender}</p>
-        </div>
-
-        <h2 style="margin-top:30px;">${formattedNIN}</h2>
-
-        <p style="font-size:10px; margin-top:20px;">
-          This card is property of NIMC. Verify before use.
-        </p>
-
-      </div>
-
-    </body>
-    </html>
-    `;
-  }
-
-  // =========================
-  // 🔵 LONG SLIP (TABLE)
-  // =========================
-  if (type === "long") {
-    return `
-    <html>
-    <body style="font-family: Arial; padding:20px;">
-
-      <h3 style="text-align:center;">National Identification Number Slip</h3>
-
-      <table border="1" cellspacing="0" cellpadding="10" width="100%">
-        <tr>
-          <td><b>Tracking ID</b><br>${data.trackingId}</td>
-          <td><b>Surname</b><br>${data.surname}</td>
-          <td rowspan="3"><b>Address</b><br>${data.residence_address}</td>
-        </tr>
-
-        <tr>
-          <td><b>NIN</b><br>${data.nin}</td>
-          <td><b>First Name</b><br>${data.firstname}</td>
-        </tr>
-
-        <tr>
-          <td></td>
-          <td><b>Middle Name</b><br>${data.middlename}</td>
-        </tr>
-
-        <tr>
-          <td></td>
-          <td><b>Gender</b><br>${data.gender}</td>
-          <td></td>
-        </tr>
-      </table>
-
-      <p style="margin-top:20px; font-size:12px;">
-      Note: The National Identification Number (NIN) is your identity.
-      </p>
-
-    </body>
-    </html>
-    `;
-  }
-
-  return `<h1>Invalid type</h1>`;
 };
 
 // ==============================
@@ -140,40 +16,143 @@ router.post("/generate-nin-slip", async (req, res) => {
   try {
     const { data, type } = req.body;
 
-    if (!data || !type) {
-      return res.status(400).json({ message: "Missing data or type" });
+    if (!data) {
+      return res.status(400).json({ message: "No data provided" });
     }
 
     const trackingId = generateTrackingId();
 
-    const html = generateHTML({ ...data, trackingId }, type);
+    let html = "";
 
-    const browser = await puppeteer.launch({
-      args: ["--no-sandbox", "--disable-setuid-sandbox"],
-    });
+    if (type === "data") {
+      html = generateDataHTML({ ...data, trackingId });
+    } else if (type === "premium") {
+      html = generatePremiumHTML({ ...data, trackingId });
+    } else if (type === "long") {
+      html = generateLongHTML({ ...data, trackingId });
+    } else {
+      return res.status(400).json({ message: "Invalid slip type" });
+    }
 
-    const page = await browser.newPage();
+    const file = { content: html };
 
-    await page.setContent(html, { waitUntil: "load" });
-
-    const pdf = await page.pdf({
+    const options = {
       format: "A4",
-      printBackground: true,
-    });
+    };
 
-    await browser.close();
+    const pdfBuffer = await pdf.generatePdf(file, options);
 
     res.set({
       "Content-Type": "application/pdf",
-      "Content-Disposition": `attachment; filename=nin-${type}-slip.pdf`,
+      "Content-Disposition": `attachment; filename=${type}-slip.pdf`,
     });
 
-    res.send(pdf);
+    res.send(pdfBuffer);
 
   } catch (error) {
     console.error("PDF ERROR:", error);
-    res.status(500).json({ message: "Failed to generate slip" });
+    res.status(500).json({ message: "Slip generation failed" });
   }
 });
+
+
+// =======================================================
+// 🟡 DATA SLIP (CLEAN DESIGN)
+// =======================================================
+function generateDataHTML(data) {
+  return `
+  <html>
+  <body style="font-family: Arial; padding: 30px; background:#f5f5f5;">
+    
+    <h2 style="text-align:center;">Federal Republic of Nigeria</h2>
+    <h3 style="text-align:center;">Verified NIN Details</h3>
+
+    <div style="text-align:center; margin:20px;">
+      <img src="${data.photo || ""}" width="120"/>
+    </div>
+
+    <table style="width:100%; font-size:14px;">
+      <tr><td><b>First Name</b></td><td>${data.firstname}</td></tr>
+      <tr><td><b>Middle Name</b></td><td>${data.middlename}</td></tr>
+      <tr><td><b>Surname</b></td><td>${data.surname}</td></tr>
+      <tr><td><b>DOB</b></td><td>${data.birthdate}</td></tr>
+      <tr><td><b>Gender</b></td><td>${data.gender}</td></tr>
+      <tr><td><b>NIN</b></td><td>${data.nin}</td></tr>
+    </table>
+
+    <p style="margin-top:20px;"><b>Tracking ID:</b> ${data.trackingId}</p>
+
+    <p style="color:green; font-size:18px;"><b>✔ Verified</b></p>
+
+  </body>
+  </html>
+  `;
+}
+
+
+// =======================================================
+// 🟢 PREMIUM SLIP (CARD STYLE)
+// =======================================================
+function generatePremiumHTML(data) {
+  return `
+  <html>
+  <body style="font-family: Arial; padding:20px;">
+
+    <div style="border:1px solid #ccc; padding:20px;">
+      
+      <h3>NIN Premium Slip</h3>
+
+      <img src="${data.photo || ""}" width="120"/>
+
+      <p><b>Name:</b> ${data.firstname} ${data.middlename}</p>
+      <p><b>Surname:</b> ${data.surname}</p>
+      <p><b>DOB:</b> ${data.birthdate}</p>
+      <p><b>Gender:</b> ${data.gender}</p>
+
+      <h2>${data.nin}</h2>
+
+      <p><b>Issued:</b> ${new Date().toLocaleDateString()}</p>
+
+      <hr/>
+
+      <p style="font-size:12px;">
+      This is a government-issued identity slip. Always verify before use.
+      </p>
+
+    </div>
+
+  </body>
+  </html>
+  `;
+}
+
+
+// =======================================================
+// 🔵 LONG SLIP (TABLE STYLE)
+// =======================================================
+function generateLongHTML(data) {
+  return `
+  <html>
+  <body style="font-family: Arial; padding:20px;">
+
+    <h3 style="text-align:center;">National Identification Number Slip</h3>
+
+    <table border="1" cellspacing="0" cellpadding="10" width="100%">
+      <tr><td><b>NIN</b></td><td>${data.nin}</td></tr>
+      <tr><td><b>Surname</b></td><td>${data.surname}</td></tr>
+      <tr><td><b>First Name</b></td><td>${data.firstname}</td></tr>
+      <tr><td><b>Middle Name</b></td><td>${data.middlename}</td></tr>
+      <tr><td><b>Gender</b></td><td>${data.gender}</td></tr>
+      <tr><td><b>Tracking ID</b></td><td>${data.trackingId}</td></tr>
+    </table>
+
+    <p style="margin-top:20px;">
+      The National Identification Number (NIN) is your identity.
+    </p>
+
+  </body>
+  </html>
+  `;
+}
 
 module.exports = router;
