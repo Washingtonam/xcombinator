@@ -420,7 +420,7 @@ function generateLongHTML(data) {
 
   <div style="
     width:100%;
-    height:11.9cm;
+    height:10.9cm;
     border:2px solid #000;
     padding:10px;
     box-sizing:border-box;
