@@ -1,6 +1,8 @@
 const express = require("express");
 const router = express.Router();
 const pdf = require("html-pdf-node");
+const puppeteer = require("puppeteer");
+const QRCode = require("qrcode");
 
 // ==============================
 // 🔢 GENERATOR
@@ -243,22 +245,8 @@ function generateDataHTML(data) {
 // =======================================================
 // 🟢 PREMIUM SLIP
 // =======================================================
-const express = require("express");
-const router = express.Router();
-const puppeteer = require("puppeteer");
-const QRCode = require("qrcode");
 
-// ==============================
-// 🔢 TRACKING ID
-// ==============================
-const generateTrackingId = () => {
-  return "TRK-" + Math.random().toString(36).substring(2, 10).toUpperCase();
-};
-
-// ==============================
-// 🚀 MAIN ROUTE
-// ==============================
-router.post("/generate-nin-slip", async (req, res) => {
+router.post("/generate-nin-slip-premium", async (req, res) => {
   try {
     const { data, type } = req.body;
 
