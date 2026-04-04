@@ -1,13 +1,15 @@
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useState, useEffect } from "react";
 import axios from "axios";
+import { useTheme } from "../context/ThemeContext";
 
 const API_BASE = "https://xcombinator.onrender.com";
 
 export default function Sidebar({ toggleTheme, dark }) {
   const navigate = useNavigate();
   const location = useLocation();
-
+  const { dark, toggleTheme } = useTheme();
+  
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [pendingPayments, setPendingPayments] = useState(0);
@@ -73,9 +75,9 @@ export default function Sidebar({ toggleTheme, dark }) {
             {/* 🌙 DARK MODE TOGGLE */}
             <button
               onClick={toggleTheme}
-              className="bg-blue-700 px-2 py-1 rounded text-xs"
+              className="bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded text-sm mt-3"
             >
-              {dark ? "☀️" : "🌙"}
+              {dark ? "☀️ Light Mode" : "🌙 Dark Mode"}
             </button>
 
             {/* COLLAPSE */}

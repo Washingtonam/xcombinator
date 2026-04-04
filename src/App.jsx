@@ -16,6 +16,8 @@ import VerifyNIN from "./pages/verification/VerifyNIN";
 import VerifyBVN from "./pages/verification/VerifyBVN";
 import Transactions from "./pages/transactions/Transactions";
 import Wallet from "./pages/wallet/Wallet";
+import { ThemeProvider } from "./context/ThemeContext";
+
 
 // ==============================
 // 🔐 AUTH CHECKS
@@ -139,6 +141,16 @@ function AppRoutes({ toggleTheme, dark }) {
 // ==============================
 // 🚀 MAIN APP
 // ==============================
+export default function App() {
+  return (
+    <ThemeProvider>
+      <BrowserRouter>
+        <AppRoutes />
+      </BrowserRouter>
+    </ThemeProvider>
+  );
+}
+
 export default function App() {
   const [dark, setDark] = useState(
     localStorage.getItem("theme") === "dark"
