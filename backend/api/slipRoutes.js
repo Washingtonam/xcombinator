@@ -415,14 +415,15 @@ function generateLongHTML(data) {
   <body style="
     font-family: Arial, Helvetica, sans-serif;
     margin:0;
+    background:#fff;
   ">
 
   <div style="
     width:100%;
-    height:9.9cm; /* 1/3 of A4 */
-    padding:12px;
-    box-sizing:border-box;
+    height:9.9cm;
     border:2px solid #000;
+    padding:10px;
+    box-sizing:border-box;
   ">
 
     <!-- ================= HEADER ================= -->
@@ -433,51 +434,52 @@ function generateLongHTML(data) {
       border-bottom:2px solid #000;
       padding-bottom:6px;
     ">
+
       <img src="https://xcombinator.com.ng/assets/coat.png" style="width:55px"/>
 
       <div style="text-align:center;">
-        <div style="font-size:18px; font-weight:700;">
+        <div style="font-size:20px; font-weight:700;">
           National Identity Management System
         </div>
-        <div style="font-size:13px;">
+        <div style="font-size:14px;">
           Federal Republic of Nigeria
         </div>
-        <div style="font-size:12px;">
+        <div style="font-size:13px;">
           National Identification Number Slip (NINS)
         </div>
       </div>
 
-      <img src="https://xcombinator.com.ng/assets/nimc-logo.png" style="width:70px"/>
+      <img src="https://xcombinator.com.ng/assets/nimc-logo.png" style="width:75px"/>
     </div>
 
-    <!-- ================= MAIN TABLE ================= -->
+    <!-- ================= MAIN GRID ================= -->
     <table style="
       width:100%;
       border-collapse:collapse;
       margin-top:8px;
-      font-size:12px;
-    " border="1">
+      font-size:13px;
+    ">
 
       <!-- ROW 1 -->
       <tr>
-        <td style="padding:6px; width:25%;">
+        <td style="border:2px solid #000; padding:8px; width:25%;">
           <b>Tracking ID:</b> ${data.trackingId}
         </td>
 
-        <td style="padding:6px; width:25%;">
+        <td style="border:2px solid #000; padding:8px; width:25%;">
           <b>Surname:</b> ${data.surname}
         </td>
 
-        <!-- ADDRESS (ROWSPAN) -->
-        <td style="padding:6px; width:30%;" rowspan="4">
+        <!-- ADDRESS -->
+        <td style="border:2px solid #000; padding:8px; width:30%;" rowspan="4">
           <b>Address:</b><br/>
           ${data.residence_address || ""}<br/><br/>
           ${data.lga || ""}<br/>
           ${data.residence_state || ""}
         </td>
 
-        <!-- PHOTO (ROWSPAN) -->
-        <td style="width:20%;" rowspan="4">
+        <!-- PHOTO -->
+        <td style="border:2px solid #000; width:20%;" rowspan="4">
           <img src="${data.photo}" style="
             width:100%;
             height:100%;
@@ -488,28 +490,28 @@ function generateLongHTML(data) {
 
       <!-- ROW 2 -->
       <tr>
-        <td style="padding:6px;">
+        <td style="border:2px solid #000; padding:8px;">
           <b>NIN:</b> ${data.nin}
         </td>
 
-        <td style="padding:6px;">
+        <td style="border:2px solid #000; padding:8px;">
           <b>First Name:</b> ${data.firstname}
         </td>
       </tr>
 
       <!-- ROW 3 -->
       <tr>
-        <!-- 👇 THIS IS THE FIX (NO SPLIT BOX BELOW NIN) -->
-        <td style="padding:6px;" rowspan="2"></td>
+        <!-- 👇 MERGED CELL (NO SPLIT LIKE BEFORE) -->
+        <td style="border:2px solid #000;" rowspan="2"></td>
 
-        <td style="padding:6px;">
+        <td style="border:2px solid #000; padding:8px;">
           <b>Middle Name:</b> ${data.middlename}
         </td>
       </tr>
 
       <!-- ROW 4 -->
       <tr>
-        <td style="padding:6px;">
+        <td style="border:2px solid #000; padding:8px;">
           <b>Gender:</b> ${data.gender}
         </td>
       </tr>
@@ -518,12 +520,13 @@ function generateLongHTML(data) {
 
     <!-- ================= NOTE ================= -->
     <div style="
-      border:1.5px solid #000;
+      border:2px solid #000;
       margin-top:8px;
-      padding:6px;
-      font-size:11px;
+      padding:8px;
+      font-size:12px;
     ">
-      <b>Note:</b> The <b>National Identification Number (NIN)</b> is your identity.
+      <b>Note:</b>
+      The <b><i>National Identification Number (NIN)</i></b> is your identity.
       It is confidential and may only be released for legitimate transactions.
       <br/><br/>
       You will be notified when your National Identity Card is ready
@@ -536,35 +539,31 @@ function generateLongHTML(data) {
       border-collapse:collapse;
       margin-top:8px;
       font-size:11px;
-    " border="1">
+    ">
 
       <tr>
 
-        <!-- EMAIL -->
-        <td style="text-align:center; padding:6px;">
+        <td style="border:2px solid #000; text-align:center; padding:8px;">
           <img src="https://xcombinator.com.ng/assets/icon-email.png" width="22"/><br/>
           helpdesk@nimc.gov.ng
         </td>
 
-        <!-- WEB -->
-        <td style="text-align:center; padding:6px;">
+        <td style="border:2px solid #000; text-align:center; padding:8px;">
           <img src="https://xcombinator.com.ng/assets/icon-web.png" width="22"/><br/>
           www.nimc.gov.ng
         </td>
 
-        <!-- PHONE -->
-        <td style="text-align:center; padding:6px;">
+        <td style="border:2px solid #000; text-align:center; padding:8px;">
           <img src="https://xcombinator.com.ng/assets/icon-phone.png" width="22"/><br/>
           0700-CALL-NIMC<br/>
           (0700-2255-646)
         </td>
 
-        <!-- ADDRESS -->
-        <td style="text-align:center; padding:6px;">
+        <td style="border:2px solid #000; text-align:center; padding:8px;">
           <img src="https://xcombinator.com.ng/assets/icon-location.png" width="22"/><br/>
           National Identity Management Commission<br/>
           11, Sokode Crescent,<br/>
-          Zone 5 Wuse, Abuja
+          Zone 5 Wuse, Abuja Nigeria
         </td>
 
       </tr>
