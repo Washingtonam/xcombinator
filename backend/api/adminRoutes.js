@@ -4,7 +4,7 @@ const router = express.Router();
 const User = require("../models/User");
 const Transaction = require("../models/Transaction");
 const AuditLog = require("../models/AuditLog");
-const Pricing = require("../models/pricing");
+const Pricing = require("../models/Pricing");
 
 // ==============================
 // 🔐 ADMIN CHECK
