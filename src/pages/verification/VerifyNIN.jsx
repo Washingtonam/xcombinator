@@ -1,54 +1,46 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useUser } from "../../context/UserContext";
 
 export default function VerifyNIN() {
-  const [nin, setNin] = useState("");
-  const [selectedType, setSelectedType] = useState(null);
-  const [consent, setConsent] = useState(false);
+  const { user, units, setUnits } = useUser();
+
+  const [method, setMethod] = useState("nin");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
 
-  const [prices, setPrices] = useState({
-    data: 350,
-    premium: 450,
-    long: 400,
+  // INPUT STATES
+  const [nin, setNin] = useState("");
+  const [phone, setPhone] = useState("");
+  const [form, setForm] = useState({
+    firstname: "",
+    surname: "",
+    gender: "",
+    birthdate: "",
   });
 
-  const { user, balance, setBalance } = useUser();
-  const isAdmin = user?.email === "washingtonamedu@gmail.com";
-
   // =========================
-  // FETCH PRICING
-  // =========================
-  useEffect(() => {
-    fetch("https://xcombinator.onrender.com/api/pricing")
-      .then(res => res.json())
-      .then(data => {
-        if (data?.nin) {
-          setPrices({
-            data: data.nin.data || 350,
-            premium: data.nin.premium || 450,
-            long: data.nin.long || 400,
-          });
-        }
-      })
-      .catch(() => {});
-  }, []);
-
-  // =========================
-  // VERIFY
+  // VERIFY FUNCTION
   // =========================
   const handleVerify = async () => {
     if (loading) return;
 
-    if (!selectedType) return alert("Select a slip type");
-    if (nin.length !== 11) return alert("NIN must be 11 digits");
-    if (!consent) return alert("You must give consent");
+    // VALIDATION
+    if (method === "nin" && nin.length !== 11) {
+      return alert("Enter valid 11-digit NIN");
+    }
 
-    const price = prices[selectedType];
+    if (method === "phone" && phone.length < 10) {
+      return alert("Enter valid phone number");
+    }
 
-    if (!isAdmin && nin !== "00000000000" && balance < price) {
-      return alert(`Insufficient balance. Required ₦${price}`);
+    if (method === "demo") {
+      if (!form.firstname || !form.surname || !form.gender || !form.birthdate) {
+        return alert("Complete all demographic fields");
+      }
+    }
+
+    if (units < 1) {
+      return alert("Insufficient units. Please fund wallet.");
     }
 
     setLoading(true);
@@ -60,7 +52,10 @@ export default function VerifyNIN() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
+          method,
           nin,
+          phone,
+          ...form,
           userId: user.id,
         }),
       });
@@ -75,16 +70,12 @@ export default function VerifyNIN() {
 
       setResult(data);
 
-      if (!isAdmin && nin !== "00000000000") {
-        setBalance(data.balance);
-      }
+      // 🔥 DEDUCT UNIT
+      setUnits(data.units);
 
-      setTimeout(() => {
-        handleDownload(data, selectedType);
-      }, 400);
-
-    } catch {
-      alert("Network error");
+    } catch (err) {
+      console.error(err);
+      alert("Server error");
     }
 
     setLoading(false);
@@ -93,13 +84,10 @@ export default function VerifyNIN() {
   // =========================
   // DOWNLOAD
   // =========================
-  const handleDownload = async (data, type) => {
-    const info =
-      data?.data?.data ||
-      data?.data ||
-      null;
+  const downloadSlip = async (type) => {
+    const info = result?.data?.data || result?.data;
 
-    if (!info) return;
+    if (!info) return alert("No data available");
 
     try {
       const res = await fetch("https://xcombinator.onrender.com/api/generate-nin-slip", {
@@ -118,153 +106,155 @@ export default function VerifyNIN() {
 
       const a = document.createElement("a");
       a.href = url;
-      a.download = `nin-${type}-slip.pdf`;
+      a.download = `${type}-slip.pdf`;
       a.click();
 
-    } catch {
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error(err);
       alert("Download failed");
     }
   };
 
-  // =========================
-  // STEP STATUS
-  // =========================
-  const step1 = !!selectedType;
-  const step2 = nin.length === 11;
-  const step3 = consent;
-
   return (
-    <div className="max-w-2xl mx-auto pb-20">
+    <div className="max-w-2xl mx-auto">
 
       {/* HEADER */}
-      <h1 className="text-2xl md:text-3xl font-bold mb-2 dark:text-white">
-        Verify NIN
-      </h1>
-
+      <h1 className="text-2xl font-bold mb-2">Verify Identity</h1>
       <p className="text-gray-500 mb-6">
-        Enter a valid NIN to retrieve and generate slip
+        Use 1 unit to verify and unlock all NIN slips instantly.
       </p>
 
-      {/* STEP INDICATOR */}
-      <div className="flex justify-between text-xs md:text-sm font-medium mb-6">
-        <span className={step1 ? "text-green-600" : "text-gray-400"}>Slip</span>
-        <span className={step2 ? "text-green-600" : "text-gray-400"}>NIN</span>
-        <span className={step3 ? "text-green-600" : "text-gray-400"}>Consent</span>
-        <span className={result ? "text-green-600" : "text-gray-400"}>Done</span>
+      {/* BALANCE */}
+      <div className="bg-black text-white p-4 rounded-lg mb-6">
+        Units Available: <b>{units}</b>
       </div>
 
-      {/* ========================= */}
-      {/* SLIP TYPE */}
-      {/* ========================= */}
+      {/* METHOD SELECT */}
+      <div className="grid grid-cols-3 gap-3 mb-6">
+        {[
+          { key: "nin", label: "NIN" },
+          { key: "phone", label: "Phone" },
+          { key: "demo", label: "Demographic" },
+        ].map((m) => (
+          <div
+            key={m.key}
+            onClick={() => setMethod(m.key)}
+            className={`p-3 rounded-lg border cursor-pointer text-center ${
+              method === m.key
+                ? "bg-blue-600 text-white"
+                : "bg-white"
+            }`}
+          >
+            {m.label}
+          </div>
+        ))}
+      </div>
+
+      {/* INPUT AREA */}
       <div className="mb-6">
 
-        <h2 className="font-semibold mb-3 dark:text-white">
-          Select Slip Type
-        </h2>
+        {method === "nin" && (
+          <input
+            type="text"
+            placeholder="Enter 11-digit NIN"
+            value={nin}
+            onChange={(e) => setNin(e.target.value)}
+            className="w-full border p-3 rounded"
+          />
+        )}
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {method === "phone" && (
+          <input
+            type="text"
+            placeholder="Enter Phone Number"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            className="w-full border p-3 rounded"
+          />
+        )}
 
-          {[
-            { type: "data", label: "Data", price: prices.data },
-            { type: "premium", label: "Premium", price: prices.premium },
-            { type: "long", label: "Long", price: prices.long },
-          ].map(item => (
+        {method === "demo" && (
+          <div className="grid grid-cols-2 gap-3">
+            <input
+              placeholder="First Name"
+              onChange={(e) =>
+                setForm({ ...form, firstname: e.target.value })
+              }
+              className="border p-3 rounded"
+            />
 
-            <div
-              key={item.type}
-              onClick={() => setSelectedType(item.type)}
-              className={`cursor-pointer rounded-2xl border p-5 transition-all ${
-                selectedType === item.type
-                  ? "border-green-600 bg-green-50 scale-105"
-                  : "bg-white dark:bg-[#1A1A1A] dark:border-gray-800"
-              }`}
+            <input
+              placeholder="Surname"
+              onChange={(e) =>
+                setForm({ ...form, surname: e.target.value })
+              }
+              className="border p-3 rounded"
+            />
+
+            <select
+              onChange={(e) =>
+                setForm({ ...form, gender: e.target.value })
+              }
+              className="border p-3 rounded"
             >
-              <p className="font-semibold dark:text-white">{item.label}</p>
-              <p className="text-sm text-gray-500">₦{item.price}</p>
-            </div>
+              <option value="">Gender</option>
+              <option>Male</option>
+              <option>Female</option>
+            </select>
 
-          ))}
-
-        </div>
-
-        {/* PREVIEW */}
-        {selectedType && (
-          <div className="mt-6">
-            <p className="text-sm text-gray-500 mb-2">
-              Preview ({selectedType})
-            </p>
-
-            <div className="rounded-xl overflow-hidden shadow border">
-              <img
-                src={`/slips/${selectedType}.png`}
-                alt="preview"
-                className="w-full h-56 object-cover"
-              />
-            </div>
+            <input
+              type="date"
+              onChange={(e) =>
+                setForm({ ...form, birthdate: e.target.value })
+              }
+              className="border p-3 rounded"
+            />
           </div>
         )}
       </div>
 
-      {/* ========================= */}
-      {/* INPUT */}
-      {/* ========================= */}
-      <input
-        type="text"
-        placeholder="Enter 11-digit NIN"
-        value={nin}
-        onChange={(e) => setNin(e.target.value)}
-        className="w-full border p-4 text-lg rounded-xl mb-3 focus:ring-2 focus:ring-green-500 outline-none"
-      />
+      {/* COST */}
+      <div className="mb-4 text-sm text-gray-600">
+        Cost: <b>1 Unit (₦250)</b>
+      </div>
 
-      <p className="text-xs text-gray-400 mb-4">
-        👉 Use <b>00000000000</b> for test mode
-      </p>
-
-      {/* ========================= */}
-      {/* CONSENT */}
-      {/* ========================= */}
-      <label className="flex items-start gap-2 mb-6 text-sm">
-        <input
-          type="checkbox"
-          checked={consent}
-          onChange={() => setConsent(!consent)}
-        />
-        <span className="text-gray-600">
-          I confirm that I have obtained proper consent
-        </span>
-      </label>
-
-      {/* ========================= */}
-      {/* ACTION BUTTON */}
-      {/* ========================= */}
+      {/* VERIFY BUTTON */}
       <button
         onClick={handleVerify}
         disabled={loading}
-        className={`w-full py-4 rounded-xl text-white font-semibold text-lg ${
-          loading ? "bg-gray-400" : "bg-green-600 hover:bg-green-700"
-        }`}
+        className="w-full bg-black text-white py-3 rounded-lg"
       >
-        {loading ? "Processing..." : "Verify & Generate Slip"}
+        {loading ? "Processing..." : "Verify & Unlock All Slips"}
       </button>
 
-      {/* SUCCESS */}
+      {/* RESULT */}
       {result && (
-        <div className="mt-6 p-4 bg-green-100 text-green-700 rounded-lg text-center">
-          ✅ Verification successful. Downloading slip...
+        <div className="mt-8">
+
+          <h2 className="font-semibold mb-3">Download Slips</h2>
+
+          <div className="grid grid-cols-3 gap-3">
+            {["data", "premium", "long"].map((type) => (
+              <button
+                key={type}
+                onClick={() => downloadSlip(type)}
+                className="bg-blue-600 text-white py-2 rounded"
+              >
+                {type} slip
+              </button>
+            ))}
+          </div>
+
         </div>
       )}
 
-      {/* BALANCE */}
-      <p className="mt-6 text-sm text-gray-500 text-center">
-        Balance: ₦{balance}
-      </p>
-
-      {/* LOADING OVERLAY */}
-      {loading && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center text-white text-lg z-50">
-          Processing...
-        </div>
-      )}
+      {/* TRUST */}
+      <div className="mt-10 text-xs text-gray-500 space-y-2">
+        <p>✔ Secure verification</p>
+        <p>✔ User consent required</p>
+        <p>✔ Not affiliated with NIMC</p>
+      </div>
 
     </div>
   );
