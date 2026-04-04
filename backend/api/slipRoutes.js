@@ -61,48 +61,143 @@ router.post("/generate-nin-slip", async (req, res) => {
 // 🟡 DATA SLIP
 // =======================================================
 function generateDataHTML(data) {
+  const formattedNIN = (data.nin || "")
+    .replace(/(\d{4})(\d{3})(\d{4})/, "$1   $2   $3");
+
   return `
   <html>
-  <body style="font-family: Arial; padding:30px; background:#f5f0dc;">
+  <body style="
+    font-family: Arial, sans-serif;
+    background:#efefef;
+    padding:30px;
+  ">
 
     <!-- HEADER -->
-    <div style="display:flex; justify-content:space-between; align-items:center;">
-      <img src="https://xcombinator.com.ng/assets/coat.png" width="60"/>
+    <div style="
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      margin-bottom:10px;
+    ">
+      <img src="https://xcombinator.com.ng/assets/coat.png" width="70"/>
+      <h2 style="
+        flex:1;
+        text-align:center;
+        color:#555;
+        font-weight:500;
+        margin:0;
+      ">
+        Federal Republic of Nigeria
+      </h2>
       <img src="https://xcombinator.com.ng/assets/nimc-logo.png" width="90"/>
     </div>
 
-    <h2 style="text-align:center; margin-top:10px;">Federal Republic of Nigeria</h2>
-    <h3 style="text-align:center;">Verified NIN Details</h3>
-
-    <!-- PHOTO -->
-    <div style="text-align:center; margin:20px;">
-      <img src="${data.photo || ""}" width="130" height="150"/>
-    </div>
-
-    <!-- DETAILS -->
-    <table style="width:100%; font-size:14px; margin-top:20px;">
-      <tr><td><b>First Name:</b></td><td>${data.firstname}</td></tr>
-      <tr><td><b>Middle Name:</b></td><td>${data.middlename}</td></tr>
-      <tr><td><b>Surname:</b></td><td>${data.surname}</td></tr>
-      <tr><td><b>Date of Birth:</b></td><td>${data.birthdate}</td></tr>
-      <tr><td><b>Gender:</b></td><td>${data.gender}</td></tr>
-    </table>
-
-    <!-- NIN -->
-    <h2 style="margin-top:20px;">
-      NIN: ${data.nin}
+    <!-- TITLE -->
+    <h2 style="
+      text-align:center;
+      color:#666;
+      margin-top:10px;
+      font-weight:600;
+    ">
+      Verified NIN Details
     </h2>
 
-    <!-- TRACKING -->
-    <p><b>Tracking ID:</b> ${data.trackingId}</p>
+    <!-- MAIN GRID -->
+    <div style="
+      display:flex;
+      justify-content:space-between;
+      margin-top:30px;
+    ">
 
-    <!-- VERIFIED -->
-    <h2 style="color:green;">✔ VERIFIED</h2>
+      <!-- LEFT DETAILS -->
+      <div style="width:40%; font-size:16px; line-height:2.2;">
+        <div><b>First Name:</b> ${data.firstname || ""}</div>
+        <div><b>Middle Name:</b> ${data.middlename || ""}</div>
+        <div><b>Last Name:</b> ${data.surname || ""}</div>
+        <div><b>Date of Birth:</b> ${data.birthdate || ""}</div>
+        <div><b>Gender:</b> ${data.gender || ""}</div>
+      </div>
 
-    <!-- FOOTER -->
-    <p style="font-size:12px;">
-      This slip remains property of the Federal Republic of Nigeria and does not expire.
-    </p>
+      <!-- CENTER IMAGE -->
+      <div style="width:25%; text-align:center;">
+        <img 
+          src="${data.photo || ""}" 
+          style="width:140px; height:160px; object-fit:cover;"
+        />
+
+        ${
+          data.signature
+            ? `<img src="${data.signature}" style="width:120px; margin-top:10px;" />`
+            : ""
+        }
+      </div>
+
+      <!-- RIGHT VERIFIED -->
+      <div style="width:30%; font-size:14px; text-align:left;">
+        
+        <h2 style="
+          color:green;
+          margin-bottom:10px;
+        ">
+          Verified
+        </h2>
+
+        <p style="color:#555; line-height:1.6;">
+          This is a property of National Identity Management Commission (NIMC), Nigeria. 
+          If found, please return to the nearest NIMC's office or contact 
+          +234 815 769 1214, +234 815 769 1071
+        </p>
+
+        <ol style="margin-top:10px; padding-left:18px; line-height:1.6;">
+          <li>This NIN slip remains the property of the Federal Republic of Nigeria, and must be surrendered on demand;</li>
+          <li>This NIN slip does not imply nor confer the citizenship of the Federal Republic of Nigeria on the individual the document is issued to;</li>
+          <li>
+            This NIN slip is valid for the lifetime of the owner and 
+            <span style="color:red;"><b>DOES NOT EXPIRE</b></span>
+          </li>
+        </ol>
+
+      </div>
+    </div>
+
+    <!-- NIN -->
+    <div style="
+      margin-top:40px;
+      font-size:22px;
+      letter-spacing:3px;
+    ">
+      <span style="color:#777;">NIN NUMBER:</span>
+      <span style="margin-left:20px; font-weight:bold; color:#444;">
+        ${formattedNIN}
+      </span>
+    </div>
+
+    <!-- LOWER GRID -->
+    <div style="
+      display:flex;
+      justify-content:space-between;
+      margin-top:20px;
+      font-size:15px;
+      line-height:2;
+    ">
+
+      <!-- LEFT -->
+      <div style="width:45%;">
+        <div><b>Tracking ID:</b> ${data.trackingId || ""}</div>
+        <div><b>Residence State:</b> ${data.residence_state || ""}</div>
+        <div><b>Birth State:</b> ${data.birth_state || ""}</div>
+        <div><b>Address:</b> ${data.residence_address || ""}</div>
+      </div>
+
+      <!-- RIGHT -->
+      <div style="width:45%;">
+        <div><b>Phone Number:</b> ${data.telephoneno || ""}</div>
+        <div><b>Residence:</b> ${data.residence || ""}</div>
+        <div><b>LGA/Town:</b> ${data.lga || ""}</div>
+        <div><b>Birth LGA:</b> ${data.birth_lga || ""}</div>
+      </div>
+
+    </div>
 
   </body>
   </html>
