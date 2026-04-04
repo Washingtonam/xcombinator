@@ -10,7 +10,7 @@ export default function Sidebar() {
   const location = useLocation();
 
   // ✅ ONLY USE CONTEXT (NO PROPS)
-  const { dark, toggleTheme } = useTheme();
+  const { theme, toggleTheme } = useTheme();
 
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -185,7 +185,7 @@ export default function Sidebar() {
         <h1 className="font-bold">NIN Portal</h1>
 
         <button onClick={toggleTheme}>
-          {dark ? "☀️" : "🌙"}
+          {theme === "dark" ? "☀️" : "🌙"}
         </button>
       </div>
 

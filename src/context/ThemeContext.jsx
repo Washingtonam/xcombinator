@@ -3,26 +3,51 @@ import { createContext, useContext, useEffect, useState } from "react";
 const ThemeContext = createContext();
 
 export function ThemeProvider({ children }) {
-  const [dark, setDark] = useState(() => {
-    return localStorage.getItem("theme") === "dark";
+  const [theme, setTheme] = useState(() => {
+    return localStorage.getItem("theme") || "system";
   });
 
   useEffect(() => {
     const root = document.documentElement;
 
-    if (dark) {
-      root.classList.add("dark");
-      localStorage.setItem("theme", "dark");
-    } else {
-      root.classList.remove("dark");
-      localStorage.setItem("theme", "light");
-    }
-  }, [dark]);
+    const applyTheme = () => {
+      if (theme === "dark") {
+        root.classList.add("dark");
+      } 
+      else if (theme === "light") {
+        root.classList.remove("dark");
+      } 
+      else {
+        // system mode
+        const systemDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+        if (systemDark) root.classList.add("dark");
+        else root.classList.remove("dark");
+      }
+    };
 
-  const toggleTheme = () => setDark(prev => !prev);
+    applyTheme();
+
+    // listen to system change ONLY if system mode
+    const media = window.matchMedia("(prefers-color-scheme: dark)");
+    const listener = () => {
+      if (theme === "system") applyTheme();
+    };
+
+    media.addEventListener("change", listener);
+
+    localStorage.setItem("theme", theme);
+
+    return () => media.removeEventListener("change", listener);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme(prev =>
+      prev === "dark" ? "light" : "dark"
+    );
+  };
 
   return (
-    <ThemeContext.Provider value={{ dark, toggleTheme }}>
+    <ThemeContext.Provider value={{ theme, toggleTheme }}>
       {children}
     </ThemeContext.Provider>
   );
