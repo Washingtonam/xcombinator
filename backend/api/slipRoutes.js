@@ -222,7 +222,7 @@ async function generatePremiumSlipHTML(data) {
         position:absolute;
         top:6px;
         left:12px;
-        font-size:11px;
+        font-size:14px;
         font-weight:bold;
         color:#0a8f2f;
         letter-spacing:1px;
