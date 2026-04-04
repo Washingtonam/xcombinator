@@ -177,30 +177,34 @@ async function generatePremiumSlipHTML(data) {
       }
 
       .back {
-        border: 1px solid black;
+        border: 1px solid #000;
         transform: rotate(180deg);
         padding: 12px;
         box-sizing: border-box;
       }
 
       .label {
-        font-size: 6.5px;
-        color: #222;
+        font-size: 7px;
+        color: #555;
+        letter-spacing: 0.5px;
       }
 
       .value {
-        font-size: 9px;
+        font-size: 10px;
         font-weight: bold;
+        letter-spacing: 1px;
       }
 
       .nin-label {
-        font-size: 7px;
+        font-size: 8px;
+        letter-spacing: 0.5px;
       }
 
       .nin-main {
-        font-size: 14px;
+        font-size: 16px;
         font-weight: bold;
-        letter-spacing: 2px;
+        letter-spacing: 3px;
+        color: #444;
       }
 
     </style>
@@ -216,21 +220,23 @@ async function generatePremiumSlipHTML(data) {
       <!-- HEADER -->
       <div style="
         position:absolute;
-        top:5px;
-        left:10px;
-        font-size:10px;
+        top:6px;
+        left:12px;
+        font-size:11px;
         font-weight:bold;
-        color:#0b7d2b;
+        color:#0a8f2f;
+        letter-spacing:1px;
       ">
         FEDERAL REPUBLIC OF NIGERIA
       </div>
 
       <div style="
         position:absolute;
-        top:16px;
-        left:10px;
-        font-size:8.5px;
+        top:20px;
+        left:12px;
+        font-size:9px;
         font-weight:bold;
+        letter-spacing:1px;
       ">
         DIGITAL NIN SLIP
       </div>
@@ -238,67 +244,64 @@ async function generatePremiumSlipHTML(data) {
       <!-- PASSPORT -->
       <img src="${data.photo}" style="
         position:absolute;
-        left:10px;
-        top:28px;
-        width:58px;
-        height:68px;
+        left:12px;
+        top:32px;
+        width:60px;
+        height:70px;
         object-fit:cover;
-        border:1px solid #ccc;
       "/>
 
       <!-- QR -->
       <img src="${qr}" style="
         position:absolute;
-        right:8px;
-        top:8px;
-        width:62px;
+        right:10px;
+        top:10px;
+        width:65px;
       "/>
 
-      <!-- DETAILS BLOCK -->
-      <div style="
-        position:absolute;
-        left:75px;
-        top:28px;
-        width:120px;
-      ">
-
+      <!-- SURNAME -->
+      <div style="position:absolute; left:80px; top:32px;">
         <div class="label">SURNAME/NOM</div>
         <div class="value">${data.surname || ""}</div>
+      </div>
 
-        <div class="label" style="margin-top:3px;">GIVEN NAMES/PRENOMS</div>
+      <!-- GIVEN NAMES -->
+      <div style="position:absolute; left:80px; top:58px;">
+        <div class="label">GIVEN NAMES/PRENOMS</div>
         <div class="value">
           ${data.firstname || ""}, ${data.middlename || ""}
         </div>
+      </div>
 
-        <div class="label" style="margin-top:3px;">DATE OF BIRTH</div>
+      <!-- DOB -->
+      <div style="position:absolute; left:80px; top:84px;">
+        <div class="label">DATE OF BIRTH</div>
         <div class="value">${data.birthdate || ""}</div>
-
       </div>
 
       <!-- SEX -->
-      <div style="
-        position:absolute;
-        left:75px;
-        top:82px;
-      ">
-        <span class="label">SEX/SEXE</span><br/>
-        <span class="value">${data.gender || ""}</span>
+      <div style="position:absolute; left:155px; top:84px;">
+        <div class="label">SEX/SEXE</div>
+        <div class="value">${data.gender || ""}</div>
       </div>
 
-      <!-- NGA + DATE -->
+      <!-- NGA -->
       <div style="
         position:absolute;
-        right:28px;
-        top:72px;
-        font-size:12px;
+        right:32px;
+        top:78px;
+        font-size:13px;
         font-weight:bold;
-      ">NGA</div>
+      ">
+        NGA
+      </div>
 
+      <!-- ISSUE DATE -->
       <div style="
         position:absolute;
         right:15px;
-        top:88px;
-        font-size:6.5px;
+        top:92px;
+        font-size:7px;
       ">
         ISSUE DATE
       </div>
@@ -306,9 +309,10 @@ async function generatePremiumSlipHTML(data) {
       <div style="
         position:absolute;
         right:15px;
-        top:98px;
-        font-size:8px;
+        top:102px;
+        font-size:9px;
         font-weight:bold;
+        letter-spacing:1px;
       ">
         ${issueDate}
       </div>
@@ -316,7 +320,7 @@ async function generatePremiumSlipHTML(data) {
       <!-- NIN LABEL -->
       <div style="
         position:absolute;
-        bottom:30px;
+        bottom:34px;
         left:40px;
       " class="nin-label">
         National Identification Number (NIN)
@@ -331,20 +335,20 @@ async function generatePremiumSlipHTML(data) {
         ${formattedNIN}
       </div>
 
-      <!-- WATERMARK NIN (4 POSITIONS) -->
-      <div style="position:absolute; left:4px; top:14px; font-size:6px; transform:rotate(-30deg); opacity:0.4;">
+      <!-- WATERMARK NIN (MATCHED ANGLES) -->
+      <div style="position:absolute; left:8px; top:18px; font-size:7px; transform:rotate(-28deg); opacity:0.5;">
         ${data.nin}
       </div>
 
-      <div style="position:absolute; left:4px; bottom:18px; font-size:6px; transform:rotate(30deg); opacity:0.4;">
+      <div style="position:absolute; left:8px; bottom:18px; font-size:7px; transform:rotate(28deg); opacity:0.5;">
         ${data.nin}
       </div>
 
-      <div style="position:absolute; right:4px; top:18px; font-size:6px; transform:rotate(30deg); opacity:0.4;">
+      <div style="position:absolute; right:8px; top:22px; font-size:7px; transform:rotate(28deg); opacity:0.5;">
         ${data.nin}
       </div>
 
-      <div style="position:absolute; right:4px; bottom:15px; font-size:6px; transform:rotate(-30deg); opacity:0.4;">
+      <div style="position:absolute; right:8px; bottom:18px; font-size:7px; transform:rotate(-28deg); opacity:0.5;">
         ${data.nin}
       </div>
 
@@ -355,26 +359,26 @@ async function generatePremiumSlipHTML(data) {
 
       <div style="text-align:center;">
 
-        <div style="font-size:15px; font-weight:bold;">
+        <div style="font-size:16px; font-weight:bold;">
           DISCLAIMER
         </div>
 
-        <div style="font-size:10px; margin-top:4px;">
+        <div style="font-size:10px; margin-top:5px;">
           Trust, but verify
         </div>
 
-        <div style="font-size:9px; margin-top:10px; line-height:1.4;">
+        <div style="font-size:9px; margin-top:12px; line-height:1.5;">
           Kindly ensure each time this ID is presented, that you verify the 
           credentials using a Government-approved verification resource.
           The details on the front of this NIN slip must EXACTLY match 
           the verification result.
         </div>
 
-        <div style="font-size:12px; font-weight:bold; margin-top:12px;">
+        <div style="font-size:13px; font-weight:bold; margin-top:14px;">
           CAUTION!
         </div>
 
-        <div style="font-size:9px; margin-top:8px; line-height:1.4;">
+        <div style="font-size:9px; margin-top:10px; line-height:1.5;">
           If this NIN was not issued to the person presenting it, please DO NOT 
           attempt to scan, photocopy or replicate personal data contained herein.
           You are only permitted to scan the barcode for identity verification.
@@ -390,7 +394,6 @@ async function generatePremiumSlipHTML(data) {
   </html>
   `;
 }
-
 
 // =======================================================
 // 🔵 LONG SLIP
