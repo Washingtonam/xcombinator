@@ -10,8 +10,7 @@ const paymentRoutes = require("./api/paymentRoutes");
 const adminRoutes = require("./api/adminRoutes");
 const slipRoutes = require("./api/slipRoutes");
 
-// ✅ NEW PRICING SOURCE
-const pricing = require("./config/pricing"); // make sure this exists
+const Pricing = require("./models/Pricing"); // ✅ NEW SYSTEM
 
 const app = express();
 
@@ -41,10 +40,27 @@ app.use("/api/admin", adminRoutes);
 app.use("/api", slipRoutes);
 
 // ==============================
-// 💰 PRICING (PUBLIC)
+// 💰 PRICING (FROM DATABASE)
 // ==============================
-app.get("/api/pricing", (req, res) => {
-  res.json(pricing);
+app.get("/api/pricing", async (req, res) => {
+  try {
+    const pricing = await Pricing.findOne();
+
+    if (!pricing) {
+      return res.json({
+        nin: {
+          unitPrice: 250,
+          agentPrice: 150,
+        },
+      });
+    }
+
+    res.json(pricing);
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Failed to fetch pricing" });
+  }
 });
 
 // ==============================
