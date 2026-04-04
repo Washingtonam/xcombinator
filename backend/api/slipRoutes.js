@@ -257,233 +257,191 @@ function generatePremiumHTML(data) {
 
   return `
   <html>
-  <body style="margin:0; font-family:Arial;">
+  <body style="margin:0; font-family:Arial; background:#f5f5f5;">
 
+  <!-- ========================= -->
+  <!-- 🔥 CONTAINER -->
+  <!-- ========================= -->
   <div style="
     width:1000px;
-    height:600px;
-    position:relative;
-    background:url('https://xcombinator.com.ng/assets/premium-bg.png') no-repeat center/cover;
+    margin:auto;
   ">
 
-    <!-- ===================== -->
-    <!-- 🔥 HEADER -->
-    <!-- ===================== -->
+    <!-- ========================= -->
+    <!-- 🟢 FRONT SIDE -->
+    <!-- ========================= -->
     <div style="
-      position:absolute;
-      top:20px;
-      left:40px;
-      font-size:22px;
-      font-weight:800;
-      color:#0b8f3a;
-    ">
-      FEDERAL REPUBLIC OF NIGERIA
-    </div>
-
-    <div style="
-      position:absolute;
-      top:55px;
-      left:40px;
-      font-size:18px;
-      font-weight:700;
-      color:black;
-    ">
-      DIGITAL NIN SLIP
-    </div>
-
-    <!-- ===================== -->
-    <!-- 📷 PASSPORT -->
-    <!-- ===================== -->
-    <img src="${data.photo}" style="
-      position:absolute;
-      left:40px;
-      top:110px;
-      width:160px;
-      height:180px;
-      object-fit:cover;
-    "/>
-
-    <!-- ===================== -->
-    <!-- 🔳 QR -->
-    <!-- ===================== -->
-    <img src="${data.qr}" style="
-      position:absolute;
-      right:50px;
-      top:30px;
-      width:180px;
-    "/>
-
-    <!-- ===================== -->
-    <!-- 🧾 DETAILS -->
-    <!-- ===================== -->
-    <div style="
-      position:absolute;
-      left:240px;
-      top:120px;
-      font-size:18px;
-      line-height:1.6;
-    ">
-
-      <div style="color:#666;">SURNAME/NOM</div>
-      <div style="font-weight:700;">${data.surname}</div>
-
-      <div style="margin-top:12px; color:#666;">
-        GIVEN NAMES/PRENOMS
-      </div>
-      <div style="font-weight:700;">
-        ${data.firstname}, ${data.middlename || ""}
-      </div>
-
-      <div style="margin-top:12px;">
-        <span style="color:#666;">DATE OF BIRTH</span>
-        <span style="margin-left:60px; color:#666;">SEX/SEXE</span>
-      </div>
-
-      <div style="font-weight:700;">
-        ${data.birthdate}
-        <span style="margin-left:90px;">${data.gender}</span>
-      </div>
-
-    </div>
-
-    <!-- ===================== -->
-    <!-- 🌍 NGA -->
-    <!-- ===================== -->
-    <div style="
-      position:absolute;
-      right:110px;
-      top:240px;
-      font-size:26px;
-      font-weight:bold;
-    ">NGA</div>
-
-    <!-- ===================== -->
-    <!-- 📅 ISSUE DATE -->
-    <!-- ===================== -->
-    <div style="
-      position:absolute;
-      right:90px;
-      top:290px;
-      font-size:14px;
-      text-align:center;
-    ">
-      <div>ISSUE DATE</div>
-      <div style="font-weight:bold;">
-        ${new Date().toLocaleDateString("en-GB")}
-      </div>
-    </div>
-
-    <!-- ===================== -->
-    <!-- 🔥 NIN LABEL -->
-    <!-- ===================== -->
-    <div style="
-      position:absolute;
-      bottom:130px;
-      left:250px;
-      font-size:18px;
-      font-weight:600;
-    ">
-      National Identification Number (NIN)
-    </div>
-
-    <!-- ===================== -->
-    <!-- 🔢 MAIN NIN -->
-    <!-- ===================== -->
-    <div style="
-      position:absolute;
-      bottom:70px;
-      left:240px;
-      font-size:36px;
-      font-weight:800;
-      letter-spacing:8px;
-      color:#444;
-    ">
-      ${formattedNIN}
-    </div>
-
-    <!-- ===================== -->
-    <!-- 🔁 SMALL NIN (5 positions) -->
-    <!-- ===================== -->
-    <div style="
-      position:absolute;
-      left:20px;
-      top:80px;
-      transform:rotate(-25deg);
-      font-size:12px;
-      opacity:0.5;
-    ">${data.nin}</div>
-
-    <div style="
-      position:absolute;
-      left:40px;
-      bottom:140px;
-      transform:rotate(25deg);
-      font-size:12px;
-      opacity:0.5;
-    ">${data.nin}</div>
-
-    <div style="
-      position:absolute;
-      right:160px;
-      top:120px;
-      transform:rotate(25deg);
-      font-size:12px;
-      opacity:0.5;
-    ">${data.nin}</div>
-
-    <div style="
-      position:absolute;
-      right:120px;
-      bottom:120px;
-      transform:rotate(-25deg);
-      font-size:12px;
-      opacity:0.5;
-    ">${data.nin}</div>
-
-    <div style="
-      position:absolute;
-      left:300px;
-      top:260px;
-      transform:rotate(-10deg);
-      font-size:12px;
-      opacity:0.4;
-    ">${data.nin}</div>
-
-    <!-- ===================== -->
-    <!-- 🔻 BACK SIDE (FLIPPED) -->
-    <!-- ===================== -->
-    <div style="
-      position:absolute;
-      bottom:0;
       width:100%;
-      height:280px;
-      transform:rotate(180deg);
-      text-align:center;
-      padding:30px;
-      box-sizing:border-box;
-      font-size:14px;
+      height:320px;
+      position:relative;
+      background:url('https://xcombinator.com.ng/assets/premium-bg.png') no-repeat center/cover;
     ">
 
-      <div style="font-size:26px; font-weight:bold;">
-        DISCLAIMER
+      <!-- HEADER -->
+      <div style="
+        position:absolute;
+        top:15px;
+        left:30px;
+        font-size:22px;
+        font-weight:900;
+        color:#0b8f3a;
+      ">
+        FEDERAL REPUBLIC OF NIGERIA
       </div>
 
-      <div style="margin-top:10px; font-style:italic;">
-        Trust, but verify
+      <div style="
+        position:absolute;
+        top:45px;
+        left:30px;
+        font-size:16px;
+        font-weight:700;
+      ">
+        DIGITAL NIN SLIP
       </div>
 
-      <div style="margin-top:15px;">
-        Kindly ensure each time this ID is presented, that you verify using
-        a Government-approved verification resource.
+      <!-- PASSPORT -->
+      <img src="${data.photo}" style="
+        position:absolute;
+        left:30px;
+        top:90px;
+        width:140px;
+        height:160px;
+        object-fit:cover;
+      "/>
+
+      <!-- QR -->
+      <img src="${data.qr}" style="
+        position:absolute;
+        right:40px;
+        top:20px;
+        width:150px;
+      "/>
+
+      <!-- DETAILS -->
+      <div style="
+        position:absolute;
+        left:200px;
+        top:90px;
+        font-size:16px;
+      ">
+
+        <div style="color:#666;">SURNAME/NOM</div>
+        <div style="font-weight:bold;">${data.surname}</div>
+
+        <div style="margin-top:10px; color:#666;">
+          GIVEN NAMES/PRENOMS
+        </div>
+        <div style="font-weight:bold;">
+          ${data.firstname}, ${data.middlename || ""}
+        </div>
+
+        <div style="margin-top:10px;">
+          <span style="color:#666;">DATE OF BIRTH</span>
+          <span style="margin-left:50px; color:#666;">SEX/SEXE</span>
+        </div>
+
+        <div style="font-weight:bold;">
+          ${data.birthdate}
+          <span style="margin-left:70px;">${data.gender}</span>
+        </div>
       </div>
 
-      <div style="margin-top:10px; font-weight:bold;">
-        CAUTION!
+      <!-- NGA -->
+      <div style="
+        position:absolute;
+        right:120px;
+        top:200px;
+        font-size:22px;
+        font-weight:bold;
+      ">
+        NGA
       </div>
 
-      <div style="margin-top:10px;">
-        If this NIN was not issued to the person presenting it, do NOT attempt
-        to scan or replicate personal data contained herein.
+      <!-- ISSUE DATE -->
+      <div style="
+        position:absolute;
+        right:100px;
+        top:230px;
+        font-size:12px;
+      ">
+        ISSUE DATE<br/>
+        <b>${new Date().toLocaleDateString("en-GB")}</b>
+      </div>
+
+      <!-- NIN LABEL -->
+      <div style="
+        position:absolute;
+        bottom:70px;
+        left:220px;
+        font-size:16px;
+        font-weight:600;
+      ">
+        National Identification Number (NIN)
+      </div>
+
+      <!-- MAIN NIN -->
+      <div style="
+        position:absolute;
+        bottom:20px;
+        left:220px;
+        font-size:30px;
+        font-weight:bold;
+        letter-spacing:6px;
+      ">
+        ${formattedNIN}
+      </div>
+
+      <!-- WATERMARK NIN -->
+      <div style="position:absolute; left:20px; top:60px; transform:rotate(-25deg); font-size:10px; opacity:0.5;">
+        ${data.nin}
+      </div>
+
+      <div style="position:absolute; right:100px; top:100px; transform:rotate(25deg); font-size:10px; opacity:0.5;">
+        ${data.nin}
+      </div>
+
+    </div>
+
+    <!-- ========================= -->
+    <!-- ⚪ BACK SIDE -->
+    <!-- ========================= -->
+    <div style="
+      width:100%;
+      height:260px;
+      background:white;
+      border-top:2px solid #000;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      text-align:center;
+      padding:20px;
+      box-sizing:border-box;
+    ">
+
+      <div style="max-width:800px;">
+
+        <div style="font-size:24px; font-weight:bold;">
+          DISCLAIMER
+        </div>
+
+        <div style="margin-top:8px; font-style:italic;">
+          Trust, but verify
+        </div>
+
+        <div style="margin-top:12px; font-size:14px;">
+          Kindly ensure each time this ID is presented, that you verify the
+          credentials using a Government-approved verification resource.
+        </div>
+
+        <div style="margin-top:15px; font-size:16px; font-weight:bold;">
+          CAUTION!
+        </div>
+
+        <div style="margin-top:10px; font-size:14px;">
+          If this NIN was not issued to the person presenting it, do NOT attempt
+          to scan, photocopy or replicate personal data contained herein.
+        </div>
+
       </div>
 
     </div>
