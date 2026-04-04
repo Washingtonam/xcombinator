@@ -5,11 +5,13 @@ import { useTheme } from "../context/ThemeContext";
 
 const API_BASE = "https://xcombinator.onrender.com";
 
-export default function Sidebar({ toggleTheme, dark }) {
+export default function Sidebar() {
   const navigate = useNavigate();
   const location = useLocation();
+
+  // ✅ ONLY USE CONTEXT (NO PROPS)
   const { dark, toggleTheme } = useTheme();
-  
+
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [pendingPayments, setPendingPayments] = useState(0);
@@ -72,12 +74,13 @@ export default function Sidebar({ toggleTheme, dark }) {
           )}
 
           <div className="flex items-center gap-2">
+
             {/* 🌙 DARK MODE TOGGLE */}
             <button
               onClick={toggleTheme}
-              className="bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded text-sm mt-3"
+              className="bg-gray-700 hover:bg-gray-600 px-3 py-1 rounded text-xs"
             >
-              {dark ? "☀️ Light Mode" : "🌙 Dark Mode"}
+              {dark ? "☀️" : "🌙"}
             </button>
 
             {/* COLLAPSE */}
@@ -180,6 +183,7 @@ export default function Sidebar({ toggleTheme, dark }) {
       <div className="md:hidden flex items-center justify-between bg-blue-900 text-white p-3">
         <button onClick={() => setMobileOpen(true)}>☰</button>
         <h1 className="font-bold">NIN Portal</h1>
+
         <button onClick={toggleTheme}>
           {dark ? "☀️" : "🌙"}
         </button>
