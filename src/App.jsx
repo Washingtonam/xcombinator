@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route, useLocation, Navigate } from "react-router-dom";
+import { useEffect, useState } from "react";
 
 import Sidebar from "./components/Sidebar";
 
@@ -8,7 +9,7 @@ import Register from "./pages/auth/Register";
 import Admin from "./pages/admin/Admin";
 import AdminUsers from "./pages/admin/AdminUsers";
 import AdminPayments from "./pages/admin/AdminPayments";
-import AdminPricing from "./pages/admin/AdminPricing"; // 🔥 NEW
+import AdminPricing from "./pages/admin/AdminPricing";
 
 import Dashboard from "./pages/dashboard/Dashboard";
 import VerifyNIN from "./pages/verification/VerifyNIN";
@@ -42,12 +43,15 @@ function AdminRoute({ children }) {
 // ==============================
 // 📦 LAYOUT
 // ==============================
-function Layout() {
+function Layout({ toggleTheme, dark }) {
   return (
     <div className="flex">
-      <Sidebar />
 
-      <div className="flex-1 p-6">
+      {/* SIDEBAR */}
+      <Sidebar toggleTheme={toggleTheme} dark={dark} />
+
+      {/* MAIN CONTENT */}
+      <div className="flex-1 p-4 md:p-6 bg-gray-100 dark:bg-[#0B0B0B] min-h-screen transition-colors duration-300">
         <Routes>
 
           {/* USER ROUTES */}
@@ -93,7 +97,7 @@ function Layout() {
             } 
           />
 
-          {/* 🔥 ADMIN PRICING (THIS WAS MISSING) */}
+          {/* ADMIN PRICING */}
           <Route 
             path="/admin/pricing" 
             element={
@@ -114,28 +118,45 @@ function Layout() {
 // ==============================
 // 🧠 ROUTE SWITCH
 // ==============================
-function AppRoutes() {
+function AppRoutes({ toggleTheme, dark }) {
   const location = useLocation();
 
+  // AUTH PAGES (NO SIDEBAR)
   if (location.pathname === "/login" || location.pathname === "/register") {
     return (
-      <Routes>
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-      </Routes>
+      <div className="bg-gray-100 dark:bg-[#0B0B0B] min-h-screen transition">
+        <Routes>
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+        </Routes>
+      </div>
     );
   }
 
-  return <Layout />;
+  return <Layout toggleTheme={toggleTheme} dark={dark} />;
 }
 
 // ==============================
 // 🚀 MAIN APP
 // ==============================
 export default function App() {
+  const [dark, setDark] = useState(
+    localStorage.getItem("theme") === "dark"
+  );
+
+  useEffect(() => {
+    if (dark) {
+      document.documentElement.classList.add("dark");
+      localStorage.setItem("theme", "dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+      localStorage.setItem("theme", "light");
+    }
+  }, [dark]);
+
   return (
     <BrowserRouter>
-      <AppRoutes />
+      <AppRoutes toggleTheme={() => setDark(!dark)} dark={dark} />
     </BrowserRouter>
   );
 }

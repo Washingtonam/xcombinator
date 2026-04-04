@@ -4,10 +4,12 @@ import axios from "axios";
 
 const API_BASE = "https://xcombinator.onrender.com";
 
-export default function Sidebar() {
+export default function Sidebar({ toggleTheme, dark }) {
   const navigate = useNavigate();
   const location = useLocation();
+
   const [collapsed, setCollapsed] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
   const [pendingPayments, setPendingPayments] = useState(0);
 
   const user = JSON.parse(localStorage.getItem("user"));
@@ -17,60 +19,73 @@ export default function Sidebar() {
     email: localStorage.getItem("email"),
   };
 
+  // =========================
+  // LOGOUT
+  // =========================
   const handleLogout = () => {
     localStorage.removeItem("user");
     navigate("/login");
   };
 
-  // 🔥 FETCH PENDING PAYMENTS COUNT
+  // =========================
+  // FETCH ADMIN DATA
+  // =========================
   const fetchPendingPayments = async () => {
     try {
       const res = await axios.get(`${API_BASE}/api/admin/payments`, { headers });
-
       const pending = res.data.filter(p => p.status === "pending").length;
       setPendingPayments(pending);
-
     } catch (err) {
       console.error(err);
     }
   };
 
   useEffect(() => {
-    if (isAdmin) {
-      fetchPendingPayments();
-    }
+    if (isAdmin) fetchPendingPayments();
   }, []);
 
-  // 🔥 ACTIVE LINK STYLE
+  // =========================
+  // ACTIVE LINK
+  // =========================
   const isActive = (path) => location.pathname === path;
 
   const linkClass = (path) =>
-    `flex items-center gap-3 p-2 rounded transition ${
+    `flex items-center gap-3 p-3 rounded-lg transition ${
       isActive(path)
         ? "bg-blue-700"
         : "hover:bg-blue-800"
     }`;
 
-  return (
-    <div
-      className={`h-screen bg-blue-900 text-white p-4 flex flex-col justify-between transition-all duration-300 ${
-        collapsed ? "w-20" : "w-64"
-      }`}
-    >
-      {/* TOP */}
+  // =========================
+  // SIDEBAR CONTENT
+  // =========================
+  const SidebarContent = () => (
+    <>
+      {/* HEADER */}
       <div>
-        {/* LOGO + TOGGLE */}
-        <div className="flex items-center justify-between mb-10">
+        <div className="flex items-center justify-between mb-8">
+
           {!collapsed && (
             <h1 className="text-xl font-bold">NIN Portal</h1>
           )}
 
-          <button
-            onClick={() => setCollapsed(!collapsed)}
-            className="bg-blue-700 px-2 py-1 rounded"
-          >
-            {collapsed ? "➡️" : "⬅️"}
-          </button>
+          <div className="flex items-center gap-2">
+            {/* 🌙 DARK MODE TOGGLE */}
+            <button
+              onClick={toggleTheme}
+              className="bg-blue-700 px-2 py-1 rounded text-xs"
+            >
+              {dark ? "☀️" : "🌙"}
+            </button>
+
+            {/* COLLAPSE */}
+            <button
+              onClick={() => setCollapsed(!collapsed)}
+              className="bg-blue-700 px-2 py-1 rounded text-xs"
+            >
+              {collapsed ? "➡️" : "⬅️"}
+            </button>
+          </div>
         </div>
 
         {/* MENU */}
@@ -129,12 +144,17 @@ export default function Sidebar() {
                 <Link to="/admin/payments" className={linkClass("/admin/payments")}>
                   💳 {!collapsed && "Payments"}
 
-                  {/* 🔔 NOTIFICATION BADGE */}
                   {pendingPayments > 0 && (
                     <span className="ml-auto bg-red-500 text-xs px-2 py-0.5 rounded-full">
                       {pendingPayments}
                     </span>
                   )}
+                </Link>
+              </li>
+
+              <li>
+                <Link to="/admin/pricing" className={linkClass("/admin/pricing")}>
+                  💲 {!collapsed && "Pricing"}
                 </Link>
               </li>
             </>
@@ -149,6 +169,38 @@ export default function Sidebar() {
       >
         {!collapsed ? "Logout" : "🚪"}
       </button>
-    </div>
+    </>
+  );
+
+  return (
+    <>
+      {/* MOBILE TOP BAR */}
+      <div className="md:hidden flex items-center justify-between bg-blue-900 text-white p-3">
+        <button onClick={() => setMobileOpen(true)}>☰</button>
+        <h1 className="font-bold">NIN Portal</h1>
+        <button onClick={toggleTheme}>
+          {dark ? "☀️" : "🌙"}
+        </button>
+      </div>
+
+      {/* MOBILE OVERLAY */}
+      {mobileOpen && (
+        <div
+          onClick={() => setMobileOpen(false)}
+          className="fixed inset-0 bg-black/50 z-40"
+        />
+      )}
+
+      {/* SIDEBAR */}
+      <div
+        className={`
+          fixed md:relative z-50 h-screen bg-blue-900 text-white p-4 flex flex-col justify-between transition-all duration-300
+          ${collapsed ? "w-20" : "w-64"}
+          ${mobileOpen ? "left-0" : "-left-full md:left-0"}
+        `}
+      >
+        <SidebarContent />
+      </div>
+    </>
   );
 }

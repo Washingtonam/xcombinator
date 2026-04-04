@@ -15,7 +15,6 @@ export default function VerifyNIN() {
   });
 
   const { user, balance, setBalance } = useUser();
-
   const isAdmin = user?.email === "washingtonamedu@gmail.com";
 
   // =========================
@@ -33,9 +32,7 @@ export default function VerifyNIN() {
           });
         }
       })
-      .catch(() => {
-        console.log("Pricing fallback used");
-      });
+      .catch(() => {});
   }, []);
 
   // =========================
@@ -50,7 +47,6 @@ export default function VerifyNIN() {
 
     const price = prices[selectedType];
 
-    // 🔥 ADMIN + MOCK BYPASS
     if (!isAdmin && nin !== "00000000000" && balance < price) {
       return alert(`Insufficient balance. Required ₦${price}`);
     }
@@ -72,26 +68,23 @@ export default function VerifyNIN() {
       const data = await res.json();
 
       if (!res.ok) {
-        alert(data.error || "Verification failed. Try again.");
+        alert(data.error || "Verification failed");
         setLoading(false);
         return;
       }
 
       setResult(data);
 
-      // 🔥 Update balance only for real paid users
       if (!isAdmin && nin !== "00000000000") {
         setBalance(data.balance);
       }
 
-      // 🔥 AUTO DOWNLOAD
       setTimeout(() => {
         handleDownload(data, selectedType);
       }, 400);
 
-    } catch (error) {
-      console.error(error);
-      alert("Network or server error. Try again.");
+    } catch {
+      alert("Network error");
     }
 
     setLoading(false);
@@ -106,10 +99,7 @@ export default function VerifyNIN() {
       data?.data ||
       null;
 
-    if (!info) {
-      alert("No data to generate slip");
-      return;
-    }
+    if (!info) return;
 
     try {
       const res = await fetch("https://xcombinator.onrender.com/api/generate-nin-slip", {
@@ -123,25 +113,15 @@ export default function VerifyNIN() {
         }),
       });
 
-      if (!res.ok) {
-        alert("Slip generation failed");
-        return;
-      }
-
       const blob = await res.blob();
       const url = window.URL.createObjectURL(blob);
 
       const a = document.createElement("a");
       a.href = url;
       a.download = `nin-${type}-slip.pdf`;
-      document.body.appendChild(a);
       a.click();
-      a.remove();
 
-      window.URL.revokeObjectURL(url);
-
-    } catch (err) {
-      console.error(err);
+    } catch {
       alert("Download failed");
     }
   };
@@ -154,24 +134,35 @@ export default function VerifyNIN() {
   const step3 = consent;
 
   return (
-    <div className="max-w-2xl mx-auto">
+    <div className="max-w-2xl mx-auto pb-20">
 
-      <h1 className="text-2xl font-bold mb-6">Verify NIN</h1>
+      {/* HEADER */}
+      <h1 className="text-2xl md:text-3xl font-bold mb-2 dark:text-white">
+        Verify NIN
+      </h1>
 
-      {/* STEP BAR */}
-      <div className="flex justify-between mb-6 text-sm font-medium">
-        <div className={step1 ? "text-green-600" : ""}>1. Slip</div>
-        <div className={step2 ? "text-green-600" : ""}>2. NIN</div>
-        <div className={step3 ? "text-green-600" : ""}>3. Consent</div>
-        <div className={result ? "text-green-600" : ""}>4. Done</div>
+      <p className="text-gray-500 mb-6">
+        Enter a valid NIN to retrieve and generate slip
+      </p>
+
+      {/* STEP INDICATOR */}
+      <div className="flex justify-between text-xs md:text-sm font-medium mb-6">
+        <span className={step1 ? "text-green-600" : "text-gray-400"}>Slip</span>
+        <span className={step2 ? "text-green-600" : "text-gray-400"}>NIN</span>
+        <span className={step3 ? "text-green-600" : "text-gray-400"}>Consent</span>
+        <span className={result ? "text-green-600" : "text-gray-400"}>Done</span>
       </div>
 
-      {/* SLIP SELECTION */}
+      {/* ========================= */}
+      {/* SLIP TYPE */}
+      {/* ========================= */}
       <div className="mb-6">
 
-        <h2 className="font-semibold mb-3">Select Slip Type</h2>
+        <h2 className="font-semibold mb-3 dark:text-white">
+          Select Slip Type
+        </h2>
 
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
 
           {[
             { type: "data", label: "Data", price: prices.data },
@@ -182,13 +173,13 @@ export default function VerifyNIN() {
             <div
               key={item.type}
               onClick={() => setSelectedType(item.type)}
-              className={`cursor-pointer rounded-xl border p-4 transition-all duration-300 hover:shadow-lg ${
+              className={`cursor-pointer rounded-2xl border p-5 transition-all ${
                 selectedType === item.type
-                  ? "border-blue-600 bg-blue-50 scale-105"
-                  : "bg-white"
+                  ? "border-green-600 bg-green-50 scale-105"
+                  : "bg-white dark:bg-[#1A1A1A] dark:border-gray-800"
               }`}
             >
-              <p className="font-semibold">{item.label}</p>
+              <p className="font-semibold dark:text-white">{item.label}</p>
               <p className="text-sm text-gray-500">₦{item.price}</p>
             </div>
 
@@ -199,63 +190,81 @@ export default function VerifyNIN() {
         {/* PREVIEW */}
         {selectedType && (
           <div className="mt-6">
-            <p className="text-sm text-gray-600 mb-2">
-              Preview ({selectedType} slip)
+            <p className="text-sm text-gray-500 mb-2">
+              Preview ({selectedType})
             </p>
 
-            <div className="rounded-xl overflow-hidden shadow-lg border">
+            <div className="rounded-xl overflow-hidden shadow border">
               <img
                 src={`/slips/${selectedType}.png`}
-                alt="Slip preview"
-                className="w-full object-cover transition-all duration-500 hover:scale-105"
+                alt="preview"
+                className="w-full h-56 object-cover"
               />
             </div>
           </div>
         )}
-
       </div>
 
+      {/* ========================= */}
       {/* INPUT */}
+      {/* ========================= */}
       <input
         type="text"
         placeholder="Enter 11-digit NIN"
         value={nin}
         onChange={(e) => setNin(e.target.value)}
-        className="w-full border p-3 rounded mb-2"
+        className="w-full border p-4 text-lg rounded-xl mb-3 focus:ring-2 focus:ring-green-500 outline-none"
       />
 
-      {/* MOCK INFO */}
       <p className="text-xs text-gray-400 mb-4">
-        👉 Use <b>00000000000</b> for test mode (no charges)
+        👉 Use <b>00000000000</b> for test mode
       </p>
 
+      {/* ========================= */}
       {/* CONSENT */}
-      <div className="flex items-start gap-2 mb-4 text-sm">
+      {/* ========================= */}
+      <label className="flex items-start gap-2 mb-6 text-sm">
         <input
           type="checkbox"
           checked={consent}
           onChange={() => setConsent(!consent)}
         />
-        <p>
-          I confirm that I have obtained proper consent from the NIN owner.
-        </p>
-      </div>
+        <span className="text-gray-600">
+          I confirm that I have obtained proper consent
+        </span>
+      </label>
 
-      {/* BUTTON */}
+      {/* ========================= */}
+      {/* ACTION BUTTON */}
+      {/* ========================= */}
       <button
         onClick={handleVerify}
         disabled={loading}
-        className={`w-full py-3 rounded text-white ${
-          loading ? "bg-gray-400" : "bg-black"
+        className={`w-full py-4 rounded-xl text-white font-semibold text-lg ${
+          loading ? "bg-gray-400" : "bg-green-600 hover:bg-green-700"
         }`}
       >
         {loading ? "Processing..." : "Verify & Generate Slip"}
       </button>
 
+      {/* SUCCESS */}
+      {result && (
+        <div className="mt-6 p-4 bg-green-100 text-green-700 rounded-lg text-center">
+          ✅ Verification successful. Downloading slip...
+        </div>
+      )}
+
       {/* BALANCE */}
-      <p className="mt-4 text-sm text-gray-600">
+      <p className="mt-6 text-sm text-gray-500 text-center">
         Balance: ₦{balance}
       </p>
+
+      {/* LOADING OVERLAY */}
+      {loading && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center text-white text-lg z-50">
+          Processing...
+        </div>
+      )}
 
     </div>
   );
