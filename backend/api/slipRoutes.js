@@ -247,210 +247,154 @@ function generateDataHTML(data) {
 // =======================================================
 
 
+async function generatePremiumSlip(doc, data) {
+  const QRCode = require("qrcode");
 
-// =======================================================
-// 🟢 PREMIUM HTML ENGINE (PIXEL PERFECT CARD)
-// =======================================================
-function generatePremiumHTML(data) {
+  // =========================
+  // 📏 CARD DIMENSIONS (EXACT)
+  // =========================
+  const CARD_WIDTH = 9.1 * 28.35;   // 258pt
+  const CARD_HEIGHT = 5.4 * 28.35;  // 153pt
+
+  const startX = 40;
+  const frontY = 40;
+  const backY = frontY + CARD_HEIGHT + 20;
+
+  // =========================
+  // 🟢 FRONT SIDE
+  // =========================
+
+  const bg = "https://xcombinator.com.ng/assets/premium-bg.png";
+
+  try {
+    doc.image(bg, startX, frontY, {
+      width: CARD_WIDTH,
+      height: CARD_HEIGHT,
+    });
+  } catch {}
+
+  // =========================
+  // 📷 PASSPORT
+  // =========================
+  if (data.photo) {
+    try {
+      const img = Buffer.from(
+        data.photo.replace(/^data:image\/\w+;base64,/, ""),
+        "base64"
+      );
+
+      doc.image(img, startX + 10, frontY + 35, {
+        width: 60,
+        height: 70,
+      });
+    } catch {}
+  }
+
+  // =========================
+  // 🔳 QR CODE
+  // =========================
+  const qr = await QRCode.toDataURL(
+    JSON.stringify({
+      nin: data.nin,
+      name: `${data.firstname} ${data.surname}`,
+    })
+  );
+
+  const qrBuffer = Buffer.from(
+    qr.replace(/^data:image\/png;base64,/, ""),
+    "base64"
+  );
+
+  doc.image(qrBuffer, startX + CARD_WIDTH - 70, frontY + 10, {
+    width: 60,
+  });
+
+  // =========================
+  // 🧾 TEXT
+  // =========================
+  doc.fillColor("black");
+
+  doc.fontSize(8).text("SURNAME/NOM", startX + 80, frontY + 35);
+  doc.font("Helvetica-Bold").text(data.surname, startX + 80, frontY + 45);
+
+  doc.font("Helvetica").text("GIVEN NAMES", startX + 80, frontY + 60);
+  doc.font("Helvetica-Bold").text(
+    `${data.firstname}, ${data.middlename || ""}`,
+    startX + 80,
+    frontY + 70
+  );
+
+  doc.font("Helvetica").text("DATE OF BIRTH", startX + 80, frontY + 85);
+  doc.text(data.birthdate, startX + 80, frontY + 95);
+
+  doc.text("SEX", startX + 150, frontY + 85);
+  doc.text(data.gender, startX + 150, frontY + 95);
+
+  // =========================
+  // 🌍 NGA + DATE
+  // =========================
+  doc.font("Helvetica-Bold").fontSize(10)
+    .text("NGA", startX + CARD_WIDTH - 70, frontY + 80);
+
+  doc.fontSize(7).text("ISSUE DATE", startX + CARD_WIDTH - 75, frontY + 95);
+
+  doc.text(
+    new Date().toLocaleDateString("en-GB"),
+    startX + CARD_WIDTH - 75,
+    frontY + 105
+  );
+
+  // =========================
+  // 🔢 NIN
+  // =========================
   const formattedNIN = (data.nin || "")
-    .replace(/(\d{4})(\d{3})(\d{4})/, "$1   $2   $3");
+    .replace(/(\d{4})(\d{3})(\d{4})/, "$1 $2 $3");
 
-  return `
-  <html>
-  <body style="margin:0; font-family:Arial; background:#f5f5f5;">
+  doc.fontSize(8).text(
+    "National Identification Number (NIN)",
+    startX + 40,
+    frontY + CARD_HEIGHT - 35
+  );
 
-  <!-- ========================= -->
-  <!-- 🔥 CONTAINER -->
-  <!-- ========================= -->
-  <div style="
-    width:1000px;
-    margin:auto;
-  ">
+  doc.fontSize(14).font("Helvetica-Bold").text(
+    formattedNIN,
+    startX + 40,
+    frontY + CARD_HEIGHT - 20
+  );
 
-    <!-- ========================= -->
-    <!-- 🟢 FRONT SIDE -->
-    <!-- ========================= -->
-    <div style="
-      width:100%;
-      height:320px;
-      position:relative;
-      background:url('https://xcombinator.com.ng/assets/premium-bg.png') no-repeat center/cover;
-    ">
+  // =========================
+  // ⚪ BACK SIDE
+  // =========================
+  doc.rect(startX, backY, CARD_WIDTH, CARD_HEIGHT).stroke();
 
-      <!-- HEADER -->
-      <div style="
-        position:absolute;
-        top:15px;
-        left:30px;
-        font-size:22px;
-        font-weight:900;
-        color:#0b8f3a;
-      ">
-        FEDERAL REPUBLIC OF NIGERIA
-      </div>
+  doc.font("Helvetica-Bold").fontSize(10)
+    .text("DISCLAIMER", startX, backY + 20, { align: "center", width: CARD_WIDTH });
 
-      <div style="
-        position:absolute;
-        top:45px;
-        left:30px;
-        font-size:16px;
-        font-weight:700;
-      ">
-        DIGITAL NIN SLIP
-      </div>
+  doc.font("Helvetica-Oblique").fontSize(8)
+    .text("Trust, but verify", startX, backY + 35, {
+      align: "center",
+      width: CARD_WIDTH,
+    });
 
-      <!-- PASSPORT -->
-      <img src="${data.photo}" style="
-        position:absolute;
-        left:30px;
-        top:90px;
-        width:140px;
-        height:160px;
-        object-fit:cover;
-      "/>
+  doc.font("Helvetica").fontSize(7).text(
+    "Kindly ensure each time this ID is presented, verify using approved sources.",
+    startX + 10,
+    backY + 50,
+    { width: CARD_WIDTH - 20, align: "center" }
+  );
 
-      <!-- QR -->
-      <img src="${data.qr}" style="
-        position:absolute;
-        right:40px;
-        top:20px;
-        width:150px;
-      "/>
+  doc.font("Helvetica-Bold").fontSize(9)
+    .text("CAUTION!", startX, backY + 80, {
+      align: "center",
+      width: CARD_WIDTH,
+    });
 
-      <!-- DETAILS -->
-      <div style="
-        position:absolute;
-        left:200px;
-        top:90px;
-        font-size:16px;
-      ">
-
-        <div style="color:#666;">SURNAME/NOM</div>
-        <div style="font-weight:bold;">${data.surname}</div>
-
-        <div style="margin-top:10px; color:#666;">
-          GIVEN NAMES/PRENOMS
-        </div>
-        <div style="font-weight:bold;">
-          ${data.firstname}, ${data.middlename || ""}
-        </div>
-
-        <div style="margin-top:10px;">
-          <span style="color:#666;">DATE OF BIRTH</span>
-          <span style="margin-left:50px; color:#666;">SEX/SEXE</span>
-        </div>
-
-        <div style="font-weight:bold;">
-          ${data.birthdate}
-          <span style="margin-left:70px;">${data.gender}</span>
-        </div>
-      </div>
-
-      <!-- NGA -->
-      <div style="
-        position:absolute;
-        right:120px;
-        top:200px;
-        font-size:22px;
-        font-weight:bold;
-      ">
-        NGA
-      </div>
-
-      <!-- ISSUE DATE -->
-      <div style="
-        position:absolute;
-        right:100px;
-        top:230px;
-        font-size:12px;
-      ">
-        ISSUE DATE<br/>
-        <b>${new Date().toLocaleDateString("en-GB")}</b>
-      </div>
-
-      <!-- NIN LABEL -->
-      <div style="
-        position:absolute;
-        bottom:70px;
-        left:220px;
-        font-size:16px;
-        font-weight:600;
-      ">
-        National Identification Number (NIN)
-      </div>
-
-      <!-- MAIN NIN -->
-      <div style="
-        position:absolute;
-        bottom:20px;
-        left:220px;
-        font-size:30px;
-        font-weight:bold;
-        letter-spacing:6px;
-      ">
-        ${formattedNIN}
-      </div>
-
-      <!-- WATERMARK NIN -->
-      <div style="position:absolute; left:20px; top:60px; transform:rotate(-25deg); font-size:10px; opacity:0.5;">
-        ${data.nin}
-      </div>
-
-      <div style="position:absolute; right:100px; top:100px; transform:rotate(25deg); font-size:10px; opacity:0.5;">
-        ${data.nin}
-      </div>
-
-    </div>
-
-    <!-- ========================= -->
-    <!-- ⚪ BACK SIDE -->
-    <!-- ========================= -->
-    <div style="
-      width:100%;
-      height:260px;
-      background:white;
-      border-top:2px solid #000;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      text-align:center;
-      padding:20px;
-      box-sizing:border-box;
-    ">
-
-      <div style="max-width:800px;">
-
-        <div style="font-size:24px; font-weight:bold;">
-          DISCLAIMER
-        </div>
-
-        <div style="margin-top:8px; font-style:italic;">
-          Trust, but verify
-        </div>
-
-        <div style="margin-top:12px; font-size:14px;">
-          Kindly ensure each time this ID is presented, that you verify the
-          credentials using a Government-approved verification resource.
-        </div>
-
-        <div style="margin-top:15px; font-size:16px; font-weight:bold;">
-          CAUTION!
-        </div>
-
-        <div style="margin-top:10px; font-size:14px;">
-          If this NIN was not issued to the person presenting it, do NOT attempt
-          to scan, photocopy or replicate personal data contained herein.
-        </div>
-
-      </div>
-
-    </div>
-
-  </div>
-
-  </body>
-  </html>
-  `;
+  doc.font("Helvetica").fontSize(7).text(
+    "Do not scan or copy if not authorized. Use only for verification.",
+    startX + 10,
+    backY + 95,
+    { width: CARD_WIDTH - 20, align: "center" }
+  );
 }
 
 // =======================================================
