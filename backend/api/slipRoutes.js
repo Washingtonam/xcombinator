@@ -137,6 +137,7 @@ function generateDataHTML(data) {
 // 🟢 PREMIUM SLIP (FIXED + SPLIT FRONT/BACK)
 // =======================================================
 async function generatePremiumSlipHTML(data) {
+  const QRCode = require("qrcode");
 
   const qr = await QRCode.toDataURL(
     JSON.stringify({
@@ -148,82 +149,220 @@ async function generatePremiumSlipHTML(data) {
   const formattedNIN = (data.nin || "")
     .replace(/(\d{4})(\d{3})(\d{4})/, "$1 $2 $3");
 
+  const issueDate = new Date().toLocaleDateString("en-GB");
+
   return `
   <html>
   <head>
-  <style>
-    body { margin:0; font-family:Arial; }
+    <style>
+      body {
+        margin: 0;
+        font-family: Arial, Helvetica, sans-serif;
+      }
 
-    .page {
-      width:9.1cm;
-      margin:auto;
-    }
+      .page {
+        width: 9.1cm;
+        margin: auto;
+      }
 
-    .card {
-      width:9.1cm;
-      height:5.4cm;
-      position:relative;
-    }
+      .card {
+        width: 9.1cm;
+        height: 5.4cm;
+        position: relative;
+        overflow: hidden;
+      }
 
-    .front {
-      background:url('https://xcombinator.com.ng/assets/premium-bg.png') no-repeat center/cover;
-    }
+      .front {
+        background: url('https://xcombinator.com.ng/assets/premium-bg.png') no-repeat center/cover;
+      }
 
-    .back {
-      border:1px solid #000;
-      text-align:center;
-      padding:10px;
-    }
-  </style>
+      .back {
+        border: 1px solid black;
+        position: relative;
+        transform: rotate(180deg);
+        padding: 10px;
+        box-sizing: border-box;
+      }
+
+      .small {
+        font-size: 7px;
+      }
+
+      .medium {
+        font-size: 9px;
+      }
+
+      .bold {
+        font-weight: bold;
+      }
+    </style>
   </head>
 
   <body>
 
   <div class="page">
 
-    <!-- FRONT -->
+    <!-- ================= FRONT ================= -->
     <div class="card front">
 
-      <img src="${data.photo}" style="position:absolute;left:10px;top:30px;width:55px;height:65px;"/>
-
-      <img src="${qr}" style="position:absolute;right:10px;top:10px;width:55px;"/>
-
-      <div style="position:absolute;left:70px;top:35px;font-size:8px;">
-        <div>SURNAME</div>
-        <div style="font-weight:bold;">${data.surname}</div>
-
-        <div>GIVEN NAMES</div>
-        <div>${data.firstname}, ${data.middlename}</div>
-
-        <div>DOB: ${data.birthdate} | SEX: ${data.gender}</div>
+      <!-- HEADER -->
+      <div style="
+        position:absolute;
+        top:6px;
+        left:10px;
+        font-size:10px;
+        font-weight:bold;
+        color:#0b7d2b;
+      ">
+        FEDERAL REPUBLIC OF NIGERIA
       </div>
 
-      <div style="position:absolute;right:30px;top:70px;font-weight:bold;">NGA</div>
+      <div style="
+        position:absolute;
+        top:18px;
+        left:10px;
+        font-size:9px;
+        font-weight:bold;
+      ">
+        DIGITAL NIN SLIP
+      </div>
 
-      <div style="position:absolute;bottom:25px;left:40px;font-size:8px;">
+      <!-- PASSPORT -->
+      <img src="${data.photo}" style="
+        position:absolute;
+        left:10px;
+        top:30px;
+        width:55px;
+        height:65px;
+        object-fit:cover;
+      "/>
+
+      <!-- QR -->
+      <img src="${qr}" style="
+        position:absolute;
+        right:8px;
+        top:8px;
+        width:60px;
+      "/>
+
+      <!-- TEXT -->
+      <div style="position:absolute; left:70px; top:30px;" class="small">
+        <div>SURNAME/NOM</div>
+        <div class="medium bold">${data.surname || ""}</div>
+
+        <div style="margin-top:3px;">GIVEN NAMES/PRENOMS</div>
+        <div class="medium bold">
+          ${data.firstname || ""}, ${data.middlename || ""}
+        </div>
+
+        <div style="margin-top:3px;">
+          DATE OF BIRTH
+        </div>
+        <div class="medium bold">${data.birthdate || ""}</div>
+
+        <div style="margin-top:3px;">
+          SEX/SEXE: ${data.gender || ""}
+        </div>
+      </div>
+
+      <!-- NGA + DATE -->
+      <div style="
+        position:absolute;
+        right:25px;
+        top:70px;
+        font-size:12px;
+        font-weight:bold;
+      ">NGA</div>
+
+      <div style="
+        position:absolute;
+        right:15px;
+        top:85px;
+        font-size:7px;
+      ">
+        ISSUE DATE
+      </div>
+
+      <div style="
+        position:absolute;
+        right:15px;
+        top:95px;
+        font-size:8px;
+        font-weight:bold;
+      ">
+        ${issueDate}
+      </div>
+
+      <!-- LABEL -->
+      <div style="
+        position:absolute;
+        bottom:28px;
+        left:40px;
+        font-size:8px;
+      ">
         National Identification Number (NIN)
       </div>
 
-      <div style="position:absolute;bottom:8px;left:40px;font-size:13px;font-weight:bold;">
+      <!-- MAIN NIN -->
+      <div style="
+        position:absolute;
+        bottom:10px;
+        left:40px;
+        font-size:14px;
+        font-weight:bold;
+        letter-spacing:2px;
+      ">
         ${formattedNIN}
+      </div>
+
+      <!-- WATERMARK NIN (ALL 4 SIDES) -->
+      <div style="position:absolute; left:5px; top:15px; font-size:6px; transform:rotate(-30deg); opacity:0.5;">
+        ${data.nin}
+      </div>
+
+      <div style="position:absolute; left:5px; bottom:20px; font-size:6px; transform:rotate(30deg); opacity:0.5;">
+        ${data.nin}
+      </div>
+
+      <div style="position:absolute; right:5px; top:20px; font-size:6px; transform:rotate(30deg); opacity:0.5;">
+        ${data.nin}
+      </div>
+
+      <div style="position:absolute; right:5px; bottom:15px; font-size:6px; transform:rotate(-30deg); opacity:0.5;">
+        ${data.nin}
       </div>
 
     </div>
 
-    <!-- BACK -->
+    <!-- ================= BACK ================= -->
     <div class="card back">
 
-      <div style="font-weight:bold;">DISCLAIMER</div>
-      <div style="font-size:8px;">Trust, but verify</div>
+      <div style="text-align:center;">
+        
+        <div style="font-size:14px; font-weight:bold;">
+          DISCLAIMER
+        </div>
 
-      <div style="font-size:7px;margin-top:5px;">
-        Always verify using approved systems.
-      </div>
+        <div style="font-size:10px; margin-top:5px;">
+          Trust, but verify
+        </div>
 
-      <div style="font-weight:bold;margin-top:8px;">CAUTION!</div>
+        <div style="font-size:9px; margin-top:10px;">
+          Kindly ensure each time this ID is presented, that you verify the credentials 
+          using a Government-approved verification resource. The details on the front 
+          of this NIN slip must EXACTLY match the verification result.
+        </div>
 
-      <div style="font-size:7px;">
-        Do not misuse this identity.
+        <div style="font-size:12px; font-weight:bold; margin-top:12px;">
+          CAUTION!
+        </div>
+
+        <div style="font-size:9px; margin-top:8px;">
+          If this NIN was not issued to the person presenting it, please DO NOT attempt 
+          to scan, photocopy or replicate personal data contained herein. You are only 
+          permitted to scan the barcode for identity verification.
+        </div>
+
       </div>
 
     </div>
