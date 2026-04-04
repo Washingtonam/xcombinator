@@ -222,7 +222,7 @@ async function generatePremiumSlipHTML(data) {
         position:absolute;
         top:6px;
         left:12px;
-        font-size:14px;
+        font-size:13px;
         font-weight:bold;
         color:#0a8f2f;
         letter-spacing:1px;
@@ -232,65 +232,71 @@ async function generatePremiumSlipHTML(data) {
 
       <div style="
         position:absolute;
-        top:20px;
+        top:24px;
         left:12px;
-        font-size:9px;
+        font-size:11px;
         font-weight:bold;
         letter-spacing:1px;
       ">
         DIGITAL NIN SLIP
       </div>
 
-      <!-- PASSPORT -->
+      <!-- PASSPORT (BIGGER) -->
       <img src="${data.photo}" style="
         position:absolute;
         left:12px;
-        top:32px;
-        width:60px;
-        height:70px;
+        top:38px;
+        width:70px;
+        height:80px;
         object-fit:cover;
       "/>
 
-      <!-- QR -->
+      <!-- QR (BIGGER) -->
       <img src="${qr}" style="
         position:absolute;
         right:10px;
         top:10px;
-        width:65px;
+        width:80px;
       "/>
 
       <!-- SURNAME -->
-      <div style="position:absolute; left:80px; top:32px;">
-        <div class="label">SURNAME/NOM</div>
-        <div class="value">${data.surname || ""}</div>
+      <div style="position:absolute; left:90px; top:40px;">
+        <div style="font-size:9px; color:#555;">SURNAME/NOM</div>
+        <div style="font-size:12px; font-weight:bold; letter-spacing:1px;">
+          ${data.surname || ""}
+        </div>
       </div>
 
       <!-- GIVEN NAMES -->
-      <div style="position:absolute; left:80px; top:58px;">
-        <div class="label">GIVEN NAMES/PRENOMS</div>
-        <div class="value">
+      <div style="position:absolute; left:90px; top:70px;">
+        <div style="font-size:9px; color:#555;">GIVEN NAMES/PRENOMS</div>
+        <div style="font-size:12px; font-weight:bold; letter-spacing:1px;">
           ${data.firstname || ""}, ${data.middlename || ""}
         </div>
       </div>
 
       <!-- DOB -->
-      <div style="position:absolute; left:80px; top:84px;">
-        <div class="label">DATE OF BIRTH</div>
-        <div class="value">${data.birthdate || ""}</div>
+      <div style="position:absolute; left:90px; top:100px;">
+        <div style="font-size:9px; color:#555;">DATE OF BIRTH</div>
+        <div style="font-size:12px; font-weight:bold;">
+          ${data.birthdate || ""}
+        </div>
       </div>
 
       <!-- SEX -->
-      <div style="position:absolute; left:155px; top:84px;">
-        <div class="label">SEX/SEXE</div>
-        <div class="value">${data.gender || ""}</div>
+      <div style="position:absolute; left:180px; top:100px;">
+        <div style="font-size:9px; color:#555;">SEX/SEXE</div>
+        <div style="font-size:12px; font-weight:bold;">
+          ${data.gender || ""}
+        </div>
       </div>
 
       <!-- NGA -->
       <div style="
         position:absolute;
-        right:32px;
-        top:78px;
-        font-size:13px;
+        right:35px;
+        top:90px;
+        font-size:16px;
         font-weight:bold;
       ">
         NGA
@@ -300,8 +306,8 @@ async function generatePremiumSlipHTML(data) {
       <div style="
         position:absolute;
         right:15px;
-        top:92px;
-        font-size:7px;
+        top:110px;
+        font-size:8px;
       ">
         ISSUE DATE
       </div>
@@ -309,8 +315,8 @@ async function generatePremiumSlipHTML(data) {
       <div style="
         position:absolute;
         right:15px;
-        top:102px;
-        font-size:9px;
+        top:122px;
+        font-size:11px;
         font-weight:bold;
         letter-spacing:1px;
       ">
@@ -320,35 +326,40 @@ async function generatePremiumSlipHTML(data) {
       <!-- NIN LABEL -->
       <div style="
         position:absolute;
-        bottom:34px;
-        left:40px;
-      " class="nin-label">
+        bottom:38px;
+        left:50px;
+        font-size:10px;
+      ">
         National Identification Number (NIN)
       </div>
 
-      <!-- MAIN NIN -->
+      <!-- MAIN NIN (BIGGER + CLEAR) -->
       <div style="
         position:absolute;
-        bottom:10px;
-        left:40px;
-      " class="nin-main">
+        bottom:12px;
+        left:50px;
+        font-size:18px;
+        font-weight:bold;
+        letter-spacing:4px;
+        color:#444;
+      ">
         ${formattedNIN}
       </div>
 
-      <!-- WATERMARK NIN (MATCHED ANGLES) -->
-      <div style="position:absolute; left:8px; top:18px; font-size:7px; transform:rotate(-28deg); opacity:0.5;">
+      <!-- WATERMARK NIN -->
+      <div style="position:absolute; left:10px; top:20px; font-size:8px; transform:rotate(-28deg); opacity:0.5;">
         ${data.nin}
       </div>
 
-      <div style="position:absolute; left:8px; bottom:18px; font-size:7px; transform:rotate(28deg); opacity:0.5;">
+      <div style="position:absolute; left:10px; bottom:20px; font-size:8px; transform:rotate(28deg); opacity:0.5;">
         ${data.nin}
       </div>
 
-      <div style="position:absolute; right:8px; top:22px; font-size:7px; transform:rotate(28deg); opacity:0.5;">
+      <div style="position:absolute; right:10px; top:25px; font-size:8px; transform:rotate(28deg); opacity:0.5;">
         ${data.nin}
       </div>
 
-      <div style="position:absolute; right:8px; bottom:18px; font-size:7px; transform:rotate(-28deg); opacity:0.5;">
+      <div style="position:absolute; right:10px; bottom:20px; font-size:8px; transform:rotate(-28deg); opacity:0.5;">
         ${data.nin}
       </div>
 
