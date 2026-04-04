@@ -183,16 +183,7 @@ export default function Sidebar() {
       {/* ========================= */}
       {/* MOBILE TOP BAR */}
       {/* ========================= */}
-      <div className="md:hidden flex items-center justify-between bg-blue-900 text-white p-3">
-        <button onClick={() => setMobileOpen(true)}>☰</button>
-
-        <h1 className="font-bold">NIN Portal</h1>
-
-        <button onClick={toggleTheme}>
-          {theme === "dark" ? "☀️" : "🌙"}
-        </button>
-      </div>
-
+      
       {/* ========================= */}
       {/* MOBILE OVERLAY */}
       {/* ========================= */}
