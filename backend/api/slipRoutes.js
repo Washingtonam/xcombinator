@@ -243,56 +243,245 @@ function generateDataHTML(data) {
 // =======================================================
 // 🟢 PREMIUM SLIP
 // =======================================================
+const express = require("express");
+const router = express.Router();
+const puppeteer = require("puppeteer");
+const QRCode = require("qrcode");
+
+// ==============================
+// 🔢 TRACKING ID
+// ==============================
+const generateTrackingId = () => {
+  return "TRK-" + Math.random().toString(36).substring(2, 10).toUpperCase();
+};
+
+// ==============================
+// 🚀 MAIN ROUTE
+// ==============================
+router.post("/generate-nin-slip", async (req, res) => {
+  try {
+    const { data, type } = req.body;
+
+    if (!data) {
+      return res.status(400).json({ message: "No data provided" });
+    }
+
+    if (type !== "premium") {
+      return res.status(400).json({ message: "Only premium handled here" });
+    }
+
+    const trackingId = generateTrackingId();
+
+    // =========================
+    // 🔳 QR CODE
+    // =========================
+    const qr = await QRCode.toDataURL(
+      JSON.stringify({
+        nin: data.nin,
+        name: `${data.firstname} ${data.surname}`,
+      })
+    );
+
+    const html = generatePremiumHTML({ ...data, trackingId, qr });
+
+    const browser = await puppeteer.launch({
+      args: ["--no-sandbox", "--disable-setuid-sandbox"],
+    });
+
+    const page = await browser.newPage();
+
+    await page.setViewport({
+      width: 1000,
+      height: 600,
+    });
+
+    await page.setContent(html, { waitUntil: "networkidle0" });
+
+    const pdf = await page.pdf({
+      width: "1000px",
+      height: "600px",
+      printBackground: true,
+    });
+
+    await browser.close();
+
+    res.set({
+      "Content-Type": "application/pdf",
+      "Content-Disposition": "attachment; filename=premium-nin.pdf",
+    });
+
+    res.send(pdf);
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Slip generation failed" });
+  }
+});
+
+
+// =======================================================
+// 🟢 PREMIUM HTML ENGINE (PIXEL PERFECT CARD)
+// =======================================================
 function generatePremiumHTML(data) {
+  const formattedNIN = (data.nin || "")
+    .replace(/(\d{4})(\d{3})(\d{4})/, "$1   $2   $3");
+
   return `
   <html>
   <body style="margin:0; font-family:Arial;">
 
-    <div style="position:relative; width:100%; height:520px;">
+  <div style="
+    width:1000px;
+    height:600px;
+    position:relative;
+    background:url('https://xcombinator.com.ng/assets/premium-bg.png') no-repeat center/cover;
+  ">
 
-      <!-- BACKGROUND -->
-      <img 
-        src="https://xcombinator.com.ng/assets/premium-bg.png"
-        style="
-          position:absolute;
-          width:100%;
-          height:100%;
-          top:0;
-          left:0;
-          object-fit:cover;
-          z-index:0;
-        "
-      />
+    <!-- ===================== -->
+    <!-- 📷 PASSPORT -->
+    <!-- ===================== -->
+    <img src="${data.photo}" style="
+      position:absolute;
+      left:60px;
+      top:120px;
+      width:150px;
+      height:170px;
+      object-fit:cover;
+    "/>
 
-      <!-- CONTENT -->
-      <div style="position:relative; z-index:2; padding:30px;">
+    <!-- ===================== -->
+    <!-- 🔳 QR CODE -->
+    <!-- ===================== -->
+    <img src="${data.qr}" style="
+      position:absolute;
+      right:80px;
+      top:60px;
+      width:150px;
+    "/>
 
-        <!-- PHOTO -->
-        <img src="${data.photo || ""}" width="120" height="140"/>
+    <!-- ===================== -->
+    <!-- 🧾 TEXT -->
+    <!-- ===================== -->
+    <div style="position:absolute; left:250px; top:120px; font-size:14px;">
+      <div style="color:#666;">SURNAME/NOM</div>
+      <div style="font-weight:bold;">${data.surname}</div>
 
-        <!-- DETAILS -->
-        <div style="margin-top:20px;">
-          <p><b>Surname:</b> ${data.surname}</p>
-          <p><b>First Name:</b> ${data.firstname}</p>
-          <p><b>Middle Name:</b> ${data.middlename}</p>
-          <p><b>DOB:</b> ${data.birthdate}</p>
-          <p><b>Gender:</b> ${data.gender}</p>
-        </div>
-
-        <!-- NIN -->
-        <h2 style="margin-top:20px;">${data.nin}</h2>
-
-        <!-- ISSUE DATE -->
-        <p><b>Issued:</b> ${new Date().toLocaleDateString()}</p>
-
+      <div style="margin-top:10px; color:#666;">GIVEN NAMES/PRENOMS</div>
+      <div style="font-weight:bold;">
+        ${data.firstname}, ${data.middlename || ""}
       </div>
 
+      <div style="margin-top:10px;">
+        <span style="color:#666;">DATE OF BIRTH</span>
+        <span style="margin-left:40px; color:#666;">SEX/SEXE</span>
+      </div>
+
+      <div style="font-weight:bold;">
+        ${data.birthdate}
+        <span style="margin-left:80px;">${data.gender}</span>
+      </div>
     </div>
+
+    <!-- ===================== -->
+    <!-- 🌍 NGA -->
+    <!-- ===================== -->
+    <div style="
+      position:absolute;
+      right:140px;
+      top:230px;
+      font-size:22px;
+      font-weight:bold;
+    ">NGA</div>
+
+    <!-- ===================== -->
+    <!-- 📅 ISSUE DATE -->
+    <!-- ===================== -->
+    <div style="
+      position:absolute;
+      right:120px;
+      top:270px;
+      font-size:12px;
+    ">
+      <div>ISSUE DATE</div>
+      <div style="font-weight:bold;">
+        ${new Date().toLocaleDateString("en-GB")}
+      </div>
+    </div>
+
+    <!-- ===================== -->
+    <!-- 🔢 MAIN NIN -->
+    <!-- ===================== -->
+    <div style="
+      position:absolute;
+      bottom:90px;
+      left:260px;
+      font-size:34px;
+      font-weight:bold;
+      letter-spacing:6px;
+      color:#444;
+    ">
+      ${formattedNIN}
+    </div>
+
+    <!-- ===================== -->
+    <!-- 🔁 SMALL NIN (WATERMARK STYLE) -->
+    <!-- ===================== -->
+    <div style="
+      position:absolute;
+      left:30px;
+      top:60px;
+      transform:rotate(-25deg);
+      font-size:12px;
+      color:#666;
+      opacity:0.5;
+    ">
+      ${data.nin}
+    </div>
+
+    <div style="
+      position:absolute;
+      left:30px;
+      top:250px;
+      transform:rotate(25deg);
+      font-size:12px;
+      color:#666;
+      opacity:0.5;
+    ">
+      ${data.nin}
+    </div>
+
+    <div style="
+      position:absolute;
+      right:120px;
+      top:120px;
+      transform:rotate(25deg);
+      font-size:12px;
+      color:#666;
+      opacity:0.5;
+    ">
+      ${data.nin}
+    </div>
+
+    <div style="
+      position:absolute;
+      right:120px;
+      bottom:140px;
+      transform:rotate(-25deg);
+      font-size:12px;
+      color:#666;
+      opacity:0.5;
+    ">
+      ${data.nin}
+    </div>
+
+  </div>
 
   </body>
   </html>
   `;
 }
+
+module.exports = router;
 
 
 // =======================================================
