@@ -7,3 +7,10 @@ const pricingSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 module.exports = mongoose.model("Pricing", pricingSchema);
+
+module.exports = {
+  nin: {
+    unitPrice: 250,
+    agentPrice: 200,
+  }
+};

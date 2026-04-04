@@ -3,21 +3,17 @@ require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 
-const { connectDB, readDB } = require("./utils/jsonDB");
-
 const authRoutes = require("./api/authRoutes");
 const userRoutes = require("./api/userRoutes");
 const verificationRoutes = require("./api/verificationRoutes");
 const paymentRoutes = require("./api/paymentRoutes");
 const adminRoutes = require("./api/adminRoutes");
-const slipRoutes = require("./api/slipRoutes"); // 🔥 IMPORTANT
+const slipRoutes = require("./api/slipRoutes");
+
+// ✅ NEW PRICING SOURCE
+const pricing = require("./config/pricing"); // make sure this exists
 
 const app = express();
-
-// ==============================
-// 🔥 CONNECT DATABASE
-// ==============================
-connectDB();
 
 // ==============================
 // ✅ CORS CONFIG
@@ -42,14 +38,13 @@ app.use("/api", userRoutes);
 app.use("/api", verificationRoutes);
 app.use("/api", paymentRoutes);
 app.use("/api/admin", adminRoutes);
-app.use("/api", slipRoutes); // 🔥 THIS FIXES YOUR SLIP DOWNLOAD
+app.use("/api", slipRoutes);
 
 // ==============================
 // 💰 PRICING (PUBLIC)
 // ==============================
 app.get("/api/pricing", (req, res) => {
-  const db = readDB();
-  res.json(db.pricing);
+  res.json(pricing);
 });
 
 // ==============================
