@@ -5,6 +5,7 @@ const User = require("../models/User");
 const Transaction = require("../models/Transaction");
 const AuditLog = require("../models/AuditLog");
 const { readDB, writeDB } = require("../utils/jsonDB");
+const Pricing = require("../models/pricing");
 
 // ==============================
 // 🔐 ADMIN CHECK
@@ -194,35 +195,26 @@ router.post("/user/:id/wallet", isAdmin, async (req, res) => {
 // ==============================
 // 💰 UPDATE NIN SLIP PRICING
 // ==============================
-router.put("/pricing", isAdmin, async (req, res) => {
+// UPDATE PRICING
+router.put("/pricing", async (req, res) => {
   try {
-    const { dataPrice, premiumPrice, longPrice } = req.body;
+    const { nin, bvn, premium } = req.body;
 
-    if (
-      dataPrice === undefined ||
-      premiumPrice === undefined ||
-      longPrice === undefined
-    ) {
-      return res.status(400).json({
-        message: "All pricing fields are required",
-      });
+    let pricing = await Pricing.findOne();
+
+    if (!pricing) {
+      pricing = new Pricing();
     }
 
-    const db = readDB();
+    if (nin !== undefined) pricing.nin = nin;
+    if (bvn !== undefined) pricing.bvn = bvn;
+    if (premium !== undefined) pricing.premium = premium;
 
-    if (!db.pricing) db.pricing = {};
-    if (!db.pricing.nin) db.pricing.nin = {};
+    await pricing.save();
 
-    db.pricing.nin.data = Number(dataPrice);
-    db.pricing.nin.premium = Number(premiumPrice);
-    db.pricing.nin.long = Number(longPrice);
+    res.json({ message: "Pricing updated", pricing });
 
-    writeDB(db);
 
-    res.json({
-      message: "Pricing updated successfully",
-      pricing: db.pricing.nin,
-    });
 
   } catch (error) {
     console.error("PRICING ERROR:", error);
