@@ -246,65 +246,6 @@ function generateDataHTML(data) {
 // 🟢 PREMIUM SLIP
 // =======================================================
 
-router.post("/generate-nin-slip-premium", async (req, res) => {
-  try {
-    const { data, type } = req.body;
-
-    if (!data) {
-      return res.status(400).json({ message: "No data provided" });
-    }
-
-    if (type !== "premium") {
-      return res.status(400).json({ message: "Only premium handled here" });
-    }
-
-    const trackingId = generateTrackingId();
-
-    // =========================
-    // 🔳 QR CODE
-    // =========================
-    const qr = await QRCode.toDataURL(
-      JSON.stringify({
-        nin: data.nin,
-        name: `${data.firstname} ${data.surname}`,
-      })
-    );
-
-    const html = generatePremiumHTML({ ...data, trackingId, qr });
-
-    const browser = await puppeteer.launch({
-      args: ["--no-sandbox", "--disable-setuid-sandbox"],
-    });
-
-    const page = await browser.newPage();
-
-    await page.setViewport({
-      width: 1000,
-      height: 600,
-    });
-
-    await page.setContent(html, { waitUntil: "networkidle0" });
-
-    const pdf = await page.pdf({
-      width: "1000px",
-      height: "600px",
-      printBackground: true,
-    });
-
-    await browser.close();
-
-    res.set({
-      "Content-Type": "application/pdf",
-      "Content-Disposition": "attachment; filename=premium-nin.pdf",
-    });
-
-    res.send(pdf);
-
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Slip generation failed" });
-  }
-});
 
 
 // =======================================================
@@ -326,48 +267,83 @@ function generatePremiumHTML(data) {
   ">
 
     <!-- ===================== -->
+    <!-- 🔥 HEADER -->
+    <!-- ===================== -->
+    <div style="
+      position:absolute;
+      top:20px;
+      left:40px;
+      font-size:22px;
+      font-weight:800;
+      color:#0b8f3a;
+    ">
+      FEDERAL REPUBLIC OF NIGERIA
+    </div>
+
+    <div style="
+      position:absolute;
+      top:55px;
+      left:40px;
+      font-size:18px;
+      font-weight:700;
+      color:black;
+    ">
+      DIGITAL NIN SLIP
+    </div>
+
+    <!-- ===================== -->
     <!-- 📷 PASSPORT -->
     <!-- ===================== -->
     <img src="${data.photo}" style="
       position:absolute;
-      left:60px;
-      top:120px;
-      width:150px;
-      height:170px;
+      left:40px;
+      top:110px;
+      width:160px;
+      height:180px;
       object-fit:cover;
     "/>
 
     <!-- ===================== -->
-    <!-- 🔳 QR CODE -->
+    <!-- 🔳 QR -->
     <!-- ===================== -->
     <img src="${data.qr}" style="
       position:absolute;
-      right:80px;
-      top:60px;
-      width:150px;
+      right:50px;
+      top:30px;
+      width:180px;
     "/>
 
     <!-- ===================== -->
-    <!-- 🧾 TEXT -->
+    <!-- 🧾 DETAILS -->
     <!-- ===================== -->
-    <div style="position:absolute; left:250px; top:120px; font-size:14px;">
-      <div style="color:#666;">SURNAME/NOM</div>
-      <div style="font-weight:bold;">${data.surname}</div>
+    <div style="
+      position:absolute;
+      left:240px;
+      top:120px;
+      font-size:18px;
+      line-height:1.6;
+    ">
 
-      <div style="margin-top:10px; color:#666;">GIVEN NAMES/PRENOMS</div>
-      <div style="font-weight:bold;">
+      <div style="color:#666;">SURNAME/NOM</div>
+      <div style="font-weight:700;">${data.surname}</div>
+
+      <div style="margin-top:12px; color:#666;">
+        GIVEN NAMES/PRENOMS
+      </div>
+      <div style="font-weight:700;">
         ${data.firstname}, ${data.middlename || ""}
       </div>
 
-      <div style="margin-top:10px;">
+      <div style="margin-top:12px;">
         <span style="color:#666;">DATE OF BIRTH</span>
-        <span style="margin-left:40px; color:#666;">SEX/SEXE</span>
+        <span style="margin-left:60px; color:#666;">SEX/SEXE</span>
       </div>
 
-      <div style="font-weight:bold;">
+      <div style="font-weight:700;">
         ${data.birthdate}
-        <span style="margin-left:80px;">${data.gender}</span>
+        <span style="margin-left:90px;">${data.gender}</span>
       </div>
+
     </div>
 
     <!-- ===================== -->
@@ -375,9 +351,9 @@ function generatePremiumHTML(data) {
     <!-- ===================== -->
     <div style="
       position:absolute;
-      right:140px;
-      top:230px;
-      font-size:22px;
+      right:110px;
+      top:240px;
+      font-size:26px;
       font-weight:bold;
     ">NGA</div>
 
@@ -386,9 +362,10 @@ function generatePremiumHTML(data) {
     <!-- ===================== -->
     <div style="
       position:absolute;
-      right:120px;
-      top:270px;
-      font-size:12px;
+      right:90px;
+      top:290px;
+      font-size:14px;
+      text-align:center;
     ">
       <div>ISSUE DATE</div>
       <div style="font-weight:bold;">
@@ -397,69 +374,118 @@ function generatePremiumHTML(data) {
     </div>
 
     <!-- ===================== -->
+    <!-- 🔥 NIN LABEL -->
+    <!-- ===================== -->
+    <div style="
+      position:absolute;
+      bottom:130px;
+      left:250px;
+      font-size:18px;
+      font-weight:600;
+    ">
+      National Identification Number (NIN)
+    </div>
+
+    <!-- ===================== -->
     <!-- 🔢 MAIN NIN -->
     <!-- ===================== -->
     <div style="
       position:absolute;
-      bottom:90px;
-      left:260px;
-      font-size:34px;
-      font-weight:bold;
-      letter-spacing:6px;
+      bottom:70px;
+      left:240px;
+      font-size:36px;
+      font-weight:800;
+      letter-spacing:8px;
       color:#444;
     ">
       ${formattedNIN}
     </div>
 
     <!-- ===================== -->
-    <!-- 🔁 SMALL NIN (WATERMARK STYLE) -->
+    <!-- 🔁 SMALL NIN (5 positions) -->
     <!-- ===================== -->
     <div style="
       position:absolute;
-      left:30px;
-      top:60px;
+      left:20px;
+      top:80px;
       transform:rotate(-25deg);
       font-size:12px;
-      color:#666;
       opacity:0.5;
-    ">
-      ${data.nin}
-    </div>
+    ">${data.nin}</div>
 
     <div style="
       position:absolute;
-      left:30px;
-      top:250px;
+      left:40px;
+      bottom:140px;
       transform:rotate(25deg);
       font-size:12px;
-      color:#666;
       opacity:0.5;
-    ">
-      ${data.nin}
-    </div>
+    ">${data.nin}</div>
 
     <div style="
       position:absolute;
-      right:120px;
+      right:160px;
       top:120px;
       transform:rotate(25deg);
       font-size:12px;
-      color:#666;
       opacity:0.5;
-    ">
-      ${data.nin}
-    </div>
+    ">${data.nin}</div>
 
     <div style="
       position:absolute;
       right:120px;
-      bottom:140px;
+      bottom:120px;
       transform:rotate(-25deg);
       font-size:12px;
-      color:#666;
       opacity:0.5;
+    ">${data.nin}</div>
+
+    <div style="
+      position:absolute;
+      left:300px;
+      top:260px;
+      transform:rotate(-10deg);
+      font-size:12px;
+      opacity:0.4;
+    ">${data.nin}</div>
+
+    <!-- ===================== -->
+    <!-- 🔻 BACK SIDE (FLIPPED) -->
+    <!-- ===================== -->
+    <div style="
+      position:absolute;
+      bottom:0;
+      width:100%;
+      height:280px;
+      transform:rotate(180deg);
+      text-align:center;
+      padding:30px;
+      box-sizing:border-box;
+      font-size:14px;
     ">
-      ${data.nin}
+
+      <div style="font-size:26px; font-weight:bold;">
+        DISCLAIMER
+      </div>
+
+      <div style="margin-top:10px; font-style:italic;">
+        Trust, but verify
+      </div>
+
+      <div style="margin-top:15px;">
+        Kindly ensure each time this ID is presented, that you verify using
+        a Government-approved verification resource.
+      </div>
+
+      <div style="margin-top:10px; font-weight:bold;">
+        CAUTION!
+      </div>
+
+      <div style="margin-top:10px;">
+        If this NIN was not issued to the person presenting it, do NOT attempt
+        to scan or replicate personal data contained herein.
+      </div>
+
     </div>
 
   </div>
@@ -468,9 +494,6 @@ function generatePremiumHTML(data) {
   </html>
   `;
 }
-
-module.exports = router;
-
 
 // =======================================================
 // 🔵 LONG SLIP
