@@ -9,7 +9,7 @@ export default function Sidebar() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // ✅ ONLY USE CONTEXT (NO PROPS)
+  // ✅ Theme control (fixed)
   const { theme, toggleTheme } = useTheme();
 
   const [collapsed, setCollapsed] = useState(false);
@@ -40,7 +40,7 @@ export default function Sidebar() {
       const pending = res.data.filter(p => p.status === "pending").length;
       setPendingPayments(pending);
     } catch (err) {
-      console.error(err);
+      console.error("Payment fetch error:", err);
     }
   };
 
@@ -75,12 +75,13 @@ export default function Sidebar() {
 
           <div className="flex items-center gap-2">
 
-            {/* 🌙 DARK MODE TOGGLE */}
+            {/* 🌙 THEME TOGGLE */}
             <button
               onClick={toggleTheme}
-              className="bg-gray-700 hover:bg-gray-600 px-3 py-1 rounded text-xs"
+              className="bg-gray-700 hover:bg-gray-600 px-3 py-1 rounded text-xs transition"
+              title="Toggle Theme"
             >
-              {dark ? "☀️" : "🌙"}
+              {theme === "dark" ? "☀️" : "🌙"}
             </button>
 
             {/* COLLAPSE */}
@@ -170,7 +171,7 @@ export default function Sidebar() {
       {/* LOGOUT */}
       <button
         onClick={handleLogout}
-        className="bg-red-600 hover:bg-red-700 px-4 py-2 rounded text-sm"
+        className="bg-red-600 hover:bg-red-700 px-4 py-2 rounded text-sm transition"
       >
         {!collapsed ? "Logout" : "🚪"}
       </button>
@@ -179,9 +180,12 @@ export default function Sidebar() {
 
   return (
     <>
+      {/* ========================= */}
       {/* MOBILE TOP BAR */}
+      {/* ========================= */}
       <div className="md:hidden flex items-center justify-between bg-blue-900 text-white p-3">
         <button onClick={() => setMobileOpen(true)}>☰</button>
+
         <h1 className="font-bold">NIN Portal</h1>
 
         <button onClick={toggleTheme}>
@@ -189,7 +193,9 @@ export default function Sidebar() {
         </button>
       </div>
 
+      {/* ========================= */}
       {/* MOBILE OVERLAY */}
+      {/* ========================= */}
       {mobileOpen && (
         <div
           onClick={() => setMobileOpen(false)}
@@ -197,7 +203,9 @@ export default function Sidebar() {
         />
       )}
 
+      {/* ========================= */}
       {/* SIDEBAR */}
+      {/* ========================= */}
       <div
         className={`
           fixed md:relative z-50 h-screen bg-blue-900 text-white p-4 flex flex-col justify-between transition-all duration-300
