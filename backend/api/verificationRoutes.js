@@ -3,14 +3,13 @@ const axios = require("axios");
 
 const User = require("../models/User");
 const Transaction = require("../models/Transaction");
-const { readDB } = require("../utils/jsonDB");
 
 const router = express.Router();
 
 const API_KEY = process.env.NIN_API_KEY;
 
 // ==============================
-// 🔥 MOCK DATA (TEST MODE)
+// 🧪 MOCK DATA
 // ==============================
 const mockData = {
   firstname: "JOHN",
@@ -27,7 +26,7 @@ const mockData = {
 };
 
 // ==============================
-// 🔍 VERIFY NIN
+// 🔍 VERIFY NIN (UNIT SYSTEM)
 // ==============================
 router.post("/verify-nin", async (req, res) => {
   const { nin, userId } = req.body;
@@ -60,34 +59,18 @@ router.post("/verify-nin", async (req, res) => {
     // 🧪 MOCK MODE (FREE)
     // ==========================
     if (nin === "00000000000") {
-      console.log("🧪 MOCK MODE ACTIVE");
-
       return res.json({
         status: "success",
         data: mockData,
-        balance: user.balance,
+        units: user.units,
       });
     }
 
     // ==========================
-    // 💰 PRICING
+    // 💳 UNIT CHECK
     // ==========================
-    const db = readDB();
-    const pricing = db?.pricing?.nin;
-
-    if (!pricing || !pricing.data) {
-      return res.status(500).json({ error: "Pricing not configured" });
-    }
-
-    const price = pricing.data;
-    const cost = 0;
-    const profit = price;
-
-    // ==========================
-    // 💳 BALANCE CHECK (NON-ADMIN ONLY)
-    // ==========================
-    if (!isAdmin && user.balance < price) {
-      return res.status(400).json({ error: "Insufficient balance" });
+    if (!isAdmin && user.units < 1) {
+      return res.status(400).json({ error: "Insufficient units" });
     }
 
     // ==========================
@@ -96,8 +79,6 @@ router.post("/verify-nin", async (req, res) => {
     if (!API_KEY) {
       return res.status(500).json({ error: "API key not configured" });
     }
-
-    console.log("🔌 Calling NIN API...");
 
     const apiResponse = await axios.post(
       "https://ninbvnportal.com.ng/api/nin-verification",
@@ -126,23 +107,21 @@ router.post("/verify-nin", async (req, res) => {
     const cleanData = apiData.data?.data || apiData.data;
 
     // ==========================
-    // 💰 DEDUCT (NON-ADMIN ONLY)
+    // 🔥 DEDUCT UNIT
     // ==========================
     if (!isAdmin) {
-      user.balance -= price;
+      user.units -= 1;
       await user.save();
     }
 
     // ==========================
-    // 🧾 SAVE TRANSACTION (OPTIONAL FOR ADMIN)
+    // 🧾 SAVE TRANSACTION
     // ==========================
     if (!isAdmin) {
       await Transaction.create({
         type: "NIN",
         nin,
-        amount: price,
-        cost,
-        profit,
+        unitsUsed: 1,
         status: "success",
         userId: user._id,
       });
@@ -154,7 +133,7 @@ router.post("/verify-nin", async (req, res) => {
     return res.json({
       status: "success",
       data: cleanData,
-      balance: user.balance,
+      units: user.units,
     });
 
   } catch (error) {

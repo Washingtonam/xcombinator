@@ -18,6 +18,12 @@ const userSchema = new mongoose.Schema({
     default: 0,
   },
 
+
+  units: {
+      type: Number,
+      default: 0,
+    },
+
   // 🔥 NEW FIELD
   status: {
     type: String,
