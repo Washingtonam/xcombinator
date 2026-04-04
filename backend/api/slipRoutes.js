@@ -249,29 +249,31 @@ function generateDataHTML(data) {
 
 async function generatePremiumSlip(doc, data) {
   const QRCode = require("qrcode");
+  const path = require("path");
 
   // =========================
-  // 📏 CARD DIMENSIONS (EXACT)
+  // 📏 CARD SIZE (EXACT)
   // =========================
-  const CARD_WIDTH = 9.1 * 28.35;   // 258pt
-  const CARD_HEIGHT = 5.4 * 28.35;  // 153pt
+  const CARD_WIDTH = 9.1 * 28.35;
+  const CARD_HEIGHT = 5.4 * 28.35;
 
   const startX = 40;
   const frontY = 40;
   const backY = frontY + CARD_HEIGHT + 20;
 
   // =========================
-  // 🟢 FRONT SIDE
+  // 🖼 BACKGROUND (LOCAL FILE ONLY)
   // =========================
-
-  const bg = "https://xcombinator.com.ng/assets/premium-bg.png";
+  const bgPath = path.join(__dirname, "../public/assets/premium-bg.png");
 
   try {
-    doc.image(bg, startX, frontY, {
+    doc.image(bgPath, startX, frontY, {
       width: CARD_WIDTH,
       height: CARD_HEIGHT,
     });
-  } catch {}
+  } catch (err) {
+    console.log("BG ERROR:", err.message);
+  }
 
   // =========================
   // 📷 PASSPORT
@@ -287,51 +289,58 @@ async function generatePremiumSlip(doc, data) {
         width: 60,
         height: 70,
       });
-    } catch {}
+    } catch (err) {
+      console.log("PHOTO ERROR:", err.message);
+    }
   }
 
   // =========================
   // 🔳 QR CODE
   // =========================
-  const qr = await QRCode.toDataURL(
-    JSON.stringify({
-      nin: data.nin,
-      name: `${data.firstname} ${data.surname}`,
-    })
-  );
+  let qrBuffer;
+  try {
+    const qr = await QRCode.toDataURL(
+      JSON.stringify({
+        nin: data.nin,
+        name: `${data.firstname} ${data.surname}`,
+      })
+    );
 
-  const qrBuffer = Buffer.from(
-    qr.replace(/^data:image\/png;base64,/, ""),
-    "base64"
-  );
+    qrBuffer = Buffer.from(
+      qr.replace(/^data:image\/png;base64,/, ""),
+      "base64"
+    );
 
-  doc.image(qrBuffer, startX + CARD_WIDTH - 70, frontY + 10, {
-    width: 60,
-  });
+    doc.image(qrBuffer, startX + CARD_WIDTH - 70, frontY + 10, {
+      width: 60,
+    });
+  } catch (err) {
+    console.log("QR ERROR:", err.message);
+  }
 
   // =========================
-  // 🧾 TEXT
+  // 🧾 TEXT DETAILS
   // =========================
   doc.fillColor("black");
 
   doc.fontSize(8).text("SURNAME/NOM", startX + 80, frontY + 35);
-  doc.font("Helvetica-Bold").text(data.surname, startX + 80, frontY + 45);
+  doc.font("Helvetica-Bold").text(data.surname || "", startX + 80, frontY + 45);
 
   doc.font("Helvetica").text("GIVEN NAMES", startX + 80, frontY + 60);
   doc.font("Helvetica-Bold").text(
-    `${data.firstname}, ${data.middlename || ""}`,
+    `${data.firstname || ""}, ${data.middlename || ""}`,
     startX + 80,
     frontY + 70
   );
 
   doc.font("Helvetica").text("DATE OF BIRTH", startX + 80, frontY + 85);
-  doc.text(data.birthdate, startX + 80, frontY + 95);
+  doc.text(data.birthdate || "", startX + 80, frontY + 95);
 
   doc.text("SEX", startX + 150, frontY + 85);
-  doc.text(data.gender, startX + 150, frontY + 95);
+  doc.text(data.gender || "", startX + 150, frontY + 95);
 
   // =========================
-  // 🌍 NGA + DATE
+  // 🌍 NGA + ISSUE DATE
   // =========================
   doc.font("Helvetica-Bold").fontSize(10)
     .text("NGA", startX + CARD_WIDTH - 70, frontY + 80);
@@ -345,7 +354,7 @@ async function generatePremiumSlip(doc, data) {
   );
 
   // =========================
-  // 🔢 NIN
+  // 🔢 NIN DISPLAY
   // =========================
   const formattedNIN = (data.nin || "")
     .replace(/(\d{4})(\d{3})(\d{4})/, "$1 $2 $3");
@@ -363,12 +372,25 @@ async function generatePremiumSlip(doc, data) {
   );
 
   // =========================
-  // ⚪ BACK SIDE
+  // 🔁 SMALL NIN (SIDE)
+  // =========================
+  doc.fontSize(6).fillColor("#666");
+
+  doc.text(data.nin || "", startX + 5, frontY + 20, { rotate: 25 });
+  doc.text(data.nin || "", startX + CARD_WIDTH - 60, frontY + 120, { rotate: -25 });
+
+  // =========================
+  // ⚪ BACK SIDE (DISCLAIMER)
   // =========================
   doc.rect(startX, backY, CARD_WIDTH, CARD_HEIGHT).stroke();
 
+  doc.fillColor("black");
+
   doc.font("Helvetica-Bold").fontSize(10)
-    .text("DISCLAIMER", startX, backY + 20, { align: "center", width: CARD_WIDTH });
+    .text("DISCLAIMER", startX, backY + 20, {
+      align: "center",
+      width: CARD_WIDTH,
+    });
 
   doc.font("Helvetica-Oblique").fontSize(8)
     .text("Trust, but verify", startX, backY + 35, {
