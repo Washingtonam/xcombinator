@@ -178,23 +178,31 @@ async function generatePremiumSlipHTML(data) {
 
       .back {
         border: 1px solid black;
-        position: relative;
         transform: rotate(180deg);
-        padding: 10px;
+        padding: 12px;
         box-sizing: border-box;
       }
 
-      .small {
+      .label {
+        font-size: 6.5px;
+        color: #222;
+      }
+
+      .value {
+        font-size: 9px;
+        font-weight: bold;
+      }
+
+      .nin-label {
         font-size: 7px;
       }
 
-      .medium {
-        font-size: 9px;
+      .nin-main {
+        font-size: 14px;
+        font-weight: bold;
+        letter-spacing: 2px;
       }
 
-      .bold {
-        font-weight: bold;
-      }
     </style>
   </head>
 
@@ -208,7 +216,7 @@ async function generatePremiumSlipHTML(data) {
       <!-- HEADER -->
       <div style="
         position:absolute;
-        top:6px;
+        top:5px;
         left:10px;
         font-size:10px;
         font-weight:bold;
@@ -219,9 +227,9 @@ async function generatePremiumSlipHTML(data) {
 
       <div style="
         position:absolute;
-        top:18px;
+        top:16px;
         left:10px;
-        font-size:9px;
+        font-size:8.5px;
         font-weight:bold;
       ">
         DIGITAL NIN SLIP
@@ -231,10 +239,11 @@ async function generatePremiumSlipHTML(data) {
       <img src="${data.photo}" style="
         position:absolute;
         left:10px;
-        top:30px;
-        width:55px;
-        height:65px;
+        top:28px;
+        width:58px;
+        height:68px;
         object-fit:cover;
+        border:1px solid #ccc;
       "/>
 
       <!-- QR -->
@@ -242,34 +251,45 @@ async function generatePremiumSlipHTML(data) {
         position:absolute;
         right:8px;
         top:8px;
-        width:60px;
+        width:62px;
       "/>
 
-      <!-- TEXT -->
-      <div style="position:absolute; left:70px; top:30px;" class="small">
-        <div>SURNAME/NOM</div>
-        <div class="medium bold">${data.surname || ""}</div>
+      <!-- DETAILS BLOCK -->
+      <div style="
+        position:absolute;
+        left:75px;
+        top:28px;
+        width:120px;
+      ">
 
-        <div style="margin-top:3px;">GIVEN NAMES/PRENOMS</div>
-        <div class="medium bold">
+        <div class="label">SURNAME/NOM</div>
+        <div class="value">${data.surname || ""}</div>
+
+        <div class="label" style="margin-top:3px;">GIVEN NAMES/PRENOMS</div>
+        <div class="value">
           ${data.firstname || ""}, ${data.middlename || ""}
         </div>
 
-        <div style="margin-top:3px;">
-          DATE OF BIRTH
-        </div>
-        <div class="medium bold">${data.birthdate || ""}</div>
+        <div class="label" style="margin-top:3px;">DATE OF BIRTH</div>
+        <div class="value">${data.birthdate || ""}</div>
 
-        <div style="margin-top:3px;">
-          SEX/SEXE: ${data.gender || ""}
-        </div>
+      </div>
+
+      <!-- SEX -->
+      <div style="
+        position:absolute;
+        left:75px;
+        top:82px;
+      ">
+        <span class="label">SEX/SEXE</span><br/>
+        <span class="value">${data.gender || ""}</span>
       </div>
 
       <!-- NGA + DATE -->
       <div style="
         position:absolute;
-        right:25px;
-        top:70px;
+        right:28px;
+        top:72px;
         font-size:12px;
         font-weight:bold;
       ">NGA</div>
@@ -277,8 +297,8 @@ async function generatePremiumSlipHTML(data) {
       <div style="
         position:absolute;
         right:15px;
-        top:85px;
-        font-size:7px;
+        top:88px;
+        font-size:6.5px;
       ">
         ISSUE DATE
       </div>
@@ -286,20 +306,19 @@ async function generatePremiumSlipHTML(data) {
       <div style="
         position:absolute;
         right:15px;
-        top:95px;
+        top:98px;
         font-size:8px;
         font-weight:bold;
       ">
         ${issueDate}
       </div>
 
-      <!-- LABEL -->
+      <!-- NIN LABEL -->
       <div style="
         position:absolute;
-        bottom:28px;
+        bottom:30px;
         left:40px;
-        font-size:8px;
-      ">
+      " class="nin-label">
         National Identification Number (NIN)
       </div>
 
@@ -308,27 +327,24 @@ async function generatePremiumSlipHTML(data) {
         position:absolute;
         bottom:10px;
         left:40px;
-        font-size:14px;
-        font-weight:bold;
-        letter-spacing:2px;
-      ">
+      " class="nin-main">
         ${formattedNIN}
       </div>
 
-      <!-- WATERMARK NIN (ALL 4 SIDES) -->
-      <div style="position:absolute; left:5px; top:15px; font-size:6px; transform:rotate(-30deg); opacity:0.5;">
+      <!-- WATERMARK NIN (4 POSITIONS) -->
+      <div style="position:absolute; left:4px; top:14px; font-size:6px; transform:rotate(-30deg); opacity:0.4;">
         ${data.nin}
       </div>
 
-      <div style="position:absolute; left:5px; bottom:20px; font-size:6px; transform:rotate(30deg); opacity:0.5;">
+      <div style="position:absolute; left:4px; bottom:18px; font-size:6px; transform:rotate(30deg); opacity:0.4;">
         ${data.nin}
       </div>
 
-      <div style="position:absolute; right:5px; top:20px; font-size:6px; transform:rotate(30deg); opacity:0.5;">
+      <div style="position:absolute; right:4px; top:18px; font-size:6px; transform:rotate(30deg); opacity:0.4;">
         ${data.nin}
       </div>
 
-      <div style="position:absolute; right:5px; bottom:15px; font-size:6px; transform:rotate(-30deg); opacity:0.5;">
+      <div style="position:absolute; right:4px; bottom:15px; font-size:6px; transform:rotate(-30deg); opacity:0.4;">
         ${data.nin}
       </div>
 
@@ -338,29 +354,30 @@ async function generatePremiumSlipHTML(data) {
     <div class="card back">
 
       <div style="text-align:center;">
-        
-        <div style="font-size:14px; font-weight:bold;">
+
+        <div style="font-size:15px; font-weight:bold;">
           DISCLAIMER
         </div>
 
-        <div style="font-size:10px; margin-top:5px;">
+        <div style="font-size:10px; margin-top:4px;">
           Trust, but verify
         </div>
 
-        <div style="font-size:9px; margin-top:10px;">
-          Kindly ensure each time this ID is presented, that you verify the credentials 
-          using a Government-approved verification resource. The details on the front 
-          of this NIN slip must EXACTLY match the verification result.
+        <div style="font-size:9px; margin-top:10px; line-height:1.4;">
+          Kindly ensure each time this ID is presented, that you verify the 
+          credentials using a Government-approved verification resource.
+          The details on the front of this NIN slip must EXACTLY match 
+          the verification result.
         </div>
 
         <div style="font-size:12px; font-weight:bold; margin-top:12px;">
           CAUTION!
         </div>
 
-        <div style="font-size:9px; margin-top:8px;">
-          If this NIN was not issued to the person presenting it, please DO NOT attempt 
-          to scan, photocopy or replicate personal data contained herein. You are only 
-          permitted to scan the barcode for identity verification.
+        <div style="font-size:9px; margin-top:8px; line-height:1.4;">
+          If this NIN was not issued to the person presenting it, please DO NOT 
+          attempt to scan, photocopy or replicate personal data contained herein.
+          You are only permitted to scan the barcode for identity verification.
         </div>
 
       </div>
