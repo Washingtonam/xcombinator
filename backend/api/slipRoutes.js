@@ -38,6 +38,7 @@ router.post("/generate-nin-slip", async (req, res) => {
 
     const options = {
       format: "A4",
+      printBackground: true,
     };
 
     const pdfBuffer = await pdf.generatePdf(file, options);
@@ -57,32 +58,51 @@ router.post("/generate-nin-slip", async (req, res) => {
 
 
 // =======================================================
-// 🟡 DATA SLIP (CLEAN DESIGN)
+// 🟡 DATA SLIP
 // =======================================================
 function generateDataHTML(data) {
   return `
   <html>
-  <body style="font-family: Arial; padding: 30px; background:#f5f5f5;">
-    
-    <h2 style="text-align:center;">Federal Republic of Nigeria</h2>
-    <h3 style="text-align:center;">Verified NIN Details</h3>
+  <body style="font-family: Arial; padding:30px; background:#f5f0dc;">
 
-    <div style="text-align:center; margin:20px;">
-      <img src="${data.photo || ""}" width="120"/>
+    <!-- HEADER -->
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+      <img src="https://xcombinator.com.ng/assets/coat.png" width="60"/>
+      <img src="https://xcombinator.com.ng/assets/nimc-logo.png" width="90"/>
     </div>
 
-    <table style="width:100%; font-size:14px;">
-      <tr><td><b>First Name</b></td><td>${data.firstname}</td></tr>
-      <tr><td><b>Middle Name</b></td><td>${data.middlename}</td></tr>
-      <tr><td><b>Surname</b></td><td>${data.surname}</td></tr>
-      <tr><td><b>DOB</b></td><td>${data.birthdate}</td></tr>
-      <tr><td><b>Gender</b></td><td>${data.gender}</td></tr>
-      <tr><td><b>NIN</b></td><td>${data.nin}</td></tr>
+    <h2 style="text-align:center; margin-top:10px;">Federal Republic of Nigeria</h2>
+    <h3 style="text-align:center;">Verified NIN Details</h3>
+
+    <!-- PHOTO -->
+    <div style="text-align:center; margin:20px;">
+      <img src="${data.photo || ""}" width="130" height="150"/>
+    </div>
+
+    <!-- DETAILS -->
+    <table style="width:100%; font-size:14px; margin-top:20px;">
+      <tr><td><b>First Name:</b></td><td>${data.firstname}</td></tr>
+      <tr><td><b>Middle Name:</b></td><td>${data.middlename}</td></tr>
+      <tr><td><b>Surname:</b></td><td>${data.surname}</td></tr>
+      <tr><td><b>Date of Birth:</b></td><td>${data.birthdate}</td></tr>
+      <tr><td><b>Gender:</b></td><td>${data.gender}</td></tr>
     </table>
 
-    <p style="margin-top:20px;"><b>Tracking ID:</b> ${data.trackingId}</p>
+    <!-- NIN -->
+    <h2 style="margin-top:20px;">
+      NIN: ${data.nin}
+    </h2>
 
-    <p style="color:green; font-size:18px;"><b>✔ Verified</b></p>
+    <!-- TRACKING -->
+    <p><b>Tracking ID:</b> ${data.trackingId}</p>
+
+    <!-- VERIFIED -->
+    <h2 style="color:green;">✔ VERIFIED</h2>
+
+    <!-- FOOTER -->
+    <p style="font-size:12px;">
+      This slip remains property of the Federal Republic of Nigeria and does not expire.
+    </p>
 
   </body>
   </html>
@@ -91,33 +111,51 @@ function generateDataHTML(data) {
 
 
 // =======================================================
-// 🟢 PREMIUM SLIP (CARD STYLE)
+// 🟢 PREMIUM SLIP
 // =======================================================
 function generatePremiumHTML(data) {
   return `
   <html>
-  <body style="font-family: Arial; padding:20px;">
+  <body style="margin:0; font-family:Arial;">
 
-    <div style="border:1px solid #ccc; padding:20px;">
-      
-      <h3>NIN Premium Slip</h3>
+    <div style="position:relative; width:100%; height:520px;">
 
-      <img src="${data.photo || ""}" width="120"/>
+      <!-- BACKGROUND -->
+      <img 
+        src="https://xcombinator.com.ng/assets/premium-bg.png"
+        style="
+          position:absolute;
+          width:100%;
+          height:100%;
+          top:0;
+          left:0;
+          object-fit:cover;
+          z-index:0;
+        "
+      />
 
-      <p><b>Name:</b> ${data.firstname} ${data.middlename}</p>
-      <p><b>Surname:</b> ${data.surname}</p>
-      <p><b>DOB:</b> ${data.birthdate}</p>
-      <p><b>Gender:</b> ${data.gender}</p>
+      <!-- CONTENT -->
+      <div style="position:relative; z-index:2; padding:30px;">
 
-      <h2>${data.nin}</h2>
+        <!-- PHOTO -->
+        <img src="${data.photo || ""}" width="120" height="140"/>
 
-      <p><b>Issued:</b> ${new Date().toLocaleDateString()}</p>
+        <!-- DETAILS -->
+        <div style="margin-top:20px;">
+          <p><b>Surname:</b> ${data.surname}</p>
+          <p><b>First Name:</b> ${data.firstname}</p>
+          <p><b>Middle Name:</b> ${data.middlename}</p>
+          <p><b>DOB:</b> ${data.birthdate}</p>
+          <p><b>Gender:</b> ${data.gender}</p>
+        </div>
 
-      <hr/>
+        <!-- NIN -->
+        <h2 style="margin-top:20px;">${data.nin}</h2>
 
-      <p style="font-size:12px;">
-      This is a government-issued identity slip. Always verify before use.
-      </p>
+        <!-- ISSUE DATE -->
+        <p><b>Issued:</b> ${new Date().toLocaleDateString()}</p>
+
+      </div>
 
     </div>
 
@@ -128,15 +166,22 @@ function generatePremiumHTML(data) {
 
 
 // =======================================================
-// 🔵 LONG SLIP (TABLE STYLE)
+// 🔵 LONG SLIP
 // =======================================================
 function generateLongHTML(data) {
   return `
   <html>
-  <body style="font-family: Arial; padding:20px;">
+  <body style="font-family:Arial; padding:20px;">
+
+    <!-- HEADER -->
+    <div style="display:flex; justify-content:space-between;">
+      <img src="https://xcombinator.com.ng/assets/coat.png" width="50"/>
+      <img src="https://xcombinator.com.ng/assets/nimc-logo.png" width="70"/>
+    </div>
 
     <h3 style="text-align:center;">National Identification Number Slip</h3>
 
+    <!-- TABLE -->
     <table border="1" cellspacing="0" cellpadding="10" width="100%">
       <tr><td><b>NIN</b></td><td>${data.nin}</td></tr>
       <tr><td><b>Surname</b></td><td>${data.surname}</td></tr>
@@ -146,9 +191,17 @@ function generateLongHTML(data) {
       <tr><td><b>Tracking ID</b></td><td>${data.trackingId}</td></tr>
     </table>
 
+    <!-- NOTE -->
     <p style="margin-top:20px;">
-      The National Identification Number (NIN) is your identity.
+      The National Identification Number (NIN) is your identity. It is confidential and must only be used for legitimate transactions.
     </p>
+
+    <!-- FOOTER -->
+    <div style="margin-top:20px; font-size:12px;">
+      <p>www.nimc.gov.ng</p>
+      <p>0700-CALL-NIMC</p>
+      <p>NIMC HQ, Abuja</p>
+    </div>
 
   </body>
   </html>
