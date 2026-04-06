@@ -3,6 +3,8 @@ require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 
+const connectDB = require("./utils/db"); // 🔥 THIS WAS MISSING
+
 const authRoutes = require("./api/authRoutes");
 const userRoutes = require("./api/userRoutes");
 const verificationRoutes = require("./api/verificationRoutes");
@@ -10,9 +12,14 @@ const paymentRoutes = require("./api/paymentRoutes");
 const adminRoutes = require("./api/adminRoutes");
 const slipRoutes = require("./api/slipRoutes");
 
-const Pricing = require("./models/Pricing"); // ✅ NEW SYSTEM
+const Pricing = require("./models/Pricing");
 
 const app = express();
+
+// ==============================
+// 🔥 CONNECT DATABASE FIRST
+// ==============================
+connectDB();
 
 // ==============================
 // ✅ CORS CONFIG
@@ -50,7 +57,7 @@ app.get("/api/pricing", async (req, res) => {
       return res.json({
         nin: {
           unitPrice: 250,
-          agentPrice: 150,
+          agentPrice: 200,
         },
       });
     }
@@ -58,7 +65,7 @@ app.get("/api/pricing", async (req, res) => {
     res.json(pricing);
 
   } catch (err) {
-    console.error(err);
+    console.error("PRICING ERROR:", err.message);
     res.status(500).json({ message: "Failed to fetch pricing" });
   }
 });
