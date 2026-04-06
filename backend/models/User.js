@@ -1,30 +1,59 @@
 const mongoose = require("mongoose");
 
 const userSchema = new mongoose.Schema({
-  firstName: String,
-  lastName: String,
-  nin: String,
+  // ==============================
+  // 👤 BASIC INFO
+  // ==============================
+  firstName: {
+    type: String,
+    default: "",
+    trim: true,
+  },
 
+  lastName: {
+    type: String,
+    default: "",
+    trim: true,
+  },
+
+  nin: {
+    type: String,
+    default: "",
+  },
+
+  // ==============================
+  // 📧 AUTH
+  // ==============================
   email: {
     type: String,
     required: true,
     unique: true,
+    lowercase: true,
+    trim: true,
   },
 
-  password: String,
+  password: {
+    type: String,
+    required: true,
+  },
 
+  // ==============================
+  // 💰 WALLET SYSTEM
+  // ==============================
+  units: {
+    type: Number,
+    default: 0,
+  },
+
+  // 🔁 legacy support (optional)
   balance: {
     type: Number,
     default: 0,
   },
 
-
-  units: {
-      type: Number,
-      default: 0,
-    },
-
-  // 🔥 NEW FIELD
+  // ==============================
+  // 🚦 ACCOUNT STATUS
+  // ==============================
   status: {
     type: String,
     enum: ["active", "suspended"],
@@ -32,7 +61,12 @@ const userSchema = new mongoose.Schema({
   },
 
 }, {
-  timestamps: true
+  timestamps: true,
 });
+
+// ==============================
+// 🔐 INDEX (ENSURES UNIQUE EMAIL)
+// ==============================
+userSchema.index({ email: 1 }, { unique: true });
 
 module.exports = mongoose.model("User", userSchema);
