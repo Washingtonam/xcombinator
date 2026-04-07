@@ -4,9 +4,9 @@ import axios from "axios";
 const API_BASE = "https://xcombinator.onrender.com";
 
 export default function AdminPricing() {
-  const [dataPrice, setDataPrice] = useState("");
-  const [premiumPrice, setPremiumPrice] = useState("");
-  const [longPrice, setLongPrice] = useState("");
+  const [unitPrice, setUnitPrice] = useState("");
+  const [agentPrice, setAgentPrice] = useState("");
+  const [mode, setMode] = useState("bundle");
 
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
@@ -17,18 +17,20 @@ export default function AdminPricing() {
   };
 
   // =========================
-  // FETCH CURRENT PRICING
+  // FETCH PRICING
   // =========================
   const fetchPricing = async () => {
     try {
       const res = await axios.get(`${API_BASE}/api/pricing`);
 
-      setDataPrice(res.data.nin.data);
-      setPremiumPrice(res.data.nin.premium);
-      setLongPrice(res.data.nin.long);
+      const nin = res.data?.nin || {};
+
+      setUnitPrice(nin.unitPrice || 250);
+      setAgentPrice(nin.agentPrice || 150);
+      setMode(nin.mode || "bundle");
 
     } catch (err) {
-      console.error("Pricing fetch error:", err);
+      console.error(err);
       alert("Failed to load pricing");
     } finally {
       setFetching(false);
@@ -43,7 +45,7 @@ export default function AdminPricing() {
   // UPDATE PRICING
   // =========================
   const handleUpdate = async () => {
-    if (!dataPrice || !premiumPrice || !longPrice) {
+    if (!unitPrice || !agentPrice) {
       return alert("All fields are required");
     }
 
@@ -54,29 +56,24 @@ export default function AdminPricing() {
       await axios.put(
         `${API_BASE}/api/admin/pricing`,
         {
-          dataPrice: Number(dataPrice),
-          premiumPrice: Number(premiumPrice),
-          longPrice: Number(longPrice),
+          unitPrice: Number(unitPrice),
+          agentPrice: Number(agentPrice),
+          mode,
         },
         { headers }
       );
 
       setSuccess(true);
-
-      // 🔥 REFETCH AFTER UPDATE (FIXES RESET ISSUE)
       await fetchPricing();
 
     } catch (err) {
       console.error(err);
-      alert("Update failed. Check server.");
+      alert("Update failed");
     }
 
     setLoading(false);
   };
 
-  // =========================
-  // UI
-  // =========================
   if (fetching) {
     return (
       <div className="p-6 text-center text-gray-500">
@@ -90,88 +87,84 @@ export default function AdminPricing() {
 
       {/* HEADER */}
       <h2 className="text-2xl font-bold mb-2 dark:text-white">
-        NIN Slip Pricing
+        Unit Pricing Control
       </h2>
 
       <p className="text-sm text-gray-500 mb-6">
-        Update pricing for all slip types. Changes apply instantly.
+        Control how users are charged for verification.
       </p>
 
-      {/* ========================= */}
-      {/* INPUTS */}
-      {/* ========================= */}
-      <div className="space-y-4">
-
-        {/* DATA */}
-        <div>
-          <label className="text-sm text-gray-600 dark:text-gray-300">
-            Data Slip Price (₦)
-          </label>
-          <input
-            type="number"
-            value={dataPrice}
-            onChange={(e) => setDataPrice(e.target.value)}
-            className="w-full border p-3 rounded-xl mt-1 focus:ring-2 focus:ring-blue-500 outline-none"
-          />
-        </div>
-
-        {/* PREMIUM */}
-        <div>
-          <label className="text-sm text-gray-600 dark:text-gray-300">
-            Premium Slip Price (₦)
-          </label>
-          <input
-            type="number"
-            value={premiumPrice}
-            onChange={(e) => setPremiumPrice(e.target.value)}
-            className="w-full border p-3 rounded-xl mt-1 focus:ring-2 focus:ring-blue-500 outline-none"
-          />
-        </div>
-
-        {/* LONG */}
-        <div>
-          <label className="text-sm text-gray-600 dark:text-gray-300">
-            Long Slip Price (₦)
-          </label>
-          <input
-            type="number"
-            value={longPrice}
-            onChange={(e) => setLongPrice(e.target.value)}
-            className="w-full border p-3 rounded-xl mt-1 focus:ring-2 focus:ring-blue-500 outline-none"
-          />
-        </div>
-
+      {/* UNIT PRICE */}
+      <div className="mb-4">
+        <label className="text-sm text-gray-600 dark:text-gray-300">
+          Price Per Unit (₦)
+        </label>
+        <input
+          type="number"
+          value={unitPrice}
+          onChange={(e) => setUnitPrice(e.target.value)}
+          className="w-full border p-3 rounded-xl mt-1"
+        />
       </div>
 
-      {/* ========================= */}
+      {/* AGENT PRICE */}
+      <div className="mb-4">
+        <label className="text-sm text-gray-600 dark:text-gray-300">
+          Agent Price (₦)
+        </label>
+        <input
+          type="number"
+          value={agentPrice}
+          onChange={(e) => setAgentPrice(e.target.value)}
+          className="w-full border p-3 rounded-xl mt-1"
+        />
+      </div>
+
+      {/* MODE */}
+      <div className="mb-4">
+        <label className="text-sm font-semibold dark:text-white">
+          Pricing Mode
+        </label>
+
+        <select
+          value={mode}
+          onChange={(e) => setMode(e.target.value)}
+          className="w-full border p-3 rounded-xl mt-1"
+        >
+          <option value="bundle">Bundle (1 Unit = All Slips)</option>
+          <option value="single">Single (1 Unit = 1 Slip)</option>
+        </select>
+      </div>
+
       {/* SUMMARY */}
-      {/* ========================= */}
-      <div className="mt-6 p-4 bg-gray-50 dark:bg-[#111] rounded-xl text-sm text-gray-600 dark:text-gray-400">
-        <p>💡 Pricing Summary:</p>
-        <p>• Data: ₦{dataPrice}</p>
-        <p>• Premium: ₦{premiumPrice}</p>
-        <p>• Long: ₦{longPrice}</p>
+      <div className="mt-6 p-4 bg-gray-50 dark:bg-[#111] rounded-xl text-sm">
+        <p>💡 System Behavior:</p>
+
+        {mode === "bundle" ? (
+          <p>• 1 Unit unlocks ALL slips</p>
+        ) : (
+          <p>• 1 Unit per slip</p>
+        )}
+
+        <p>• User Price: ₦{unitPrice}</p>
+        <p>• Agent Price: ₦{agentPrice}</p>
       </div>
 
-      {/* ========================= */}
       {/* BUTTON */}
-      {/* ========================= */}
       <button
         onClick={handleUpdate}
         disabled={loading}
-        className={`w-full mt-6 py-3 rounded-xl text-white font-semibold ${
-          loading
-            ? "bg-gray-400"
-            : "bg-blue-600 hover:bg-blue-700"
+        className={`w-full mt-6 py-3 rounded-xl text-white ${
+          loading ? "bg-gray-400" : "bg-blue-600"
         }`}
       >
-        {loading ? "Updating..." : "Save Pricing"}
+        {loading ? "Updating..." : "Save Settings"}
       </button>
 
-      {/* SUCCESS MESSAGE */}
+      {/* SUCCESS */}
       {success && (
         <div className="mt-4 text-green-600 text-center text-sm">
-          ✅ Pricing updated successfully
+          ✅ Settings updated successfully
         </div>
       )}
 

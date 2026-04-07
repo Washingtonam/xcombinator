@@ -180,21 +180,26 @@ router.post("/user/:id/units", isAdmin, async (req, res) => {
 });
 
 // ==============================
-// 💰 UPDATE PRICING (UNIT SYSTEM)
+// 💰 UPDATE PRICING + MODE
 // ==============================
 router.put("/pricing", isAdmin, async (req, res) => {
   try {
-    const { unitPrice, agentPrice } = req.body;
+    const { unitPrice, agentPrice, mode } = req.body;
 
     let pricing = await Pricing.findOne();
 
     if (!pricing) {
       pricing = new Pricing({
-        nin: { unitPrice, agentPrice },
+        nin: {
+          unitPrice,
+          agentPrice,
+          mode: mode || "bundle",
+        },
       });
     } else {
-      pricing.nin.unitPrice = unitPrice;
-      pricing.nin.agentPrice = agentPrice;
+      if (unitPrice !== undefined) pricing.nin.unitPrice = unitPrice;
+      if (agentPrice !== undefined) pricing.nin.agentPrice = agentPrice;
+      if (mode) pricing.nin.mode = mode;
     }
 
     await pricing.save();

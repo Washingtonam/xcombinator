@@ -7,10 +7,13 @@ export default function VerifyNIN() {
   const [method, setMethod] = useState("nin");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
+  const [mode, setMode] = useState("bundle"); // 🔥 NEW
 
   // INPUT STATES
   const [nin, setNin] = useState("");
   const [phone, setPhone] = useState("");
+  const [selectedSlip, setSelectedSlip] = useState("data"); // 🔥 FOR SINGLE MODE
+
   const [form, setForm] = useState({
     firstname: "",
     surname: "",
@@ -24,7 +27,6 @@ export default function VerifyNIN() {
   const handleVerify = async () => {
     if (loading) return;
 
-    // VALIDATION
     if (method === "nin" && nin.length !== 11) {
       return alert("Enter valid 11-digit NIN");
     }
@@ -69,9 +71,8 @@ export default function VerifyNIN() {
       }
 
       setResult(data);
-
-      // 🔥 DEDUCT UNIT
       setUnits(data.units);
+      setMode(data.mode || "bundle"); // 🔥 GET MODE
 
     } catch (err) {
       console.error(err);
@@ -86,7 +87,6 @@ export default function VerifyNIN() {
   // =========================
   const downloadSlip = async (type) => {
     const info = result?.data?.data || result?.data;
-
     if (!info) return alert("No data available");
 
     try {
@@ -121,8 +121,11 @@ export default function VerifyNIN() {
 
       {/* HEADER */}
       <h1 className="text-2xl font-bold mb-2">Verify Identity</h1>
+
       <p className="text-gray-500 mb-6">
-        Use 1 unit to verify and unlock all NIN slips instantly.
+        {mode === "bundle"
+          ? "Use 1 unit to unlock all NIN slips"
+          : "Use 1 unit per slip generation"}
       </p>
 
       {/* BALANCE */}
@@ -214,9 +217,31 @@ export default function VerifyNIN() {
         )}
       </div>
 
+      {/* 🔥 SINGLE MODE SLIP SELECT */}
+      {mode === "single" && (
+        <div className="mb-4">
+          <p className="text-sm mb-2">Select Slip Type</p>
+          <div className="grid grid-cols-3 gap-3">
+            {["data", "premium", "long"].map((type) => (
+              <button
+                key={type}
+                onClick={() => setSelectedSlip(type)}
+                className={`p-2 rounded border ${
+                  selectedSlip === type
+                    ? "bg-blue-600 text-white"
+                    : "bg-white"
+                }`}
+              >
+                {type}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* COST */}
       <div className="mb-4 text-sm text-gray-600">
-        Cost: <b>1 Unit (₦250)</b>
+        Cost: <b>1 Unit</b>
       </div>
 
       {/* VERIFY BUTTON */}
@@ -225,26 +250,43 @@ export default function VerifyNIN() {
         disabled={loading}
         className="w-full bg-black text-white py-3 rounded-lg"
       >
-        {loading ? "Processing..." : "Verify & Unlock All Slips"}
+        {loading
+          ? "Processing..."
+          : mode === "bundle"
+          ? "Verify & Unlock All Slips"
+          : "Verify"}
       </button>
 
       {/* RESULT */}
       {result && (
         <div className="mt-8">
 
-          <h2 className="font-semibold mb-3">Download Slips</h2>
+          <h2 className="font-semibold mb-3">
+            {mode === "bundle"
+              ? "Download All Slips"
+              : "Download Selected Slip"}
+          </h2>
 
-          <div className="grid grid-cols-3 gap-3">
-            {["data", "premium", "long"].map((type) => (
-              <button
-                key={type}
-                onClick={() => downloadSlip(type)}
-                className="bg-blue-600 text-white py-2 rounded"
-              >
-                {type} slip
-              </button>
-            ))}
-          </div>
+          {mode === "bundle" ? (
+            <div className="grid grid-cols-3 gap-3">
+              {["data", "premium", "long"].map((type) => (
+                <button
+                  key={type}
+                  onClick={() => downloadSlip(type)}
+                  className="bg-blue-600 text-white py-2 rounded"
+                >
+                  {type}
+                </button>
+              ))}
+            </div>
+          ) : (
+            <button
+              onClick={() => downloadSlip(selectedSlip)}
+              className="bg-blue-600 text-white py-3 rounded w-full"
+            >
+              Download {selectedSlip} slip
+            </button>
+          )}
 
         </div>
       )}
