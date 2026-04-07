@@ -7,12 +7,13 @@ export default function VerifyNIN() {
   const [method, setMethod] = useState("nin");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
-  const [mode, setMode] = useState("bundle"); // 🔥 NEW
+  const [mode, setMode] = useState("bundle");
 
-  // INPUT STATES
   const [nin, setNin] = useState("");
   const [phone, setPhone] = useState("");
-  const [selectedSlip, setSelectedSlip] = useState("data"); // 🔥 FOR SINGLE MODE
+  const [selectedSlip, setSelectedSlip] = useState("data");
+
+  const [hasDownloaded, setHasDownloaded] = useState(false); // 🔥 LOCK SYSTEM
 
   const [form, setForm] = useState({
     firstname: "",
@@ -22,7 +23,7 @@ export default function VerifyNIN() {
   });
 
   // =========================
-  // VERIFY FUNCTION
+  // VERIFY
   // =========================
   const handleVerify = async () => {
     if (loading) return;
@@ -42,10 +43,11 @@ export default function VerifyNIN() {
     }
 
     if (units < 1) {
-      return alert("Insufficient units. Please fund wallet.");
+      return alert("Insufficient units");
     }
 
     setLoading(true);
+    setHasDownloaded(false); // reset lock
 
     try {
       const res = await fetch("https://xcombinator.onrender.com/api/verify-nin", {
@@ -72,7 +74,7 @@ export default function VerifyNIN() {
 
       setResult(data);
       setUnits(data.units);
-      setMode(data.mode || "bundle"); // 🔥 GET MODE
+      setMode(data.mode || "bundle");
 
     } catch (err) {
       console.error(err);
@@ -86,6 +88,10 @@ export default function VerifyNIN() {
   // DOWNLOAD
   // =========================
   const downloadSlip = async (type) => {
+    if (mode === "single" && hasDownloaded) {
+      return alert("You already downloaded a slip. Verify again.");
+    }
+
     const info = result?.data?.data || result?.data;
     if (!info) return alert("No data available");
 
@@ -110,6 +116,12 @@ export default function VerifyNIN() {
       a.click();
 
       window.URL.revokeObjectURL(url);
+
+      // 🔥 LOCK AFTER DOWNLOAD (SINGLE MODE)
+      if (mode === "single") {
+        setHasDownloaded(true);
+      }
+
     } catch (err) {
       console.error(err);
       alert("Download failed");
@@ -125,7 +137,7 @@ export default function VerifyNIN() {
       <p className="text-gray-500 mb-6">
         {mode === "bundle"
           ? "Use 1 unit to unlock all NIN slips"
-          : "Use 1 unit per slip generation"}
+          : "Use 1 unit per slip"}
       </p>
 
       {/* BALANCE */}
@@ -133,7 +145,7 @@ export default function VerifyNIN() {
         Units Available: <b>{units}</b>
       </div>
 
-      {/* METHOD SELECT */}
+      {/* METHOD */}
       <div className="grid grid-cols-3 gap-3 mb-6">
         {[
           { key: "nin", label: "NIN" },
@@ -154,9 +166,8 @@ export default function VerifyNIN() {
         ))}
       </div>
 
-      {/* INPUT AREA */}
+      {/* INPUT */}
       <div className="mb-6">
-
         {method === "nin" && (
           <input
             type="text"
@@ -166,58 +177,9 @@ export default function VerifyNIN() {
             className="w-full border p-3 rounded"
           />
         )}
-
-        {method === "phone" && (
-          <input
-            type="text"
-            placeholder="Enter Phone Number"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            className="w-full border p-3 rounded"
-          />
-        )}
-
-        {method === "demo" && (
-          <div className="grid grid-cols-2 gap-3">
-            <input
-              placeholder="First Name"
-              onChange={(e) =>
-                setForm({ ...form, firstname: e.target.value })
-              }
-              className="border p-3 rounded"
-            />
-
-            <input
-              placeholder="Surname"
-              onChange={(e) =>
-                setForm({ ...form, surname: e.target.value })
-              }
-              className="border p-3 rounded"
-            />
-
-            <select
-              onChange={(e) =>
-                setForm({ ...form, gender: e.target.value })
-              }
-              className="border p-3 rounded"
-            >
-              <option value="">Gender</option>
-              <option>Male</option>
-              <option>Female</option>
-            </select>
-
-            <input
-              type="date"
-              onChange={(e) =>
-                setForm({ ...form, birthdate: e.target.value })
-              }
-              className="border p-3 rounded"
-            />
-          </div>
-        )}
       </div>
 
-      {/* 🔥 SINGLE MODE SLIP SELECT */}
+      {/* SINGLE MODE SELECT */}
       {mode === "single" && (
         <div className="mb-4">
           <p className="text-sm mb-2">Select Slip Type</p>
@@ -244,7 +206,7 @@ export default function VerifyNIN() {
         Cost: <b>1 Unit</b>
       </div>
 
-      {/* VERIFY BUTTON */}
+      {/* VERIFY */}
       <button
         onClick={handleVerify}
         disabled={loading}
@@ -284,7 +246,7 @@ export default function VerifyNIN() {
               onClick={() => downloadSlip(selectedSlip)}
               className="bg-blue-600 text-white py-3 rounded w-full"
             >
-              Download {selectedSlip} slip
+              Download {selectedSlip}
             </button>
           )}
 
