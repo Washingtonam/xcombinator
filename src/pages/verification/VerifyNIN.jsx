@@ -1,19 +1,17 @@
 import { useState } from "react";
 import { useUser } from "../../context/UserContext";
+import { useNavigate } from "react-router-dom";
 
 export default function VerifyNIN() {
   const { user, units, setUnits } = useUser();
+  const navigate = useNavigate();
 
   const [method, setMethod] = useState("nin");
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState(null);
   const [mode, setMode] = useState("bundle");
 
   const [nin, setNin] = useState("");
   const [phone, setPhone] = useState("");
-  const [selectedSlip, setSelectedSlip] = useState("data");
-
-  const [hasDownloaded, setHasDownloaded] = useState(false); // 🔥 LOCK SYSTEM
 
   const [form, setForm] = useState({
     firstname: "",
@@ -47,7 +45,6 @@ export default function VerifyNIN() {
     }
 
     setLoading(true);
-    setHasDownloaded(false); // reset lock
 
     try {
       const res = await fetch("https://xcombinator.onrender.com/api/verify-nin", {
@@ -72,60 +69,22 @@ export default function VerifyNIN() {
         return;
       }
 
-      setResult(data);
+      // 🔥 UPDATE STATE
       setUnits(data.units);
       setMode(data.mode || "bundle");
 
+      // 🔥 STORE RESULT FOR NEXT PAGE
+      localStorage.setItem("nin_result", JSON.stringify(data));
+
+      // 🔥 REDIRECT
+      navigate("/verify-result");
+
     } catch (err) {
       console.error(err);
-      alert("Server error");
+      alert("Server not responding. Try again.");
     }
 
     setLoading(false);
-  };
-
-  // =========================
-  // DOWNLOAD
-  // =========================
-  const downloadSlip = async (type) => {
-    if (mode === "single" && hasDownloaded) {
-      return alert("You already downloaded a slip. Verify again.");
-    }
-
-    const info = result?.data?.data || result?.data;
-    if (!info) return alert("No data available");
-
-    try {
-      const res = await fetch("https://xcombinator.onrender.com/api/generate-nin-slip", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          data: info,
-          type,
-        }),
-      });
-
-      const blob = await res.blob();
-      const url = window.URL.createObjectURL(blob);
-
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `${type}-slip.pdf`;
-      a.click();
-
-      window.URL.revokeObjectURL(url);
-
-      // 🔥 LOCK AFTER DOWNLOAD (SINGLE MODE)
-      if (mode === "single") {
-        setHasDownloaded(true);
-      }
-
-    } catch (err) {
-      console.error(err);
-      alert("Download failed");
-    }
   };
 
   return (
@@ -168,6 +127,7 @@ export default function VerifyNIN() {
 
       {/* INPUT */}
       <div className="mb-6">
+
         {method === "nin" && (
           <input
             type="text"
@@ -177,79 +137,73 @@ export default function VerifyNIN() {
             className="w-full border p-3 rounded"
           />
         )}
-      </div>
 
-      {/* SINGLE MODE SELECT */}
-      {mode === "single" && (
-        <div className="mb-4">
-          <p className="text-sm mb-2">Select Slip Type</p>
-          <div className="grid grid-cols-3 gap-3">
-            {["data", "premium", "long"].map((type) => (
-              <button
-                key={type}
-                onClick={() => setSelectedSlip(type)}
-                className={`p-2 rounded border ${
-                  selectedSlip === type
-                    ? "bg-blue-600 text-white"
-                    : "bg-white"
-                }`}
-              >
-                {type}
-              </button>
-            ))}
+        {method === "phone" && (
+          <input
+            type="text"
+            placeholder="Enter Phone Number"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            className="w-full border p-3 rounded"
+          />
+        )}
+
+        {method === "demo" && (
+          <div className="grid grid-cols-2 gap-3">
+            <input
+              placeholder="First Name"
+              onChange={(e) =>
+                setForm({ ...form, firstname: e.target.value })
+              }
+              className="border p-3 rounded"
+            />
+
+            <input
+              placeholder="Surname"
+              onChange={(e) =>
+                setForm({ ...form, surname: e.target.value })
+              }
+              className="border p-3 rounded"
+            />
+
+            <select
+              onChange={(e) =>
+                setForm({ ...form, gender: e.target.value })
+              }
+              className="border p-3 rounded"
+            >
+              <option value="">Gender</option>
+              <option>Male</option>
+              <option>Female</option>
+            </select>
+
+            <input
+              type="date"
+              onChange={(e) =>
+                setForm({ ...form, birthdate: e.target.value })
+              }
+              className="border p-3 rounded"
+            />
           </div>
-        </div>
-      )}
+        )}
 
-      {/* COST */}
-      <div className="mb-4 text-sm text-gray-600">
-        Cost: <b>1 Unit</b>
       </div>
 
-      {/* VERIFY */}
+      {/* VERIFY BUTTON */}
       <button
         onClick={handleVerify}
         disabled={loading}
         className="w-full bg-black text-white py-3 rounded-lg"
       >
         {loading
-          ? "Processing..."
-          : mode === "bundle"
-          ? "Verify & Unlock All Slips"
-          : "Verify"}
+          ? "Verifying... Please wait ⏳"
+          : "Verify Identity"}
       </button>
 
-      {/* RESULT */}
-      {result && (
-        <div className="mt-8">
-
-          <h2 className="font-semibold mb-3">
-            {mode === "bundle"
-              ? "Download All Slips"
-              : "Download Selected Slip"}
-          </h2>
-
-          {mode === "bundle" ? (
-            <div className="grid grid-cols-3 gap-3">
-              {["data", "premium", "long"].map((type) => (
-                <button
-                  key={type}
-                  onClick={() => downloadSlip(type)}
-                  className="bg-blue-600 text-white py-2 rounded"
-                >
-                  {type}
-                </button>
-              ))}
-            </div>
-          ) : (
-            <button
-              onClick={() => downloadSlip(selectedSlip)}
-              className="bg-blue-600 text-white py-3 rounded w-full"
-            >
-              Download {selectedSlip}
-            </button>
-          )}
-
+      {/* LOADING FEEDBACK */}
+      {loading && (
+        <div className="mt-4 text-sm text-gray-500 text-center">
+          🔍 Connecting to NIN server...
         </div>
       )}
 
