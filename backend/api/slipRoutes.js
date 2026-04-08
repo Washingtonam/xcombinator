@@ -418,8 +418,17 @@ async function generatePremiumSlipHTML(data) {
   `;
 }
 
+function formatImage(photo) {
+  if (!photo) return "";
+
+  // if already base64, ensure prefix exists
+  if (photo.startsWith("data:image")) return photo;
+
+  return `data:image/png;base64,${photo}`;
+}
+
 // =======================================================
-// 🔵 LONG SLIP
+// 🔵 LONG SLIP (FIXED)
 // =======================================================
 function generateLongHTML(data) {
   return `
@@ -474,56 +483,80 @@ function generateLongHTML(data) {
 
       <!-- ROW 1 -->
       <tr>
-        <td style="border:2px solid #000; padding:8px; width:25%;">
+        <td style="border:2px solid #000; padding:8px; width:25%; vertical-align:top;">
           <b>Tracking ID:</b> ${data.trackingId}
         </td>
 
-        <td style="border:2px solid #000; padding:8px; width:25%;">
+        <td style="border:2px solid #000; padding:8px; width:25%; vertical-align:top;">
           <b>Surname:</b> ${data.surname}
         </td>
 
-        <!-- ADDRESS -->
-        <td style="border:2px solid #000; padding:8px; width:30%;" rowspan="4">
-          <b>Address:</b><br/>
-          ${data.residence_address || ""}<br/><br/>
-          ${data.lga || ""}<br/>
-          ${data.residence_state || ""}
+        <!-- ADDRESS (FIXED ALIGNMENT) -->
+        <td style="
+          border:2px solid #000;
+          padding:8px;
+          width:30%;
+          vertical-align:top;
+        " rowspan="4">
+
+          <div style="line-height:1.4;">
+            <b>Address:</b>
+
+            <div>${data.residence_address || ""}</div>
+            <div>${data.lga || ""}</div>
+            <div>${data.residence_state || ""}</div>
+          </div>
+
         </td>
 
-        <!-- PHOTO -->
-        <td style="border:2px solid #000; width:20%;" rowspan="4">
-          <img src="${formatImage(data.photo)}" style="
+        <!-- PHOTO (FIXED RENDER + FIT) -->
+        <td style="
+          border:2px solid #000;
+          width:20%;
+          vertical-align:top;
+        " rowspan="4">
+
+          <div style="
             width:100%;
-            height:100%;
-            object-fit:cover;
-          "/>
+            height:140px;
+            overflow:hidden;
+            display:flex;
+            align-items:flex-start;
+            justify-content:center;
+          ">
+            <img src="${formatImage(data.photo)}" style="
+              width:100%;
+              height:auto;
+              object-fit:cover;
+            "/>
+          </div>
+
         </td>
       </tr>
 
       <!-- ROW 2 -->
       <tr>
-        <td style="border:2px solid #000; padding:8px;">
+        <td style="border:2px solid #000; padding:8px; vertical-align:top;">
           <b>NIN:</b> ${data.nin}
         </td>
 
-        <td style="border:2px solid #000; padding:8px;">
+        <td style="border:2px solid #000; padding:8px; vertical-align:top;">
           <b>First Name:</b> ${data.firstname}
         </td>
       </tr>
 
       <!-- ROW 3 -->
       <tr>
-        <!-- 👇 MERGED CELL (NO SPLIT LIKE BEFORE) -->
         <td style="border:2px solid #000;" rowspan="2"></td>
 
-        <td style="border:2px solid #000; padding:8px;">
+        <td style="border:2px solid #000; padding:8px; vertical-align:top;">
           <b>Middle Name:</b> ${data.middlename}
         </td>
       </tr>
 
       <!-- ROW 4 -->
       <tr>
-        <td style="border:2px solid #000; padding:8px;">
+        <td style="border:2px solid #000; padding:8px; vertical-align:top;">
           <b>Gender:</b> ${data.gender}
         </td>
       </tr>
@@ -567,7 +600,7 @@ function generateLongHTML(data) {
 
         <td style="border:2px solid #000; text-align:center; padding:8px;">
           <img src="https://xcombinator.com.ng/assets/icon-phone.png" width="22"/><br/>
-          0700-CALL-NIMC<br/>
+          0700-CALL NIMC<br/>
           (0700-2255-646)
         </td>
 
