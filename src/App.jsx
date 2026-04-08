@@ -13,6 +13,8 @@ import AdminPricing from "./pages/admin/AdminPricing";
 import Dashboard from "./pages/dashboard/Dashboard";
 import VerifyNIN from "./pages/verification/VerifyNIN";
 import VerifyBVN from "./pages/verification/VerifyBVN";
+import VerifyResult from "./pages/verification/VerifyResult"; // 🔥 ADD THIS
+
 import Transactions from "./pages/transactions/Transactions";
 import Wallet from "./pages/wallet/Wallet";
 
@@ -62,6 +64,16 @@ function Layout() {
           <Route path="/transactions" element={<ProtectedRoute><Transactions /></ProtectedRoute>} />
           <Route path="/wallet" element={<ProtectedRoute><Wallet /></ProtectedRoute>} />
 
+          {/* 🔥 FIXED: VERIFY RESULT ROUTE */}
+          <Route
+            path="/verify-result"
+            element={
+              <ProtectedRoute>
+                <VerifyResult />
+              </ProtectedRoute>
+            }
+          />
+
           {/* ADMIN */}
           <Route path="/admin" element={<ProtectedRoute><AdminRoute><Admin /></AdminRoute></ProtectedRoute>} />
           <Route path="/admin/users" element={<ProtectedRoute><AdminRoute><AdminUsers /></AdminRoute></ProtectedRoute>} />
@@ -95,7 +107,7 @@ function AppRoutes() {
 }
 
 // ==============================
-// 🚀 MAIN APP (ONLY ONE EXPORT)
+// 🚀 MAIN APP
 // ==============================
 export default function App() {
   return (
