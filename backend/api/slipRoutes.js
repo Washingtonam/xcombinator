@@ -418,15 +418,6 @@ async function generatePremiumSlipHTML(data) {
   `;
 }
 
-function formatImage(photo) {
-  if (!photo) return "";
-
-  // if already base64, ensure prefix exists
-  if (photo.startsWith("data:image")) return photo;
-
-  return `data:image/png;base64,${photo}`;
-}
-
 // =======================================================
 // 🔵 LONG SLIP (FIXED)
 // =======================================================
