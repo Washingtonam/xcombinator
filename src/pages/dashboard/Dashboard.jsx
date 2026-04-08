@@ -3,7 +3,7 @@ import { useUser } from "../../context/UserContext";
 
 export default function Dashboard() {
   const navigate = useNavigate();
-  const { user, balance } = useUser();
+  const { user, units } = useUser(); // 🔥 SWITCHED TO UNITS
 
   return (
     <div className="max-w-6xl mx-auto">
@@ -17,31 +17,40 @@ export default function Dashboard() {
         </h1>
 
         <p className="text-gray-500 dark:text-gray-400 mt-1">
-          Manage your verifications and wallet from here
+          Manage your verifications and usage from here
         </p>
       </div>
 
       {/* ========================= */}
-      {/* BALANCE CARD */}
+      {/* UNITS CARD (REPLACES WALLET) */}
       {/* ========================= */}
-      <div className="bg-gradient-to-r from-green-600 to-green-500 text-white p-6 rounded-2xl mb-8 shadow-lg">
-        <p className="text-sm opacity-80">Wallet Balance</p>
-        <h2 className="text-4xl font-bold mt-1">₦{balance}</h2>
+      <div className="bg-gradient-to-r from-blue-600 to-indigo-500 text-white p-6 rounded-2xl mb-8 shadow-lg">
+        <p className="text-sm opacity-80">Available Units</p>
+
+        <h2 className="text-4xl font-bold mt-1">
+          {units}
+        </h2>
+
+        <p className="text-xs mt-2 opacity-80">
+          1 Unit = 1 Verification
+        </p>
 
         <div className="mt-4 flex gap-3 flex-wrap">
+
           <button
             onClick={() => navigate("/wallet")}
-            className="bg-white text-green-600 px-4 py-2 rounded-lg text-sm font-semibold"
+            className="bg-white text-blue-600 px-4 py-2 rounded-lg text-sm font-semibold"
           >
-            Fund Wallet
+            Buy Units
           </button>
 
           <button
             onClick={() => navigate("/transactions")}
             className="bg-white/20 px-4 py-2 rounded-lg text-sm font-semibold"
           >
-            View Transactions
+            View Usage
           </button>
+
         </div>
       </div>
 
@@ -82,17 +91,17 @@ export default function Dashboard() {
           </p>
         </div>
 
-        {/* WALLET */}
+        {/* BUY UNITS (REPLACED WALLET) */}
         <div
           onClick={() => navigate("/wallet")}
           className="bg-white dark:bg-[#1A1A1A] p-5 rounded-2xl shadow hover:shadow-xl transition cursor-pointer border border-gray-100 dark:border-gray-800"
         >
-          <p className="text-2xl mb-2">💰</p>
+          <p className="text-2xl mb-2">⚡</p>
           <h3 className="font-semibold text-gray-800 dark:text-white">
-            Wallet
+            Buy Units
           </h3>
           <p className="text-sm text-gray-500">
-            Fund and manage balance
+            Fund account for verifications
           </p>
         </div>
 
@@ -106,7 +115,7 @@ export default function Dashboard() {
             Transactions
           </h3>
           <p className="text-sm text-gray-500">
-            View your history
+            View your usage history
           </p>
         </div>
 

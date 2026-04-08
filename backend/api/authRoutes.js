@@ -11,12 +11,10 @@ router.post("/register", async (req, res) => {
   try {
     const { firstName, lastName, nin, email, password } = req.body;
 
-    // ✅ VALIDATION
     if (!email || !password) {
       return res.status(400).json({ error: "Email and password are required" });
     }
 
-    // ✅ CHECK EXISTING USER
     const existingUser = await User.findOne({
       email: email.toLowerCase(),
     });
@@ -25,10 +23,8 @@ router.post("/register", async (req, res) => {
       return res.status(400).json({ error: "User already exists" });
     }
 
-    // 🔐 HASH PASSWORD
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // ✅ CREATE USER
     const newUser = await User.create({
       firstName: firstName || "",
       lastName: lastName || "",
@@ -36,9 +32,8 @@ router.post("/register", async (req, res) => {
       email: email.toLowerCase(),
       password: hashedPassword,
 
-      // 🔥 NEW SYSTEM
       units: 0,
-      balance: 0, // keep for compatibility
+      balance: 0,
       status: "active",
     });
 
@@ -47,6 +42,7 @@ router.post("/register", async (req, res) => {
       user: {
         id: newUser._id,
         email: newUser.email,
+        units: newUser.units || 0, // 🔥 FIXED
       },
     });
 
@@ -65,7 +61,6 @@ router.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // ✅ VALIDATION
     if (!email || !password) {
       return res.status(400).json({ error: "Email and password required" });
     }
@@ -78,14 +73,12 @@ router.post("/login", async (req, res) => {
       return res.status(400).json({ error: "Invalid credentials" });
     }
 
-    // 🔒 CHECK PASSWORD
     const isMatch = await bcrypt.compare(password, user.password);
 
     if (!isMatch) {
       return res.status(400).json({ error: "Invalid credentials" });
     }
 
-    // 🚫 CHECK STATUS
     if (user.status === "suspended") {
       return res.status(403).json({ error: "Account suspended" });
     }
@@ -95,7 +88,7 @@ router.post("/login", async (req, res) => {
       user: {
         id: user._id,
         email: user.email,
-        units: user.units || 0,
+        units: user.units || 0, // 🔥 CONFIRMED
       },
     });
 

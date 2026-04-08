@@ -9,7 +9,6 @@ export default function Sidebar() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // ✅ Theme control (fixed)
   const { theme, toggleTheme } = useTheme();
 
   const [collapsed, setCollapsed] = useState(false);
@@ -75,11 +74,10 @@ export default function Sidebar() {
 
           <div className="flex items-center gap-2">
 
-            {/* 🌙 THEME TOGGLE */}
+            {/* THEME */}
             <button
               onClick={toggleTheme}
               className="bg-gray-700 hover:bg-gray-600 px-3 py-1 rounded text-xs transition"
-              title="Toggle Theme"
             >
               {theme === "dark" ? "☀️" : "🌙"}
             </button>
@@ -121,9 +119,10 @@ export default function Sidebar() {
             </Link>
           </li>
 
+          {/* 🔥 REPLACED WALLET WITH UNITS */}
           <li>
             <Link to="/wallet" className={linkClass("/wallet")}>
-              💰 {!collapsed && "Wallet"}
+              ⚡ {!collapsed && "Buy Units"}
             </Link>
           </li>
 
@@ -180,9 +179,7 @@ export default function Sidebar() {
 
   return (
     <>
-      {/* ========================= */}
       {/* MOBILE TOP BAR */}
-      {/* ========================= */}
       <div className="md:hidden flex items-center justify-between bg-blue-900 text-white p-3">
         <button onClick={() => setMobileOpen(true)}>☰</button>
 
@@ -193,9 +190,7 @@ export default function Sidebar() {
         </button>
       </div>
 
-      {/* ========================= */}
       {/* MOBILE OVERLAY */}
-      {/* ========================= */}
       {mobileOpen && (
         <div
           onClick={() => setMobileOpen(false)}
@@ -203,9 +198,7 @@ export default function Sidebar() {
         />
       )}
 
-      {/* ========================= */}
       {/* SIDEBAR */}
-      {/* ========================= */}
       <div
         className={`
           fixed md:relative z-50 h-screen bg-blue-900 text-white p-4 flex flex-col justify-between transition-all duration-300

@@ -4,56 +4,52 @@ const UserContext = createContext();
 
 export function UserProvider({ children }) {
   const [user, setUser] = useState(null);
-  const [balance, setBalance] = useState(0);
+  const [units, setUnits] = useState(0);
 
-  // 🔥 CENTRAL FUNCTION (IMPORTANT)
-  const fetchBalance = async (userId) => {
-    try {
-      const res = await fetch("https://xcombinator.onrender.com/api/balance", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ userId }),
-      });
-
-      const data = await res.json();
-
-      if (res.ok) {
-        setBalance(data.balance);
-      }
-    } catch (error) {
-      console.error("Balance fetch error:", error);
-    }
-  };
-
+  // =========================
+  // LOAD USER FROM STORAGE
+  // =========================
   useEffect(() => {
     const storedUser = JSON.parse(localStorage.getItem("user"));
 
     if (storedUser) {
       setUser(storedUser);
-      fetchBalance(storedUser.id);
+      setUnits(storedUser.units || 0); // 🔥 IMPORTANT
     }
   }, []);
 
-  // 🔥 AUTO SYNC (VERY IMPORTANT)
-  useEffect(() => {
-    if (user) {
-      const interval = setInterval(() => {
-        fetchBalance(user.id);
-      }, 5000); // every 5 seconds
+  // =========================
+  // UPDATE USER (LOGIN / REGISTER)
+  // =========================
+  const updateUser = (userData) => {
+    setUser(userData);
+    setUnits(userData.units || 0);
 
-      return () => clearInterval(interval);
-    }
-  }, [user]);
+    localStorage.setItem("user", JSON.stringify(userData));
+  };
+
+  // =========================
+  // UPDATE UNITS
+  // =========================
+  const updateUnits = (newUnits) => {
+    setUnits(newUnits);
+
+    const updatedUser = {
+      ...user,
+      units: newUnits,
+    };
+
+    setUser(updatedUser);
+    localStorage.setItem("user", JSON.stringify(updatedUser));
+  };
 
   return (
     <UserContext.Provider
       value={{
         user,
-        balance,
-        setBalance,
-        refreshBalance: () => fetchBalance(user?.id), // 🔥 manual trigger
+        units,
+        setUnits: updateUnits, // 🔥 USE THIS EVERYWHERE
+        setUser: updateUser,
       }}
     >
       {children}
