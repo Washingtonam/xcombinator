@@ -10,6 +10,18 @@ const generateTrackingId = () => {
   return "TRK-" + Math.random().toString(36).substring(2, 10).toUpperCase();
 };
 
+const formatImage = (photo) => {
+  if (!photo) return "";
+
+  // already correct
+  if (photo.startsWith("data:image")) {
+    return photo;
+  }
+
+  // convert raw base64 → proper format
+  return `data:image/png;base64,${photo}`;
+};
+
 // ==============================
 // 🚀 MAIN ROUTE
 // ==============================
@@ -101,7 +113,7 @@ function generateDataHTML(data) {
       </div>
 
       <div style="width:25%; text-align:center;">
-        <img src="${data.photo}" style="width:120px;height:140px;object-fit:cover"/>
+        <img src="${formatImage(data.photo)}" style="width:120px;height:140px;object-fit:cover"/>
         ${data.signature ? `<img src="${data.signature}" style="width:100px;margin-top:5px"/>` : ""}
       </div>
 
@@ -242,7 +254,7 @@ async function generatePremiumSlipHTML(data) {
       </div>
 
       <!-- PASSPORT (BIGGER) -->
-      <img src="${data.photo}" style="
+      <img src="${formatImage(data.photo)}" style="
         position:absolute;
         left:12px;
         top:38px;
@@ -480,7 +492,7 @@ function generateLongHTML(data) {
 
         <!-- PHOTO -->
         <td style="border:2px solid #000; width:20%;" rowspan="4">
-          <img src="${data.photo}" style="
+          <img src="${formatImage(data.photo)}" style="
             width:100%;
             height:100%;
             object-fit:cover;
