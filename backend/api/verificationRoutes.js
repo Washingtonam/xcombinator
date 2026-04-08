@@ -8,7 +8,8 @@ const Pricing = require("../models/Pricing");
 const router = express.Router();
 
 const API_KEY = process.env.NIN_API_KEY;
-const ADMIN_EMAIL = "washingtonamedu@gmail.com"; // ✅ MUST MATCH YOUR LOGIN EMAIL
+const API_KEY_BACKUP = process.env.NIN_API_KEY_BACKUP;
+const ADMIN_EMAIL = "washingtonamedu@gmail.com";
 
 // MOCK DATA
 const mockData = {
@@ -43,28 +44,17 @@ router.post("/verify-nin", async (req, res) => {
       return res.status(403).json({ error: "Account suspended" });
     }
 
-    // ==========================
-    // 🔥 ADMIN CHECK (FIXED)
-    // ==========================
     const isAdmin =
       user.email?.toLowerCase().trim() ===
       ADMIN_EMAIL.toLowerCase().trim();
 
-    // 🔥 DEBUG (REMOVE LATER)
-    console.log("USER EMAIL:", user.email);
-    console.log("ADMIN EMAIL:", ADMIN_EMAIL);
-    console.log("IS ADMIN:", isAdmin);
-
-    // 🔥 GET MODE
     const pricing = await Pricing.findOne();
     const mode = pricing?.nin?.mode || "bundle";
 
     // ==========================
-    // 🧪 MOCK MODE
+    // 🧪 MOCK MODE (ALWAYS WORKS)
     // ==========================
     if (nin === "00000000000") {
-
-      // ✅ ADMIN BYPASS
       if (!isAdmin) {
         if (user.units < 1) {
           return res.status(400).json({ error: "Insufficient units" });
@@ -91,38 +81,73 @@ router.post("/verify-nin", async (req, res) => {
     }
 
     // ==========================
-    // 💳 UNIT CHECK (REAL API)
+    // 💳 UNIT CHECK
     // ==========================
     if (!isAdmin && user.units < 1) {
       return res.status(400).json({ error: "Insufficient units" });
     }
 
-    if (!API_KEY) {
-      return res.status(500).json({ error: "API key not configured" });
-    }
+    // ==========================
+    // 🔥 API FAILOVER SYSTEM
+    // ==========================
+    let apiData;
 
-    const apiResponse = await axios.post(
-      "https://ninbvnportal.com.ng/api/nin-verification",
-      { nin, consent: true },
-      {
-        headers: {
-          "x-api-key": API_KEY,
-          "Content-Type": "application/json",
-        },
-        timeout: 20000,
+    try {
+      const primary = await axios.post(
+        "https://ninbvnportal.com.ng/api/nin-verification",
+        { nin, consent: true },
+        {
+          headers: {
+            "x-api-key": API_KEY,
+            "Content-Type": "application/json",
+          },
+          timeout: 15000,
+        }
+      );
+
+      if (primary.data.status === "success") {
+        apiData = primary.data;
+        console.log("✅ PRIMARY API USED");
+      } else {
+        throw new Error("Primary failed");
       }
-    );
 
-    const apiData = apiResponse.data;
+    } catch (primaryError) {
+      console.log("⚠️ PRIMARY FAILED → SWITCHING TO BACKUP");
 
-    if (apiData.status !== "success") {
-      return res.status(400).json({ error: "API failed" });
+      try {
+        const backup = await axios.post(
+          "https://ninbvnportal.com.ng/api/nin-verification",
+          { nin, consent: true },
+          {
+            headers: {
+              "x-api-key": API_KEY_BACKUP,
+              "Content-Type": "application/json",
+            },
+            timeout: 15000,
+          }
+        );
+
+        if (backup.data.status === "success") {
+          apiData = backup.data;
+          console.log("✅ BACKUP API USED");
+        } else {
+          throw new Error("Backup failed");
+        }
+
+      } catch (backupError) {
+        console.error("❌ BOTH APIs FAILED");
+
+        return res.status(500).json({
+          error: "Verification service unavailable. Try again later.",
+        });
+      }
     }
 
     const cleanData = apiData.data?.data || apiData.data;
 
     // ==========================
-    // 🔥 DEDUCT UNIT (ONLY USERS)
+    // 🔥 DEDUCT UNIT
     // ==========================
     if (!isAdmin) {
       user.units -= 1;
@@ -146,6 +171,7 @@ router.post("/verify-nin", async (req, res) => {
 
   } catch (error) {
     console.error("VERIFY ERROR:", error.message);
+
     return res.status(500).json({
       error: "Verification failed",
       details: error.message,
