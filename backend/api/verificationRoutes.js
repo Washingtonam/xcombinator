@@ -3,7 +3,7 @@ const axios = require("axios");
 
 const User = require("../models/User");
 const Transaction = require("../models/Transaction");
-const Pricing = require("../models/Pricing");
+const Pricing = require("../models/pricing");
 
 const router = express.Router();
 
