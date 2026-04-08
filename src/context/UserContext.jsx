@@ -1,8 +1,9 @@
 import { createContext, useContext, useState, useEffect } from "react";
 
-const UserContext = createContext();
-
+const API_BASE = "https://xcombinator.onrender.com";
 const ADMIN_EMAIL = "washingtonamedu@gmail.com";
+
+const UserContext = createContext();
 
 export function UserProvider({ children }) {
   const [user, setUser] = useState(null);
@@ -20,11 +21,36 @@ export function UserProvider({ children }) {
       units: userData.units || 0,
     };
 
-    // 🔥 AUTO ADMIN FLAG
     normalized.isAdmin =
       normalized.email?.toLowerCase().trim() === ADMIN_EMAIL;
 
     return normalized;
+  };
+
+  // =========================
+  // FETCH UNITS FROM BACKEND 🔥
+  // =========================
+  const fetchUnits = async (userId) => {
+    if (!userId) return;
+
+    try {
+      const res = await fetch(`${API_BASE}/api/balance`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ userId }),
+      });
+
+      const data = await res.json();
+
+      if (res.ok && data.units !== undefined) {
+        updateUnits(data.units);
+      }
+
+    } catch (error) {
+      console.error("❌ UNIT SYNC ERROR:", error);
+    }
   };
 
   // =========================
@@ -38,11 +64,27 @@ export function UserProvider({ children }) {
 
       setUser(normalized);
       setUnits(normalized.units);
+
+      // 🔥 INITIAL SYNC
+      fetchUnits(normalized.id);
     }
   }, []);
 
   // =========================
-  // UPDATE USER (LOGIN / REGISTER)
+  // AUTO SYNC EVERY 5s 🔥
+  // =========================
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const interval = setInterval(() => {
+      fetchUnits(user.id);
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [user]);
+
+  // =========================
+  // UPDATE USER
   // =========================
   const updateUser = (userData) => {
     const normalized = normalizeUser(userData);
@@ -54,7 +96,7 @@ export function UserProvider({ children }) {
   };
 
   // =========================
-  // UPDATE UNITS (SYNC SAFE)
+  // UPDATE UNITS
   // =========================
   const updateUnits = (newUnits) => {
     setUnits(newUnits);
@@ -74,7 +116,7 @@ export function UserProvider({ children }) {
   };
 
   // =========================
-  // RESET USER (LOGOUT SAFE)
+  // LOGOUT
   // =========================
   const clearUser = () => {
     setUser(null);
@@ -91,8 +133,11 @@ export function UserProvider({ children }) {
         setUser: updateUser,
         clearUser,
 
-        // 🔥 GLOBAL ADMIN ACCESS
+        // 🔥 ADMIN FLAG
         isAdmin: user?.isAdmin || false,
+
+        // 🔥 MANUAL REFRESH
+        refreshUnits: () => fetchUnits(user?.id),
       }}
     >
       {children}

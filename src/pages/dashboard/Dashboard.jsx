@@ -1,16 +1,22 @@
 import { useNavigate } from "react-router-dom";
 import { useUser } from "../../context/UserContext";
+import { useEffect } from "react";
 
 export default function Dashboard() {
   const navigate = useNavigate();
-  const { user, units } = useUser(); // 🔥 SWITCHED TO UNITS
+  const { user, units, refreshUnits } = useUser();
+
+  // 🔥 FORCE SYNC ON LOAD
+  useEffect(() => {
+    if (user?.id) {
+      refreshUnits();
+    }
+  }, [user]);
 
   return (
     <div className="max-w-6xl mx-auto">
 
-      {/* ========================= */}
       {/* HEADER */}
-      {/* ========================= */}
       <div className="mb-6">
         <h1 className="text-2xl md:text-3xl font-bold text-gray-800 dark:text-white">
           Welcome, {user?.email}
@@ -21,9 +27,7 @@ export default function Dashboard() {
         </p>
       </div>
 
-      {/* ========================= */}
-      {/* UNITS CARD (REPLACES WALLET) */}
-      {/* ========================= */}
+      {/* UNITS CARD */}
       <div className="bg-gradient-to-r from-blue-600 to-indigo-500 text-white p-6 rounded-2xl mb-8 shadow-lg">
         <p className="text-sm opacity-80">Available Units</p>
 
@@ -54,19 +58,16 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* ========================= */}
       {/* QUICK ACTIONS */}
-      {/* ========================= */}
       <h2 className="text-lg font-semibold mb-4 text-gray-700 dark:text-gray-300">
         Quick Actions
       </h2>
 
       <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
 
-        {/* VERIFY NIN */}
         <div
           onClick={() => navigate("/verify-nin")}
-          className="bg-white dark:bg-[#1A1A1A] p-5 rounded-2xl shadow hover:shadow-xl transition cursor-pointer border border-gray-100 dark:border-gray-800"
+          className="bg-white dark:bg-[#1A1A1A] p-5 rounded-2xl shadow hover:shadow-xl transition cursor-pointer border"
         >
           <p className="text-2xl mb-2">🆔</p>
           <h3 className="font-semibold text-gray-800 dark:text-white">
@@ -77,10 +78,9 @@ export default function Dashboard() {
           </p>
         </div>
 
-        {/* VERIFY BVN */}
         <div
           onClick={() => navigate("/verify-bvn")}
-          className="bg-white dark:bg-[#1A1A1A] p-5 rounded-2xl shadow hover:shadow-xl transition cursor-pointer border border-gray-100 dark:border-gray-800"
+          className="bg-white dark:bg-[#1A1A1A] p-5 rounded-2xl shadow hover:shadow-xl transition cursor-pointer border"
         >
           <p className="text-2xl mb-2">🏦</p>
           <h3 className="font-semibold text-gray-800 dark:text-white">
@@ -91,10 +91,9 @@ export default function Dashboard() {
           </p>
         </div>
 
-        {/* BUY UNITS (REPLACED WALLET) */}
         <div
           onClick={() => navigate("/wallet")}
-          className="bg-white dark:bg-[#1A1A1A] p-5 rounded-2xl shadow hover:shadow-xl transition cursor-pointer border border-gray-100 dark:border-gray-800"
+          className="bg-white dark:bg-[#1A1A1A] p-5 rounded-2xl shadow hover:shadow-xl transition cursor-pointer border"
         >
           <p className="text-2xl mb-2">⚡</p>
           <h3 className="font-semibold text-gray-800 dark:text-white">
@@ -105,10 +104,9 @@ export default function Dashboard() {
           </p>
         </div>
 
-        {/* TRANSACTIONS */}
         <div
           onClick={() => navigate("/transactions")}
-          className="bg-white dark:bg-[#1A1A1A] p-5 rounded-2xl shadow hover:shadow-xl transition cursor-pointer border border-gray-100 dark:border-gray-800"
+          className="bg-white dark:bg-[#1A1A1A] p-5 rounded-2xl shadow hover:shadow-xl transition cursor-pointer border"
         >
           <p className="text-2xl mb-2">📜</p>
           <h3 className="font-semibold text-gray-800 dark:text-white">
@@ -121,10 +119,8 @@ export default function Dashboard() {
 
       </div>
 
-      {/* ========================= */}
-      {/* TRUST SECTION */}
-      {/* ========================= */}
-      <div className="mt-10 p-5 bg-white dark:bg-[#1A1A1A] rounded-2xl shadow border border-gray-100 dark:border-gray-800">
+      {/* TRUST */}
+      <div className="mt-10 p-5 bg-white dark:bg-[#1A1A1A] rounded-2xl shadow border">
         <h3 className="font-semibold text-gray-800 dark:text-white mb-2">
           🔐 Secure & Verified Platform
         </h3>
