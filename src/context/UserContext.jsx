@@ -7,14 +7,29 @@ export function UserProvider({ children }) {
   const [units, setUnits] = useState(0);
 
   // =========================
+  // NORMALIZE USER
+  // =========================
+  const normalizeUser = (userData) => {
+    if (!userData) return null;
+
+    return {
+      ...userData,
+      id: userData.id || userData._id, // 🔥 FIX HERE
+      units: userData.units || 0,
+    };
+  };
+
+  // =========================
   // LOAD USER FROM STORAGE
   // =========================
   useEffect(() => {
     const storedUser = JSON.parse(localStorage.getItem("user"));
 
     if (storedUser) {
-      setUser(storedUser);
-      setUnits(storedUser.units || 0); // 🔥 IMPORTANT
+      const normalized = normalizeUser(storedUser);
+
+      setUser(normalized);
+      setUnits(normalized.units);
     }
   }, []);
 
@@ -22,10 +37,12 @@ export function UserProvider({ children }) {
   // UPDATE USER (LOGIN / REGISTER)
   // =========================
   const updateUser = (userData) => {
-    setUser(userData);
-    setUnits(userData.units || 0);
+    const normalized = normalizeUser(userData);
 
-    localStorage.setItem("user", JSON.stringify(userData));
+    setUser(normalized);
+    setUnits(normalized.units);
+
+    localStorage.setItem("user", JSON.stringify(normalized));
   };
 
   // =========================
@@ -48,7 +65,7 @@ export function UserProvider({ children }) {
       value={{
         user,
         units,
-        setUnits: updateUnits, // 🔥 USE THIS EVERYWHERE
+        setUnits: updateUnits,
         setUser: updateUser,
       }}
     >
