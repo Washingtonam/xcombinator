@@ -17,7 +17,7 @@ const Pricing = require("./models/Pricing");
 const app = express();
 
 // ==============================
-// ✅ MIDDLEWARE
+// ✅ CORS
 // ==============================
 app.use(cors({
   origin: [
@@ -29,10 +29,14 @@ app.use(cors({
   credentials: true
 }));
 
-app.use(express.json());
+// ==============================
+// 🔥 BODY PARSER (FIXED)
+// ==============================
+app.use(express.json({ limit: "10mb" }));
+app.use(express.urlencoded({ limit: "10mb", extended: true }));
 
 // ==============================
-// 🧠 HEALTH CHECK (VERY IMPORTANT)
+// 🧠 HEALTH CHECK
 // ==============================
 app.get("/api/health", (req, res) => {
   res.json({ status: "OK" });
@@ -60,7 +64,7 @@ app.get("/api/pricing", async (req, res) => {
         nin: {
           unitPrice: 250,
           agentPrice: 200,
-          mode: "bundle", // 🔥 DEFAULT MODE
+          mode: "bundle",
         },
       });
     }

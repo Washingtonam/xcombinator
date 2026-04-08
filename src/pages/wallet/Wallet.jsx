@@ -12,7 +12,7 @@ export default function Wallet() {
   const [unitPrice, setUnitPrice] = useState(250);
 
   // =========================
-  // FETCH PRICING (LIVE)
+  // FETCH PRICING
   // =========================
   useEffect(() => {
     const fetchPricing = async () => {
@@ -35,11 +35,17 @@ export default function Wallet() {
   const calculatedUnits = Math.floor(Number(amount) / unitPrice);
 
   // =========================
-  // HANDLE FILE
+  // HANDLE FILE (SAFE VERSION 🔥)
   // =========================
   const handleFile = (e) => {
     const file = e.target.files[0];
     if (!file) return;
+
+    // 🔥 LIMIT SIZE (VERY IMPORTANT)
+    if (file.size > 2 * 1024 * 1024) {
+      alert("Image too large. Max 2MB.");
+      return;
+    }
 
     const reader = new FileReader();
     reader.readAsDataURL(file);
@@ -50,9 +56,13 @@ export default function Wallet() {
   };
 
   // =========================
-  // SUBMIT PAYMENT
+  // SUBMIT PAYMENT (UPGRADED 🔥)
   // =========================
   const submitPayment = async () => {
+    if (!user?.id) {
+      return alert("User not logged in");
+    }
+
     if (!amount || Number(amount) <= 0) {
       return alert("Enter a valid amount");
     }
@@ -68,6 +78,12 @@ export default function Wallet() {
     setLoading(true);
 
     try {
+      console.log("🚀 SENDING PAYMENT:", {
+        userId: user.id,
+        amount,
+        units: calculatedUnits,
+      });
+
       const res = await fetch(`${API_BASE}/api/submit-payment`, {
         method: "POST",
         headers: {
@@ -83,18 +99,23 @@ export default function Wallet() {
 
       const data = await res.json();
 
+      console.log("📦 RESPONSE:", data);
+
       if (!res.ok) {
         throw new Error(data.message || "Payment failed");
       }
 
       alert(`✅ Submitted! You’ll receive ${calculatedUnits} units after approval`);
 
+      // RESET
       setAmount("");
       setProof(null);
 
     } catch (error) {
-      console.error(error);
-      alert("❌ Submission failed. Try again.");
+      console.error("❌ PAYMENT ERROR:", error.message);
+
+      // 🔥 SHOW REAL ERROR (NOT GENERIC)
+      alert(error.message || "Submission failed");
     }
 
     setLoading(false);
@@ -109,12 +130,12 @@ export default function Wallet() {
         Fund your account and convert to units
       </p>
 
-      {/* UNITS DISPLAY */}
+      {/* UNITS */}
       <div className="bg-black text-white p-4 rounded-lg mb-6">
         Units Available: <b>{units}</b>
       </div>
 
-      {/* PRICE INFO */}
+      {/* PRICE */}
       <div className="bg-gray-100 p-4 rounded mb-6 text-sm">
         💰 Price per unit: <b>₦{unitPrice}</b>
       </div>
@@ -124,7 +145,6 @@ export default function Wallet() {
 
         <h2 className="font-semibold mb-3">Manual Bank Transfer</h2>
 
-        {/* BANK DETAILS */}
         <div className="bg-gray-100 p-4 rounded text-sm space-y-1">
           <p><b>Bank:</b> Moniepoint</p>
           <p><b>Account Number:</b> 8161495298</p>
@@ -140,29 +160,18 @@ export default function Wallet() {
           className="w-full border p-3 mt-4 rounded"
         />
 
-        {/* CALC DISPLAY */}
+        {/* CALC */}
         {amount && (
           <div className="mt-3 text-sm bg-blue-50 p-3 rounded">
-
-            <p>
-              💱 Conversion:
-              <br />
-              ₦{amount || 0} ÷ ₦{unitPrice}
-            </p>
-
-            <p className="mt-1 font-semibold text-blue-700">
+            <p>💱 ₦{amount} ÷ ₦{unitPrice}</p>
+            <p className="font-semibold text-blue-700">
               = {calculatedUnits} units
             </p>
-
           </div>
         )}
 
         {/* FILE */}
-        <input
-          type="file"
-          onChange={handleFile}
-          className="mt-4"
-        />
+        <input type="file" onChange={handleFile} className="mt-4" />
 
         {/* BUTTON */}
         <button
@@ -177,9 +186,8 @@ export default function Wallet() {
           {loading ? "Submitting..." : "Submit Payment"}
         </button>
 
-        {/* INFO */}
         <p className="text-xs text-gray-500 mt-4">
-          ⚠️ Payments are reviewed by admin before units are credited.
+          ⚠️ Payments are reviewed before units are credited.
         </p>
 
       </div>

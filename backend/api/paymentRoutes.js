@@ -28,9 +28,23 @@ router.post("/submit-payment", async (req, res) => {
   try {
     const { userId, amount, proof, units } = req.body;
 
+    console.log("🔥 PAYMENT RECEIVED:", {
+      userId,
+      amount,
+      units,
+      proofLength: proof?.length
+    });
+
     if (!userId || !amount || !proof) {
       return res.status(400).json({
         message: "userId, amount and proof required",
+      });
+    }
+
+    // 🔥 PREVENT HUGE IMAGE CRASH
+    if (proof.length > 5 * 1024 * 1024) {
+      return res.status(400).json({
+        message: "Image too large. Reduce file size.",
       });
     }
 
@@ -53,7 +67,7 @@ router.post("/submit-payment", async (req, res) => {
     const payment = await Transaction.create({
       type: "UNIT_ADD",
       amount,
-      units: units || 0, // 🔥 store expected units
+      units: units || 0,
       status: "pending",
       userId,
       proof,
@@ -65,8 +79,11 @@ router.post("/submit-payment", async (req, res) => {
     });
 
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Submission failed" });
+    console.error("🔥 SUBMIT ERROR:", error);
+    res.status(500).json({
+      message: "Submission failed",
+      error: error.message
+    });
   }
 });
 
@@ -83,12 +100,13 @@ router.get("/admin/payments", isAdmin, async (req, res) => {
 
     res.json(payments);
   } catch (error) {
+    console.error("🔥 FETCH PAYMENTS ERROR:", error);
     res.status(500).json({ message: "Failed to fetch payments" });
   }
 });
 
 // ==============================
-// ✅ APPROVE (CORE FIX 🔥)
+// ✅ APPROVE PAYMENT
 // ==============================
 router.post("/admin/payments/:id/approve", isAdmin, async (req, res) => {
   try {
@@ -104,7 +122,7 @@ router.post("/admin/payments/:id/approve", isAdmin, async (req, res) => {
     const user = await User.findById(payment.userId);
 
     // ==============================
-    // 🔥 GET PRICE PER UNIT
+    // 🔥 GET PRICE
     // ==============================
     const pricing = await Pricing.findOne();
     const pricePerUnit = pricing?.nin?.unitPrice || 250;
@@ -114,7 +132,6 @@ router.post("/admin/payments/:id/approve", isAdmin, async (req, res) => {
     // ==============================
     let unitsToAdd = payment.units;
 
-    // fallback if frontend didn’t send units
     if (!unitsToAdd || unitsToAdd < 1) {
       unitsToAdd = Math.floor(payment.amount / pricePerUnit);
     }
@@ -126,7 +143,7 @@ router.post("/admin/payments/:id/approve", isAdmin, async (req, res) => {
     }
 
     // ==============================
-    // 🔥 CREDIT UNITS (NOT BALANCE)
+    // 🔥 CREDIT UNITS
     // ==============================
     const beforeUnits = user.units;
 
@@ -134,7 +151,7 @@ router.post("/admin/payments/:id/approve", isAdmin, async (req, res) => {
     await user.save();
 
     // ==============================
-    // 🔥 UPDATE TRANSACTION
+    // 🔥 UPDATE PAYMENT
     // ==============================
     payment.status = "approved";
     payment.units = unitsToAdd;
@@ -155,11 +172,15 @@ router.post("/admin/payments/:id/approve", isAdmin, async (req, res) => {
 
     res.json({
       message: `Approved. ${unitsToAdd} units added`,
+      units: user.units
     });
 
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Approval failed" });
+    console.error("🔥 APPROVAL ERROR:", error);
+    res.status(500).json({
+      message: "Approval failed",
+      error: error.message
+    });
   }
 });
 
@@ -180,6 +201,7 @@ router.post("/admin/payments/:id/reject", isAdmin, async (req, res) => {
     res.json({ message: "Payment rejected" });
 
   } catch (error) {
+    console.error("🔥 REJECT ERROR:", error);
     res.status(500).json({ message: "Rejection failed" });
   }
 });
