@@ -505,20 +505,21 @@ function generateLongHTML(data) {
           border:2px solid #000;
           width:20%;
           vertical-align:top;
-        " rowspan="4">
+          " rowspan="4">
 
           <div style="
             width:100%;
-            height:140px;
-            overflow:hidden;
+            height:160px;
             display:flex;
-            align-items:flex-start;
+            align-items:center;
             justify-content:center;
-          ">
+            overflow:hidden;
+            background:#fff;
+            ">
             <img src="${formatImage(data.photo)}" style="
-              width:100%;
-              height:auto;
-              object-fit:cover;
+              max-width:100%;
+              max-height:100%;
+              object-fit:contain;
             "/>
           </div>
 
