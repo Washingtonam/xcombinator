@@ -9,7 +9,9 @@ const router = express.Router();
 
 const API_KEY = process.env.NIN_API_KEY;
 
-// MOCK DATA
+// ==============================
+// 🧪 MOCK DATA
+// ==============================
 const mockData = {
   firstname: "JOHN",
   middlename: "DOE",
@@ -24,14 +26,39 @@ const mockData = {
   photo: null,
 };
 
+// ==============================
+// 🔍 VERIFY NIN
+// ==============================
 router.post("/verify-nin", async (req, res) => {
   const { nin, userId } = req.body;
 
   try {
+    // ==========================
+    // 🔥 MOCK FIRST (NO DB AT ALL)
+    // ==========================
+    if (nin === "00000000000") {
+      return res.json({
+        status: "success",
+        data: mockData,
+        units: 999, // fake units
+        mode: "bundle",
+      });
+    }
+
+    // ==========================
+    // VALIDATION
+    // ==========================
     if (!nin || nin.length !== 11) {
       return res.status(400).json({ error: "Invalid NIN" });
     }
 
+    if (!userId) {
+      return res.status(400).json({ error: "User ID required" });
+    }
+
+    // ==========================
+    // NOW FETCH USER (REAL FLOW)
+    // ==========================
     const user = await User.findById(userId);
     if (!user) return res.status(404).json({ error: "User not found" });
 
@@ -41,40 +68,22 @@ router.post("/verify-nin", async (req, res) => {
 
     const isAdmin = user.email === "washingtonamedu@gmail.com";
 
-    // 🔥 GET MODE
+    // ==========================
+    // GET MODE
+    // ==========================
     const pricing = await Pricing.findOne();
     const mode = pricing?.nin?.mode || "bundle";
 
     // ==========================
-    // 🧪 MOCK MODE (FULL FLOW)
-    // ==========================
-    if (nin === "00000000000") {
-      if (!isAdmin) {
-        user.units -= 1;
-        await user.save();
-      }
-
-      await Transaction.create({
-        type: "NIN",
-        nin,
-        unitsUsed: 1,
-        status: "success",
-        userId: user._id,
-      });
-
-      return res.json({
-        status: "success",
-        data: mockData,
-        units: user.units,
-        mode,
-      });
-    }
-
     // UNIT CHECK
+    // ==========================
     if (!isAdmin && user.units < 1) {
       return res.status(400).json({ error: "Insufficient units" });
     }
 
+    // ==========================
+    // API CALL
+    // ==========================
     if (!API_KEY) {
       return res.status(500).json({ error: "API key not configured" });
     }
@@ -98,7 +107,9 @@ router.post("/verify-nin", async (req, res) => {
 
     const cleanData = apiData.data?.data || apiData.data;
 
-    // 🔥 DEDUCT UNIT
+    // ==========================
+    // DEDUCT UNIT
+    // ==========================
     if (!isAdmin) {
       user.units -= 1;
       await user.save();
@@ -120,7 +131,12 @@ router.post("/verify-nin", async (req, res) => {
     });
 
   } catch (error) {
-    return res.status(500).json({ error: "Verification failed" });
+    console.error("VERIFY ERROR:", error.message);
+
+    return res.status(500).json({
+      error: "Verification failed",
+      details: error.message,
+    });
   }
 });
 
