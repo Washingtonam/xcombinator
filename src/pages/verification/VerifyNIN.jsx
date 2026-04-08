@@ -21,11 +21,12 @@ export default function VerifyNIN() {
   });
 
   // =========================
-  // VERIFY
+  // VERIFY (UPGRADED)
   // =========================
   const handleVerify = async () => {
     if (loading) return;
 
+    // VALIDATION
     if (method === "nin" && nin.length !== 11) {
       return alert("Enter valid 11-digit NIN");
     }
@@ -47,41 +48,61 @@ export default function VerifyNIN() {
     setLoading(true);
 
     try {
-      const res = await fetch("https://xcombinator.onrender.com/api/verify-nin", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          method,
-          nin,
-          phone,
-          ...form,
-          userId: user.id,
-        }),
-      });
+      // =========================
+      // 🔥 STEP 1: WAKE SERVER
+      // =========================
+      await fetch("https://xcombinator.onrender.com/api/pricing");
+
+      // =========================
+      // 🔥 STEP 2: TIMEOUT CONTROL
+      // =========================
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 15000);
+
+      const res = await fetch(
+        "https://xcombinator.onrender.com/api/verify-nin",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            method,
+            nin,
+            phone,
+            ...form,
+            userId: user.id,
+          }),
+          signal: controller.signal,
+        }
+      );
+
+      clearTimeout(timeout);
 
       const data = await res.json();
 
       if (!res.ok) {
-        alert(data.error || "Verification failed");
-        setLoading(false);
-        return;
+        throw new Error(data.error || "Verification failed");
       }
 
-      // 🔥 UPDATE STATE
+      // =========================
+      // ✅ SUCCESS FLOW
+      // =========================
       setUnits(data.units);
       setMode(data.mode || "bundle");
 
-      // 🔥 STORE RESULT FOR NEXT PAGE
       localStorage.setItem("nin_result", JSON.stringify(data));
 
-      // 🔥 REDIRECT
       navigate("/verify-result");
 
     } catch (err) {
-      console.error(err);
-      alert("Server not responding. Try again.");
+      console.error("VERIFY ERROR:", err);
+
+      if (err.name === "AbortError") {
+        alert("⏳ Server is taking too long. Try again.");
+      } else {
+        alert("⚠️ Server waking up... try again in a few seconds.");
+      }
     }
 
     setLoading(false);
@@ -200,10 +221,10 @@ export default function VerifyNIN() {
           : "Verify Identity"}
       </button>
 
-      {/* LOADING FEEDBACK */}
+      {/* LOADING */}
       {loading && (
         <div className="mt-4 text-sm text-gray-500 text-center">
-          🔍 Connecting to NIN server...
+          🔍 Connecting to server...
         </div>
       )}
 

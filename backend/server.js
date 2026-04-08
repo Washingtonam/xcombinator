@@ -3,7 +3,7 @@ require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 
-const connectDB = require("./utils/db"); // 🔥 THIS WAS MISSING
+const connectDB = require("./utils/db");
 
 const authRoutes = require("./api/authRoutes");
 const userRoutes = require("./api/userRoutes");
@@ -17,12 +17,7 @@ const Pricing = require("./models/Pricing");
 const app = express();
 
 // ==============================
-// 🔥 CONNECT DATABASE FIRST
-// ==============================
-connectDB();
-
-// ==============================
-// ✅ CORS CONFIG
+// ✅ MIDDLEWARE
 // ==============================
 app.use(cors({
   origin: [
@@ -37,6 +32,13 @@ app.use(cors({
 app.use(express.json());
 
 // ==============================
+// 🧠 HEALTH CHECK (VERY IMPORTANT)
+// ==============================
+app.get("/api/health", (req, res) => {
+  res.json({ status: "OK" });
+});
+
+// ==============================
 // 🚀 ROUTES
 // ==============================
 app.use("/api", authRoutes);
@@ -47,7 +49,7 @@ app.use("/api/admin", adminRoutes);
 app.use("/api", slipRoutes);
 
 // ==============================
-// 💰 PRICING (FROM DATABASE)
+// 💰 PRICING
 // ==============================
 app.get("/api/pricing", async (req, res) => {
   try {
@@ -58,6 +60,7 @@ app.get("/api/pricing", async (req, res) => {
         nin: {
           unitPrice: 250,
           agentPrice: 200,
+          mode: "bundle", // 🔥 DEFAULT MODE
         },
       });
     }
@@ -71,10 +74,19 @@ app.get("/api/pricing", async (req, res) => {
 });
 
 // ==============================
-// 🚀 START SERVER
+// 🚀 START SERVER AFTER DB
 // ==============================
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-});
+connectDB()
+  .then(() => {
+    console.log("✅ MongoDB Connected");
+
+    app.listen(PORT, () => {
+      console.log(`🚀 Server running on port ${PORT}`);
+    });
+  })
+  .catch((err) => {
+    console.error("❌ Failed to connect to MongoDB:", err.message);
+    process.exit(1);
+  });
