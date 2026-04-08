@@ -49,7 +49,7 @@ export default function AdminUsers() {
   };
 
   // =========================
-  // ACTIONS
+  // USER CONTROL
   // =========================
   const suspendUser = async (id) => {
     await axios.put(`${API_BASE}/api/admin/user/${id}/suspend`, {}, { headers });
@@ -68,26 +68,29 @@ export default function AdminUsers() {
     fetchUsers();
   };
 
-  const addMoney = async (id) => {
-    const amount = prompt("Enter amount to ADD:");
-    if (!amount) return;
+  // =========================
+  // 🔥 UNIT CONTROL (FIXED)
+  // =========================
+  const addUnits = async (id) => {
+    const units = prompt("Enter units to ADD:");
+    if (!units) return;
 
     await axios.post(
-      `${API_BASE}/api/admin/user/${id}/wallet`,
-      { amount: Number(amount), action: "add" },
+      `${API_BASE}/api/admin/user/${id}/units`,
+      { units: Number(units), action: "add" },
       { headers }
     );
 
     fetchUsers();
   };
 
-  const deductMoney = async (id) => {
-    const amount = prompt("Enter amount to DEDUCT:");
-    if (!amount) return;
+  const deductUnits = async (id) => {
+    const units = prompt("Enter units to DEDUCT:");
+    if (!units) return;
 
     await axios.post(
-      `${API_BASE}/api/admin/user/${id}/wallet`,
-      { amount: Number(amount), action: "deduct" },
+      `${API_BASE}/api/admin/user/${id}/units`,
+      { units: Number(units), action: "deduct" },
       { headers }
     );
 
@@ -103,7 +106,7 @@ export default function AdminUsers() {
 
       <h1 className="text-xl font-bold mb-6">User Management</h1>
 
-      {/* ================= SEARCH ================= */}
+      {/* SEARCH */}
       <div className="flex gap-2 mb-6">
         <input
           type="text"
@@ -120,7 +123,7 @@ export default function AdminUsers() {
         </button>
       </div>
 
-      {/* ================= USERS TABLE ================= */}
+      {/* USERS TABLE */}
       <div className="bg-white p-6 rounded shadow mb-10 overflow-x-auto">
 
         <table className="w-full text-sm">
@@ -128,7 +131,7 @@ export default function AdminUsers() {
           <thead>
             <tr className="text-left border-b">
               <th>Email</th>
-              <th>Balance</th>
+              <th>Units</th>
               <th>Status</th>
               <th>Actions</th>
             </tr>
@@ -138,7 +141,7 @@ export default function AdminUsers() {
             {users.map(u => (
               <tr key={u._id} className="border-t">
 
-                {/* CLICK TO VIEW ACTIVITY */}
+                {/* CLICK USER */}
                 <td
                   className="cursor-pointer text-blue-600"
                   onClick={() => fetchUserActivity(u._id)}
@@ -146,7 +149,8 @@ export default function AdminUsers() {
                   {u.email}
                 </td>
 
-                <td>₦{u.balance}</td>
+                {/* 🔥 SHOW UNITS */}
+                <td><b>{u.units || 0}</b></td>
 
                 <td>
                   <span
@@ -162,7 +166,7 @@ export default function AdminUsers() {
 
                 <td className="space-x-2">
 
-                  {/* 🚫 PROTECT ADMIN */}
+                  {/* PROTECT ADMIN */}
                   {u.email !== "washingtonamedu@gmail.com" && (
                     <>
                       {u.status === "active" ? (
@@ -188,18 +192,19 @@ export default function AdminUsers() {
                         Delete
                       </button>
 
+                      {/* 🔥 UNITS BUTTONS */}
                       <button
-                        onClick={() => addMoney(u._id)}
+                        onClick={() => addUnits(u._id)}
                         className="bg-blue-600 text-white px-2 py-1 rounded text-xs"
                       >
-                        +₦
+                        +Units
                       </button>
 
                       <button
-                        onClick={() => deductMoney(u._id)}
+                        onClick={() => deductUnits(u._id)}
                         className="bg-gray-800 text-white px-2 py-1 rounded text-xs"
                       >
-                        -₦
+                        -Units
                       </button>
                     </>
                   )}
@@ -213,7 +218,7 @@ export default function AdminUsers() {
         </table>
       </div>
 
-      {/* ================= USER ACTIVITY ================= */}
+      {/* USER ACTIVITY */}
       {selectedUser && (
         <div className="bg-white p-6 rounded shadow">
 
@@ -226,7 +231,7 @@ export default function AdminUsers() {
             <thead>
               <tr>
                 <th>Type</th>
-                <th>Amount</th>
+                <th>Units</th>
                 <th>Status</th>
                 <th>Date</th>
               </tr>
@@ -236,7 +241,7 @@ export default function AdminUsers() {
               {userActivity.map(tx => (
                 <tr key={tx._id}>
                   <td>{tx.type}</td>
-                  <td>₦{tx.amount}</td>
+                  <td>{tx.units || tx.unitsUsed || 0}</td>
                   <td>{tx.status}</td>
                   <td>{new Date(tx.createdAt).toLocaleString()}</td>
                 </tr>

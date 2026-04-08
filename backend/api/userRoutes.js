@@ -6,7 +6,7 @@ const Transaction = require("../models/Transaction");
 const router = express.Router();
 
 // ==============================
-// 💰 GET USER BALANCE (MongoDB)
+// 🔥 GET USER UNITS (MAIN SYSTEM)
 // ==============================
 router.post("/balance", async (req, res) => {
   const { userId } = req.body;
@@ -23,7 +23,8 @@ router.post("/balance", async (req, res) => {
     }
 
     return res.json({
-      balance: user.balance,
+      units: user.units || 0,     // ✅ PRIMARY SYSTEM
+      balance: user.balance || 0, // optional (legacy)
     });
 
   } catch (error) {
@@ -49,7 +50,18 @@ router.post("/transactions", async (req, res) => {
     const transactions = await Transaction.find({ userId })
       .sort({ createdAt: -1 });
 
-    return res.json(transactions);
+    // 🔥 NORMALIZE RESPONSE FOR FRONTEND
+    const formatted = transactions.map(tx => ({
+      _id: tx._id,
+      type: tx.type,
+      nin: tx.nin || null,
+      amount: tx.amount || 0,
+      units: tx.units || tx.unitsUsed || 0,
+      status: tx.status,
+      createdAt: tx.createdAt,
+    }));
+
+    return res.json(formatted);
 
   } catch (error) {
     console.error("🔥 TRANSACTION ERROR:", error.message);

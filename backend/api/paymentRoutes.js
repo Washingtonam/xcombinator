@@ -4,6 +4,7 @@ const router = express.Router();
 const Transaction = require("../models/Transaction");
 const User = require("../models/User");
 const AuditLog = require("../models/AuditLog");
+const Pricing = require("../models/Pricing");
 
 // ==============================
 // 🔐 ADMIN CHECK
@@ -12,8 +13,10 @@ function isAdmin(req, res, next) {
   const email = req.headers["email"];
 
   if (!email) return res.status(401).json({ message: "Unauthorized" });
-  if (email !== "washingtonamedu@gmail.com")
+
+  if (email.toLowerCase().trim() !== "washingtonamedu@gmail.com") {
     return res.status(403).json({ message: "Access denied" });
+  }
 
   next();
 }
@@ -23,7 +26,7 @@ function isAdmin(req, res, next) {
 // ==============================
 router.post("/submit-payment", async (req, res) => {
   try {
-    const { userId, amount, proof } = req.body;
+    const { userId, amount, proof, units } = req.body;
 
     if (!userId || !amount || !proof) {
       return res.status(400).json({
@@ -34,22 +37,23 @@ router.post("/submit-payment", async (req, res) => {
     const user = await User.findById(userId);
     if (!user) return res.status(404).json({ message: "User not found" });
 
-    // 🚫 BLOCK DUPLICATE PENDING PAYMENTS
+    // 🚫 BLOCK DUPLICATE
     const existingPending = await Transaction.findOne({
       userId,
-      type: "FUND",
+      type: "UNIT_ADD",
       status: "pending",
     });
 
     if (existingPending) {
       return res.status(400).json({
-        message: "You already have a pending payment awaiting approval",
+        message: "You already have a pending payment",
       });
     }
 
     const payment = await Transaction.create({
-      type: "FUND",
+      type: "UNIT_ADD",
       amount,
+      units: units || 0, // 🔥 store expected units
       status: "pending",
       userId,
       proof,
@@ -72,9 +76,9 @@ router.post("/submit-payment", async (req, res) => {
 router.get("/admin/payments", isAdmin, async (req, res) => {
   try {
     const payments = await Transaction.find({
-      type: "FUND",
+      type: "UNIT_ADD",
     })
-      .populate("userId", "email")
+      .populate("userId", "email units")
       .sort({ createdAt: -1 });
 
     res.json(payments);
@@ -84,7 +88,7 @@ router.get("/admin/payments", isAdmin, async (req, res) => {
 });
 
 // ==============================
-// ✅ APPROVE
+// ✅ APPROVE (CORE FIX 🔥)
 // ==============================
 router.post("/admin/payments/:id/approve", isAdmin, async (req, res) => {
   try {
@@ -99,26 +103,62 @@ router.post("/admin/payments/:id/approve", isAdmin, async (req, res) => {
 
     const user = await User.findById(payment.userId);
 
-    const before = user.balance;
+    // ==============================
+    // 🔥 GET PRICE PER UNIT
+    // ==============================
+    const pricing = await Pricing.findOne();
+    const pricePerUnit = pricing?.nin?.unitPrice || 250;
 
-    user.balance += payment.amount;
+    // ==============================
+    // 🔥 CALCULATE UNITS
+    // ==============================
+    let unitsToAdd = payment.units;
+
+    // fallback if frontend didn’t send units
+    if (!unitsToAdd || unitsToAdd < 1) {
+      unitsToAdd = Math.floor(payment.amount / pricePerUnit);
+    }
+
+    if (unitsToAdd < 1) {
+      return res.status(400).json({
+        message: "Amount too small to generate units",
+      });
+    }
+
+    // ==============================
+    // 🔥 CREDIT UNITS (NOT BALANCE)
+    // ==============================
+    const beforeUnits = user.units;
+
+    user.units += unitsToAdd;
     await user.save();
 
+    // ==============================
+    // 🔥 UPDATE TRANSACTION
+    // ==============================
     payment.status = "approved";
+    payment.units = unitsToAdd;
     await payment.save();
 
+    // ==============================
+    // 🧾 AUDIT LOG
+    // ==============================
     await AuditLog.create({
       action: "APPROVE_PAYMENT",
       performedBy: adminEmail,
       userId: user._id,
       amount: payment.amount,
-      balanceBefore: before,
-      balanceAfter: user.balance,
+      unitsAdded: unitsToAdd,
+      unitsBefore: beforeUnits,
+      unitsAfter: user.units,
     });
 
-    res.json({ message: "Approved & wallet credited" });
+    res.json({
+      message: `Approved. ${unitsToAdd} units added`,
+    });
 
   } catch (error) {
+    console.error(error);
     res.status(500).json({ message: "Approval failed" });
   }
 });
@@ -129,6 +169,10 @@ router.post("/admin/payments/:id/approve", isAdmin, async (req, res) => {
 router.post("/admin/payments/:id/reject", isAdmin, async (req, res) => {
   try {
     const payment = await Transaction.findById(req.params.id);
+
+    if (!payment) {
+      return res.status(404).json({ message: "Not found" });
+    }
 
     payment.status = "rejected";
     await payment.save();
