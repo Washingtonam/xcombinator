@@ -8,7 +8,7 @@ const Pricing = require("../models/Pricing");
 const router = express.Router();
 
 const API_KEY = process.env.NIN_API_KEY;
-const ADMIN_EMAIL = "washingtonamedu@gmail.com"; // 🔥 MAKE SURE THIS IS CORRECT
+const ADMIN_EMAIL = "washingtonamedu@gmail.com"; // ✅ MUST MATCH YOUR LOGIN EMAIL
 
 // MOCK DATA
 const mockData = {
@@ -43,7 +43,17 @@ router.post("/verify-nin", async (req, res) => {
       return res.status(403).json({ error: "Account suspended" });
     }
 
-    const isAdmin = user.email === ADMIN_EMAIL;
+    // ==========================
+    // 🔥 ADMIN CHECK (FIXED)
+    // ==========================
+    const isAdmin =
+      user.email?.toLowerCase().trim() ===
+      ADMIN_EMAIL.toLowerCase().trim();
+
+    // 🔥 DEBUG (REMOVE LATER)
+    console.log("USER EMAIL:", user.email);
+    console.log("ADMIN EMAIL:", ADMIN_EMAIL);
+    console.log("IS ADMIN:", isAdmin);
 
     // 🔥 GET MODE
     const pricing = await Pricing.findOne();
@@ -54,7 +64,7 @@ router.post("/verify-nin", async (req, res) => {
     // ==========================
     if (nin === "00000000000") {
 
-      // ❌ NO UNIT DEDUCTION FOR ADMIN
+      // ✅ ADMIN BYPASS
       if (!isAdmin) {
         if (user.units < 1) {
           return res.status(400).json({ error: "Insufficient units" });

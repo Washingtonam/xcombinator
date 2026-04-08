@@ -21,12 +21,14 @@ export default function VerifyNIN() {
   });
 
   // =========================
-  // VERIFY (UPGRADED)
+  // VERIFY (FIXED)
   // =========================
   const handleVerify = async () => {
     if (loading) return;
 
+    // =========================
     // VALIDATION
+    // =========================
     if (method === "nin" && nin.length !== 11) {
       return alert("Enter valid 11-digit NIN");
     }
@@ -41,7 +43,13 @@ export default function VerifyNIN() {
       }
     }
 
-    if (units < 1) {
+    // =========================
+    // 🔥 ADMIN BYPASS FIX
+    // =========================
+    const isAdmin =
+      user?.email?.toLowerCase().trim() === "washingtonamedu@gmail.com";
+
+    if (!isAdmin && units < 1) {
       return alert("Insufficient units");
     }
 
@@ -49,12 +57,12 @@ export default function VerifyNIN() {
 
     try {
       // =========================
-      // 🔥 STEP 1: WAKE SERVER
+      // ⚡ WAKE SERVER (Render sleep fix)
       // =========================
       await fetch("https://xcombinator.onrender.com/api/pricing");
 
       // =========================
-      // 🔥 STEP 2: TIMEOUT CONTROL
+      // ⏱ TIMEOUT CONTROL
       // =========================
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 15000);
@@ -99,9 +107,9 @@ export default function VerifyNIN() {
       console.error("VERIFY ERROR:", err);
 
       if (err.name === "AbortError") {
-        alert("⏳ Server is taking too long. Try again.");
+        alert("⏳ Server timeout. Try again.");
       } else {
-        alert("⚠️ Server waking up... try again in a few seconds.");
+        alert("⚠️ Server waking up... try again.");
       }
     }
 
@@ -216,9 +224,7 @@ export default function VerifyNIN() {
         disabled={loading}
         className="w-full bg-black text-white py-3 rounded-lg"
       >
-        {loading
-          ? "Verifying... Please wait ⏳"
-          : "Verify Identity"}
+        {loading ? "Verifying... ⏳" : "Verify Identity"}
       </button>
 
       {/* LOADING */}

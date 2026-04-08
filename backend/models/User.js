@@ -1,5 +1,7 @@
 const mongoose = require("mongoose");
 
+const ADMIN_EMAIL = "washingtonamedu@gmail.com";
+
 const userSchema = new mongoose.Schema({
   // ==============================
   // 👤 BASIC INFO
@@ -19,6 +21,7 @@ const userSchema = new mongoose.Schema({
   nin: {
     type: String,
     default: "",
+    trim: true,
   },
 
   // ==============================
@@ -43,12 +46,14 @@ const userSchema = new mongoose.Schema({
   units: {
     type: Number,
     default: 0,
+    min: 0,
   },
 
   // 🔁 legacy support (optional)
   balance: {
     type: Number,
     default: 0,
+    min: 0,
   },
 
   // ==============================
@@ -60,13 +65,35 @@ const userSchema = new mongoose.Schema({
     default: "active",
   },
 
+  // ==============================
+  // 🔥 ROLE SYSTEM (UPGRADE)
+  // ==============================
+  role: {
+    type: String,
+    enum: ["user", "admin"],
+    default: "user",
+  },
+
 }, {
   timestamps: true,
 });
 
 // ==============================
-// 🔐 INDEX (ENSURES UNIQUE EMAIL)
+// 🔐 INDEX
 // ==============================
 userSchema.index({ email: 1 }, { unique: true });
+
+// ==============================
+// 🔥 AUTO-SET ADMIN ROLE
+// ==============================
+userSchema.pre("save", function (next) {
+  if (
+    this.email &&
+    this.email.toLowerCase().trim() === ADMIN_EMAIL
+  ) {
+    this.role = "admin";
+  }
+  next();
+});
 
 module.exports = mongoose.model("User", userSchema);
