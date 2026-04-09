@@ -338,7 +338,7 @@ async function generatePremiumSlipHTML(data) {
       <!-- NIN LABEL -->
       <div style="
         position:absolute;
-        bottom:40px;
+        bottom:50px;
         left:60px;
         font-size:12px;
       ">
@@ -348,8 +348,8 @@ async function generatePremiumSlipHTML(data) {
       <!-- MAIN NIN (BIGGER + CLEAR) -->
       <div style="
         position:absolute;
-        bottom:14px;
-        left:60px;
+        bottom:24px;
+        left:65px;
         font-size:20px;
         font-weight:bold;
         letter-spacing:4px;
@@ -359,7 +359,7 @@ async function generatePremiumSlipHTML(data) {
       </div>
 
       <!-- WATERMARK NIN -->
-      <div style="position:absolute; left:10px; top:60px; font-size:8px; transform:rotate(-28deg); opacity:0.5;">
+      <div style="position:absolute; left:10px; top:120px; font-size:8px; transform:rotate(-28deg); opacity:0.5;">
         ${data.nin}
       </div>
 
@@ -367,7 +367,7 @@ async function generatePremiumSlipHTML(data) {
         ${data.nin}
       </div>
 
-      <div style="position:absolute; right:10px; top:50px; font-size:8px; transform:rotate(180deg); opacity:0.5;">
+      <div style="position:absolute; right:10px; top:80px; font-size:8px; transform:rotate(180deg); opacity:0.5;">
         ${data.nin}
       </div>
 
