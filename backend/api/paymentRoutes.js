@@ -10,15 +10,33 @@ const Pricing = require("../models/Pricing");
 // 🔐 ADMIN CHECK
 // ==============================
 function isAdmin(req, res, next) {
-  const email = req.headers["email"];
+  try {
+    const email = req.headers["email"];
 
-  if (!email) return res.status(401).json({ message: "Unauthorized" });
+    if (!email) {
+      return res.status(401).json({ message: "Unauthorized - No email header" });
+    }
 
-  if (email.toLowerCase().trim() !== "washingtonamedu@gmail.com") {
-    return res.status(403).json({ message: "Access denied" });
+    const normalizedEmail = email.toLowerCase().trim();
+
+    if (normalizedEmail !== "washingtonamedu@gmail.com") {
+      return res.status(403).json({ message: "Access denied - Not admin" });
+    }
+
+    // 🔥 CRITICAL: ensure next exists
+    if (typeof next === "function") {
+      return next();
+    } else {
+      throw new Error("next is not a function");
+    }
+
+  } catch (error) {
+    console.error("🔥 ADMIN MIDDLEWARE ERROR:", error);
+    return res.status(500).json({
+      message: "Admin middleware failed",
+      error: error.message,
+    });
   }
-
-  next();
 }
 
 // ==============================
@@ -120,6 +138,7 @@ router.post("/admin/payments/:id/approve", isAdmin, async (req, res) => {
     }
 
     const user = await User.findById(payment.userId);
+    if (!user) return res.status(404).json({ message: "User not found" });
 
     // ==============================
     // 🔥 GET PRICE
