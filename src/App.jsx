@@ -1,7 +1,8 @@
 import { BrowserRouter, Routes, Route, useLocation, Navigate } from "react-router-dom";
-import Home from "./pages/public/Home";
+
 import Sidebar from "./components/Sidebar";
 
+import Home from "./pages/public/Home";
 import Login from "./pages/auth/Login";
 import Register from "./pages/auth/Register";
 
@@ -9,7 +10,7 @@ import Admin from "./pages/admin/Admin";
 import AdminUsers from "./pages/admin/AdminUsers";
 import AdminPayments from "./pages/admin/AdminPayments";
 import AdminPricing from "./pages/admin/AdminPricing";
-import AdminRequests from "./pages/admin/AdminRequests"; // 🔥 NEW
+import AdminRequests from "./pages/admin/AdminRequests";
 
 import Dashboard from "./pages/dashboard/Dashboard";
 
@@ -18,8 +19,6 @@ import VerifyBVN from "./pages/verification/VerifyBVN";
 import VerifyResult from "./pages/verification/VerifyResult";
 
 import NINServices from "./pages/services/NINServices";
-
-// 🔥 NEW SERVICE PAGES
 import Validation from "./pages/services/Validation";
 import IPEClearance from "./pages/services/IPEClearance";
 import Modification from "./pages/services/Modification";
@@ -30,7 +29,7 @@ import Wallet from "./pages/wallet/Wallet";
 import { ThemeProvider } from "./context/ThemeContext";
 
 // ==============================
-// 🔐 AUTH CHECKS
+// 🔐 AUTH
 // ==============================
 function isAuthenticated() {
   return !!localStorage.getItem("user");
@@ -48,54 +47,46 @@ function ProtectedRoute({ children }) {
 
 function AdminRoute({ children }) {
   if (!isAuthenticated()) return <Navigate to="/login" />;
-  if (!isAdmin()) return <Navigate to="/" />;
+  if (!isAdmin()) return <Navigate to="/dashboard" />;
   return children;
 }
 
 // ==============================
-// 📦 LAYOUT
+// 📦 APP LAYOUT (WITH SIDEBAR)
 // ==============================
 function Layout() {
   return (
     <div className="flex">
 
-      {/* SIDEBAR */}
       <Sidebar />
 
-      {/* MAIN */}
-      <div className="flex-1 p-4 md:p-6 bg-gray-100 dark:bg-[#0B0B0B] min-h-screen transition-colors duration-300">
+      <div className="flex-1 p-4 md:p-6 bg-gray-100 dark:bg-[#0B0B0B] min-h-screen">
 
         <Routes>
 
-          {/* ================= USER ================= */}
-          <Route path="/" element={<Home />} />
+          {/* 🔥 MAIN APP */}
+          <Route path="/dashboard" element={<Dashboard />} />
 
-          <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+          <Route path="/verify-nin" element={<VerifyNIN />} />
+          <Route path="/verify-bvn" element={<VerifyBVN />} />
+          <Route path="/verify-result" element={<VerifyResult />} />
 
-          <Route path="/verify-nin" element={<ProtectedRoute><VerifyNIN /></ProtectedRoute>} />
-          <Route path="/verify-bvn" element={<ProtectedRoute><VerifyBVN /></ProtectedRoute>} />
+          {/* NIN SERVICES */}
+          <Route path="/nin-services" element={<NINServices />} />
+          <Route path="/nin-services/validation" element={<Validation />} />
+          <Route path="/nin-services/ipe-clearance" element={<IPEClearance />} />
+          <Route path="/nin-services/modification" element={<Modification />} />
 
-          <Route path="/verify-result" element={<ProtectedRoute><VerifyResult /></ProtectedRoute>} />
+          {/* WALLET */}
+          <Route path="/transactions" element={<Transactions />} />
+          <Route path="/wallet" element={<Wallet />} />
 
-          {/* ================= 🔥 NIN SERVICES ================= */}
-          <Route path="/nin-services" element={<ProtectedRoute><NINServices /></ProtectedRoute>} />
-
-          <Route path="/nin-services/validation" element={<ProtectedRoute><Validation /></ProtectedRoute>} />
-          <Route path="/nin-services/ipe-clearance" element={<ProtectedRoute><IPEClearance /></ProtectedRoute>} />
-          <Route path="/nin-services/modification" element={<ProtectedRoute><Modification /></ProtectedRoute>} />
-
-          {/* ================= WALLET ================= */}
-          <Route path="/transactions" element={<ProtectedRoute><Transactions /></ProtectedRoute>} />
-          <Route path="/wallet" element={<ProtectedRoute><Wallet /></ProtectedRoute>} />
-
-          {/* ================= ADMIN ================= */}
-          <Route path="/admin" element={<ProtectedRoute><AdminRoute><Admin /></AdminRoute></ProtectedRoute>} />
-          <Route path="/admin/users" element={<ProtectedRoute><AdminRoute><AdminUsers /></AdminRoute></ProtectedRoute>} />
-          <Route path="/admin/payments" element={<ProtectedRoute><AdminRoute><AdminPayments /></AdminRoute></ProtectedRoute>} />
-          <Route path="/admin/pricing" element={<ProtectedRoute><AdminRoute><AdminPricing /></AdminRoute></ProtectedRoute>} />
-
-          {/* 🔥 NEW: REQUEST MANAGEMENT */}
-          <Route path="/admin/requests" element={<ProtectedRoute><AdminRoute><AdminRequests /></AdminRoute></ProtectedRoute>} />
+          {/* ADMIN */}
+          <Route path="/admin" element={<AdminRoute><Admin /></AdminRoute>} />
+          <Route path="/admin/users" element={<AdminRoute><AdminUsers /></AdminRoute>} />
+          <Route path="/admin/payments" element={<AdminRoute><AdminPayments /></AdminRoute>} />
+          <Route path="/admin/pricing" element={<AdminRoute><AdminPricing /></AdminRoute>} />
+          <Route path="/admin/requests" element={<AdminRoute><AdminRequests /></AdminRoute>} />
 
         </Routes>
 
@@ -105,30 +96,28 @@ function Layout() {
 }
 
 // ==============================
-// 🧠 ROUTE SWITCH
+// 🔥 ROUTE CONTROLLER
 // ==============================
 function AppRoutes() {
   const location = useLocation();
 
-  // 🔥 PUBLIC PAGES (NO SIDEBAR)
-  if (
-    location.pathname === "/" ||
-    location.pathname === "/login" ||
-    location.pathname === "/register"
-  ) {
+  const publicRoutes = ["/", "/login", "/register"];
+
+  if (publicRoutes.includes(location.pathname)) {
     return (
-      <div className="min-h-screen bg-white">
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-        </Routes>
-      </div>
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+      </Routes>
     );
   }
 
-  // 🔥 PROTECTED APP (WITH SIDEBAR)
-  return <Layout />;
+  return (
+    <ProtectedRoute>
+      <Layout />
+    </ProtectedRoute>
+  );
 }
 
 // ==============================

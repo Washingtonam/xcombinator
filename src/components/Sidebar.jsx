@@ -23,11 +23,14 @@ export default function Sidebar() {
   };
 
   // =========================
-  // LOGOUT
+  // 🔥 FIXED LOGOUT (CRITICAL)
   // =========================
   const handleLogout = () => {
     localStorage.removeItem("user");
-    navigate("/login");
+    localStorage.removeItem("email");
+
+    // 🔥 FORCE FULL RESET (prevents auto-login bug)
+    window.location.href = "/login";
   };
 
   // =========================
@@ -95,8 +98,9 @@ export default function Sidebar() {
         {/* MENU */}
         <ul className="space-y-2 text-sm">
 
+          {/* 🔥 FIXED DASHBOARD ROUTE */}
           <li>
-            <Link to="/" className={linkClass("/")}>
+            <Link to="/dashboard" className={linkClass("/dashboard")}>
               📊 {!collapsed && "Dashboard"}
             </Link>
           </li>
@@ -119,7 +123,6 @@ export default function Sidebar() {
             </Link>
           </li>
 
-          {/* 🔥 REPLACED WALLET WITH UNITS */}
           <li>
             <Link to="/wallet" className={linkClass("/wallet")}>
               ⚡ {!collapsed && "Buy Units"}
