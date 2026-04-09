@@ -110,10 +110,16 @@ function Layout() {
 function AppRoutes() {
   const location = useLocation();
 
-  if (location.pathname === "/login" || location.pathname === "/register") {
+  // 🔥 PUBLIC PAGES (NO SIDEBAR)
+  if (
+    location.pathname === "/" ||
+    location.pathname === "/login" ||
+    location.pathname === "/register"
+  ) {
     return (
-      <div className="bg-gray-100 dark:bg-[#0B0B0B] min-h-screen">
+      <div className="min-h-screen bg-white">
         <Routes>
+          <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
         </Routes>
@@ -121,6 +127,7 @@ function AppRoutes() {
     );
   }
 
+  // 🔥 PROTECTED APP (WITH SIDEBAR)
   return <Layout />;
 }
 
