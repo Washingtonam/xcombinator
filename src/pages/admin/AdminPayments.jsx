@@ -9,8 +9,11 @@ export default function AdminPayments() {
   const [unitPrice, setUnitPrice] = useState(250);
   const [loadingId, setLoadingId] = useState(null);
 
+  // ✅ FIXED HEADER
+  const user = JSON.parse(localStorage.getItem("user"));
+
   const headers = {
-    email: localStorage.getItem("email"),
+    email: user?.email,
   };
 
   // =========================
@@ -28,7 +31,7 @@ export default function AdminPayments() {
 
       setPayments(sorted);
     } catch (err) {
-      console.error(err);
+      console.error("Fetch error:", err.response?.data || err.message);
     }
   };
 
@@ -51,15 +54,19 @@ export default function AdminPayments() {
     setLoadingId(id);
 
     try {
-      await axios.post(
+      const res = await axios.post(
         `${API_BASE}/api/admin/payments/${id}/approve`,
         {},
         { headers }
       );
 
+      alert(res.data.message || "Approved successfully");
+
       fetchPayments();
+
     } catch (err) {
-      alert("Approval failed");
+      console.error("Approve error:", err.response?.data || err.message);
+      alert(err.response?.data?.message || "Approval failed");
     }
 
     setLoadingId(null);
@@ -72,15 +79,19 @@ export default function AdminPayments() {
     setLoadingId(id);
 
     try {
-      await axios.post(
+      const res = await axios.post(
         `${API_BASE}/api/admin/payments/${id}/reject`,
         {},
         { headers }
       );
 
+      alert(res.data.message || "Rejected successfully");
+
       fetchPayments();
+
     } catch (err) {
-      alert("Rejection failed");
+      console.error("Reject error:", err.response?.data || err.message);
+      alert(err.response?.data?.message || "Rejection failed");
     }
 
     setLoadingId(null);
@@ -167,7 +178,7 @@ export default function AdminPayments() {
                 Amount: <b>₦{p.amount}</b>
               </p>
 
-              {/* 🔥 UNITS CALC */}
+              {/* UNITS */}
               <p className="text-blue-600 font-semibold text-sm mb-2">
                 ≈ {units} units
               </p>
