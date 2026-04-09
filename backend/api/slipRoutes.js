@@ -469,12 +469,12 @@ function generateLongHTML(data) {
       width:100%;
       border-collapse:collapse;
       margin-top:8px;
-      font-size:13px;
+      font-size:11px;
     ">
 
       <!-- ROW 1 -->
       <tr>
-        <td style="border:2px solid #000; padding:8px; width:28%; vertical-align:top;">
+        <td style="border:2px solid #000; padding:8px; width:25%; vertical-align:top;">
           <b>Tracking ID:</b> ${data.trackingId}
         </td>
 
@@ -486,7 +486,7 @@ function generateLongHTML(data) {
         <td style="
           border:2px solid #000;
           padding:8px;
-          width:30%;
+          width:33%;
           vertical-align:top;
         " rowspan="4">
 
@@ -560,7 +560,7 @@ function generateLongHTML(data) {
       border:2px solid #000;
       margin-top:8px;
       padding:8px;
-      font-size:12px;
+      font-size:11px;
     ">
       <b>Note:</b>
       The <b><i>National Identification Number (NIN)</i></b> is your identity.
