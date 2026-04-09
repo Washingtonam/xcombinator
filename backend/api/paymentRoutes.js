@@ -10,33 +10,17 @@ const Pricing = require("../models/Pricing");
 // 🔐 ADMIN CHECK
 // ==============================
 function isAdmin(req, res, next) {
-  try {
-    const email = req.headers["email"];
+  const email = req.headers["email"];
 
-    if (!email) {
-      return res.status(401).json({ message: "Unauthorized - No email header" });
-    }
-
-    const normalizedEmail = email.toLowerCase().trim();
-
-    if (normalizedEmail !== "washingtonamedu@gmail.com") {
-      return res.status(403).json({ message: "Access denied - Not admin" });
-    }
-
-    // 🔥 CRITICAL: ensure next exists
-    if (typeof next === "function") {
-      return next();
-    } else {
-      throw new Error("next is not a function");
-    }
-
-  } catch (error) {
-    console.error("🔥 ADMIN MIDDLEWARE ERROR:", error);
-    return res.status(500).json({
-      message: "Admin middleware failed",
-      error: error.message,
-    });
+  if (!email) {
+    return res.status(401).json({ message: "Unauthorized" });
   }
+
+  if (email.toLowerCase().trim() !== "washingtonamedu@gmail.com") {
+    return res.status(403).json({ message: "Access denied" });
+  }
+
+  next(); // ✅ SIMPLE. NO DRAMA.
 }
 
 // ==============================
