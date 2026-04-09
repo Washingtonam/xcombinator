@@ -307,7 +307,7 @@ async function generatePremiumSlipHTML(data) {
       <div style="
         position:absolute;
         right:35px;
-        top:90px;
+        top:100px;
         font-size:16px;
         font-weight:bold;
       ">
@@ -318,7 +318,7 @@ async function generatePremiumSlipHTML(data) {
       <div style="
         position:absolute;
         right:15px;
-        top:110px;
+        top:120px;
         font-size:8px;
       ">
         ISSUE DATE
@@ -327,7 +327,7 @@ async function generatePremiumSlipHTML(data) {
       <div style="
         position:absolute;
         right:15px;
-        top:122px;
+        top:132px;
         font-size:11px;
         font-weight:bold;
         letter-spacing:1px;
@@ -367,7 +367,7 @@ async function generatePremiumSlipHTML(data) {
         ${data.nin}
       </div>
 
-      <div style="position:absolute; right:10px; top:80px; font-size:8px; transform:rotate(180deg); opacity:0.5;">
+      <div style="position:absolute; right:10px; top:90px; font-size:8px; transform:rotate(180deg); opacity:0.5;">
         ${data.nin}
       </div>
 
@@ -474,7 +474,7 @@ function generateLongHTML(data) {
 
       <!-- ROW 1 -->
       <tr>
-        <td style="border:2px solid #000; padding:8px; width:25%; vertical-align:top;">
+        <td style="border:2px solid #000; padding:8px; width:28%; vertical-align:top;">
           <b>Tracking ID:</b> ${data.trackingId}
         </td>
 
@@ -486,7 +486,7 @@ function generateLongHTML(data) {
         <td style="
           border:2px solid #000;
           padding:8px;
-          width:35%;
+          width:30%;
           vertical-align:top;
         " rowspan="4">
 
@@ -503,7 +503,7 @@ function generateLongHTML(data) {
         <!-- PHOTO (FIXED RENDER + FIT) -->
         <td style="
           border:2px solid #000;
-          width:15%;
+          width:17%;
           vertical-align:top;
           " rowspan="4">
 
