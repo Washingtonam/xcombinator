@@ -338,9 +338,9 @@ async function generatePremiumSlipHTML(data) {
       <!-- NIN LABEL -->
       <div style="
         position:absolute;
-        bottom:38px;
-        left:50px;
-        font-size:10px;
+        bottom:40px;
+        left:60px;
+        font-size:12px;
       ">
         National Identification Number (NIN)
       </div>
@@ -348,9 +348,9 @@ async function generatePremiumSlipHTML(data) {
       <!-- MAIN NIN (BIGGER + CLEAR) -->
       <div style="
         position:absolute;
-        bottom:12px;
-        left:50px;
-        font-size:18px;
+        bottom:14px;
+        left:60px;
+        font-size:20px;
         font-weight:bold;
         letter-spacing:4px;
         color:#444;
@@ -359,7 +359,7 @@ async function generatePremiumSlipHTML(data) {
       </div>
 
       <!-- WATERMARK NIN -->
-      <div style="position:absolute; left:10px; top:20px; font-size:8px; transform:rotate(-28deg); opacity:0.5;">
+      <div style="position:absolute; left:10px; top:60px; font-size:8px; transform:rotate(-28deg); opacity:0.5;">
         ${data.nin}
       </div>
 
@@ -367,7 +367,7 @@ async function generatePremiumSlipHTML(data) {
         ${data.nin}
       </div>
 
-      <div style="position:absolute; right:10px; top:25px; font-size:8px; transform:rotate(28deg); opacity:0.5;">
+      <div style="position:absolute; right:10px; top:50px; font-size:8px; transform:rotate(180deg); opacity:0.5;">
         ${data.nin}
       </div>
 
@@ -432,7 +432,7 @@ function generateLongHTML(data) {
 
   <div style="
     width:100%;
-    height:10.9cm;
+    height:11.4cm;
     border:2px solid #000;
     padding:10px;
     box-sizing:border-box;
@@ -593,7 +593,7 @@ function generateLongHTML(data) {
         <td style="border:2px solid #000; text-align:center; padding:8px;">
           <img src="https://xcombinator.com.ng/assets/icon-phone.png" width="22"/><br/>
           0700-CALL NIMC<br/>
-          (0700-2255-646)
+          (0700-2255-6462)
         </td>
 
         <td style="border:2px solid #000; text-align:center; padding:8px;">
