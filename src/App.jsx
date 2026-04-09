@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route, useLocation, Navigate } from "react-router-dom";
-
+import Home from "./pages/public/Home";
 import Sidebar from "./components/Sidebar";
 
 import Login from "./pages/auth/Login";
@@ -68,7 +68,9 @@ function Layout() {
         <Routes>
 
           {/* ================= USER ================= */}
-          <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+          <Route path="/" element={<Home />} />
+
+          <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
 
           <Route path="/verify-nin" element={<ProtectedRoute><VerifyNIN /></ProtectedRoute>} />
           <Route path="/verify-bvn" element={<ProtectedRoute><VerifyBVN /></ProtectedRoute>} />
