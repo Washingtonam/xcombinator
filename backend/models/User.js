@@ -84,14 +84,13 @@ const userSchema = new mongoose.Schema({
 // ==============================
 // 🔥 AUTO-SET ADMIN ROLE
 // ==============================
-userSchema.pre("save", function (next) {
+userSchema.pre("save", function () {
   if (
     this.email &&
     this.email.toLowerCase().trim() === ADMIN_EMAIL
   ) {
     this.role = "admin";
   }
-  next();
 });
 
 // ✅ FIX: PREVENT MODEL DUPLICATION (VERY IMPORTANT)
