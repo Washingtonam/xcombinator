@@ -20,7 +20,7 @@ const transactionSchema = new mongoose.Schema({
   // ==============================
   amount: {
     type: Number,
-    default: 0, // used for funding
+    default: 0,
   },
 
   // ==============================
@@ -28,12 +28,12 @@ const transactionSchema = new mongoose.Schema({
   // ==============================
   units: {
     type: Number,
-    default: 0, // units added
+    default: 0,
   },
 
   unitsUsed: {
     type: Number,
-    default: 0, // units consumed (e.g. NIN)
+    default: 0,
   },
 
   // ==============================
@@ -50,12 +50,18 @@ const transactionSchema = new mongoose.Schema({
   },
 
   // ==============================
-  // 📌 STATUS
+  // 📌 STATUS (🔥 FIXED HERE)
   // ==============================
   status: {
     type: String,
-    enum: ["success", "pending", "failed"],
-    default: "success",
+    enum: [
+      "pending",   // waiting for admin
+      "approved",  // admin approved
+      "rejected",  // admin rejected
+      "success",   // completed action (NIN/BVN)
+      "failed",    // failed action
+    ],
+    default: "pending",
   },
 
   // ==============================
@@ -72,6 +78,14 @@ const transactionSchema = new mongoose.Schema({
   nin: String,
 
   // ==============================
+  // 📷 PROOF (🔥 YOU NEED THIS)
+  // ==============================
+  proof: {
+    type: String,
+    default: null,
+  },
+
+  // ==============================
   // 🕒 DATE
   // ==============================
   date: {
@@ -83,4 +97,7 @@ const transactionSchema = new mongoose.Schema({
   timestamps: true,
 });
 
-module.exports = mongoose.model("Transaction", transactionSchema);
+// ✅ FIX: prevent model crash on reload
+module.exports =
+  mongoose.models.Transaction ||
+  mongoose.model("Transaction", transactionSchema);
