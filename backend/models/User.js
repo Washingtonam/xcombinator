@@ -30,7 +30,7 @@ const userSchema = new mongoose.Schema({
   email: {
     type: String,
     required: true,
-    unique: true,
+    unique: true, // ✅ keep this
     lowercase: true,
     trim: true,
   },
@@ -78,10 +78,8 @@ const userSchema = new mongoose.Schema({
   timestamps: true,
 });
 
-// ==============================
-// 🔐 INDEX
-// ==============================
-userSchema.index({ email: 1 }, { unique: true });
+// ❌ REMOVE DUPLICATE INDEX (IMPORTANT)
+// userSchema.index({ email: 1 }, { unique: true });
 
 // ==============================
 // 🔥 AUTO-SET ADMIN ROLE
@@ -96,4 +94,5 @@ userSchema.pre("save", function (next) {
   next();
 });
 
-module.exports = mongoose.model("User", userSchema);
+// ✅ FIX: PREVENT MODEL DUPLICATION (VERY IMPORTANT)
+module.exports = mongoose.models.User || mongoose.model("User", userSchema);
