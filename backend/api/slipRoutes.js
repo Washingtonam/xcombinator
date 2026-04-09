@@ -486,7 +486,7 @@ function generateLongHTML(data) {
         <td style="
           border:2px solid #000;
           padding:8px;
-          width:30%;
+          width:35%;
           vertical-align:top;
         " rowspan="4">
 
@@ -503,7 +503,7 @@ function generateLongHTML(data) {
         <!-- PHOTO (FIXED RENDER + FIT) -->
         <td style="
           border:2px solid #000;
-          width:20%;
+          width:15%;
           vertical-align:top;
           " rowspan="4">
 
