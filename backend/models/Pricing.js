@@ -15,7 +15,7 @@ const pricingSchema = new mongoose.Schema({
       type: Number,
       required: true,
       default: 250,
-      min: 1, // 🔥 prevents zero or negative pricing
+      min: 1,
     },
 
     agentPrice: {
@@ -25,10 +25,9 @@ const pricingSchema = new mongoose.Schema({
     },
   },
 
-
   // ==============================
-// 🔥 NIN SERVICES
-// ==============================
+  // 🔥 NIN SERVICES
+  // ==============================
   ninServices: {
     validation: {
       noRecord: { type: Number, default: 1000 },
@@ -49,9 +48,8 @@ const pricingSchema = new mongoose.Schema({
     slipPrice: {
       type: Number,
       default: 150,
-    }
-  }
-
+    },
+  }, // ✅🔥 THIS COMMA WAS MISSING
 
   // ==============================
   // 🏦 BVN PRICING
