@@ -14,6 +14,7 @@ import Dashboard from "./pages/dashboard/Dashboard";
 import VerifyNIN from "./pages/verification/VerifyNIN";
 import VerifyBVN from "./pages/verification/VerifyBVN";
 import VerifyResult from "./pages/verification/VerifyResult"; // 🔥 ADD THIS
+import NINServices from "./pages/services/NINServices";
 
 import Transactions from "./pages/transactions/Transactions";
 import Wallet from "./pages/wallet/Wallet";
@@ -60,6 +61,7 @@ function Layout() {
           {/* USER */}
           <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
           <Route path="/verify-nin" element={<ProtectedRoute><VerifyNIN /></ProtectedRoute>} />
+          <Route path="/nin-services" element={<ProtectedRoute><NINServices /></ProtectedRoute>} />
           <Route path="/verify-bvn" element={<ProtectedRoute><VerifyBVN /></ProtectedRoute>} />
           <Route path="/transactions" element={<ProtectedRoute><Transactions /></ProtectedRoute>} />
           <Route path="/wallet" element={<ProtectedRoute><Wallet /></ProtectedRoute>} />

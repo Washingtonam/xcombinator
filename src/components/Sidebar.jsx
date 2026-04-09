@@ -108,8 +108,8 @@ export default function Sidebar() {
           </li>
 
           <li>
-            <Link to="/verify-bvn" className={linkClass("/verify-bvn")}>
-              🏦 {!collapsed && "Verify BVN"}
+            <Link to="/nin-services" className={linkClass("/nin-services")}>
+              🏦 {!collapsed && "NIN Services"}
             </Link>
           </li>
 

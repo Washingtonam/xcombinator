@@ -25,6 +25,34 @@ const pricingSchema = new mongoose.Schema({
     },
   },
 
+
+  // ==============================
+// 🔥 NIN SERVICES
+// ==============================
+  ninServices: {
+    validation: {
+      noRecord: { type: Number, default: 1000 },
+      updateRecord: { type: Number, default: 1150 },
+      validateModification: { type: Number, default: 1150 },
+      vnin: { type: Number, default: 1000 },
+      photoError: { type: Number, default: 1150 },
+      bypass: { type: Number, default: 1150 },
+    },
+
+    ipe: {
+      inProcessingError: { type: Number, default: 1000 },
+      stillProcessing: { type: Number, default: 1000 },
+      newEnrollment: { type: Number, default: 1000 },
+      invalidTracking: { type: Number, default: 1000 },
+    },
+
+    slipPrice: {
+      type: Number,
+      default: 150,
+    }
+  }
+
+
   // ==============================
   // 🏦 BVN PRICING
   // ==============================

@@ -35,7 +35,13 @@ export default function VerifyResult() {
   // =========================
   // DOWNLOAD
   // =========================
+  const [loadingType, setLoadingType] = useState(null);
+
   const downloadSlip = async (type) => {
+    if (loadingType) return; // 🔥 block multiple clicks
+
+    setLoadingType(type);
+
     try {
       const res = await fetch("https://xcombinator.onrender.com/api/generate-nin-slip", {
         method: "POST",
@@ -58,10 +64,11 @@ export default function VerifyResult() {
 
       window.URL.revokeObjectURL(url);
 
-    } catch (err) {
-      console.error(err);
+    } catch {
       alert("Download failed");
     }
+
+    setLoadingType(null);
   };
 
   return (
@@ -103,14 +110,23 @@ export default function VerifyResult() {
       {/* DOWNLOAD */}
       <div className="grid grid-cols-3 gap-3">
         {["data", "premium", "long"].map((type) => (
-          <button
-            key={type}
-            onClick={() => downloadSlip(type)}
-            className="bg-blue-600 hover:bg-blue-700 text-white py-3 rounded"
-          >
-            {type} slip
-          </button>
-        ))}
+        <button
+          key={type}
+          onClick={() => downloadSlip(type)}
+          disabled={loadingType !== null}
+          className={`py-3 rounded text-white ${
+            loadingType === type
+              ? "bg-gray-400"
+              : loadingType
+              ? "bg-gray-300 cursor-not-allowed"
+              : "bg-blue-600"
+          }`}
+        >
+          {loadingType === type
+            ? "Generating..."
+            : `Download ${type}`}
+        </button>
+      ))}
       </div>
 
     </div>
