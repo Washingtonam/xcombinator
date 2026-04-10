@@ -1,7 +1,10 @@
 import { useEffect, useState } from "react";
 
 export default function VerifyResult() {
+
+  // 🔥 ALL HOOKS MUST BE AT TOP
   const [info, setInfo] = useState(null);
+  const [loadingType, setLoadingType] = useState(null);
 
   useEffect(() => {
     try {
@@ -11,7 +14,6 @@ export default function VerifyResult() {
 
       const parsed = JSON.parse(stored);
 
-      // 🔥 SAFE EXTRACTION (handles all cases)
       const extracted =
         parsed?.data?.data ||
         parsed?.data ||
@@ -24,21 +26,11 @@ export default function VerifyResult() {
     }
   }, []);
 
-  if (!info) {
-    return (
-      <div className="p-6 text-center text-gray-500">
-        No verification data found. Please verify again.
-      </div>
-    );
-  }
-
   // =========================
   // DOWNLOAD
   // =========================
-  const [loadingType, setLoadingType] = useState(null);
-
   const downloadSlip = async (type) => {
-    if (loadingType) return; // 🔥 block multiple clicks
+    if (loadingType) return;
 
     setLoadingType(type);
 
@@ -71,6 +63,17 @@ export default function VerifyResult() {
     setLoadingType(null);
   };
 
+  // =========================
+  // SAFE UI CHECK
+  // =========================
+  if (!info) {
+    return (
+      <div className="p-6 text-center text-gray-500">
+        No verification data found. Please verify again.
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-3xl mx-auto">
 
@@ -93,7 +96,6 @@ export default function VerifyResult() {
 
         {/* DETAILS */}
         <div className="space-y-2 text-sm">
-
           <p><b>Name:</b> {info.firstname} {info.middlename} {info.surname}</p>
           <p><b>NIN:</b> {info.nin}</p>
           <p><b>Gender:</b> {info.gender}</p>
@@ -102,7 +104,6 @@ export default function VerifyResult() {
           <p><b>Address:</b> {info.residence_address}</p>
           <p><b>State:</b> {info.residence_state}</p>
           <p><b>LGA:</b> {info.residence_lga}</p>
-
         </div>
 
       </div>
@@ -110,23 +111,23 @@ export default function VerifyResult() {
       {/* DOWNLOAD */}
       <div className="grid grid-cols-3 gap-3">
         {["data", "premium", "long"].map((type) => (
-        <button
-          key={type}
-          onClick={() => downloadSlip(type)}
-          disabled={loadingType !== null}
-          className={`py-3 rounded text-white ${
-            loadingType === type
-              ? "bg-gray-400"
-              : loadingType
-              ? "bg-gray-300 cursor-not-allowed"
-              : "bg-blue-600"
-          }`}
-        >
-          {loadingType === type
-            ? "Generating..."
-            : `Download ${type}`}
-        </button>
-      ))}
+          <button
+            key={type}
+            onClick={() => downloadSlip(type)}
+            disabled={loadingType !== null}
+            className={`py-3 rounded text-white ${
+              loadingType === type
+                ? "bg-gray-400"
+                : loadingType
+                ? "bg-gray-300 cursor-not-allowed"
+                : "bg-blue-600"
+            }`}
+          >
+            {loadingType === type
+              ? "Generating..."
+              : `Download ${type}`}
+          </button>
+        ))}
       </div>
 
     </div>

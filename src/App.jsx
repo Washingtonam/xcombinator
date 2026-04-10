@@ -52,7 +52,7 @@ function AdminRoute({ children }) {
 }
 
 // ==============================
-// 📦 APP LAYOUT (WITH SIDEBAR)
+// 📦 APP LAYOUT
 // ==============================
 function Layout() {
   return (
@@ -64,7 +64,7 @@ function Layout() {
 
         <Routes>
 
-          {/* 🔥 MAIN APP */}
+          {/* MAIN */}
           <Route path="/dashboard" element={<Dashboard />} />
 
           <Route path="/verify-nin" element={<VerifyNIN />} />
@@ -88,6 +88,9 @@ function Layout() {
           <Route path="/admin/pricing" element={<AdminRoute><AdminPricing /></AdminRoute>} />
           <Route path="/admin/requests" element={<AdminRoute><AdminRequests /></AdminRoute>} />
 
+          {/* 🔥 FALLBACK */}
+          <Route path="*" element={<Navigate to="/dashboard" />} />
+
         </Routes>
 
       </div>
@@ -100,19 +103,25 @@ function Layout() {
 // ==============================
 function AppRoutes() {
   const location = useLocation();
+  const loggedIn = isAuthenticated();
 
-  const publicRoutes = ["/", "/login", "/register"];
-
-  if (publicRoutes.includes(location.pathname)) {
-    return (
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-      </Routes>
-    );
+  // 🔥 ROOT FIX
+  if (location.pathname === "/") {
+    return loggedIn
+      ? <Navigate to="/dashboard" />
+      : <Home />;
   }
 
+  // PUBLIC
+  if (location.pathname === "/login") {
+    return loggedIn ? <Navigate to="/dashboard" /> : <Login />;
+  }
+
+  if (location.pathname === "/register") {
+    return loggedIn ? <Navigate to="/dashboard" /> : <Register />;
+  }
+
+  // PROTECTED
   return (
     <ProtectedRoute>
       <Layout />
