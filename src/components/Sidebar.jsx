@@ -126,6 +126,12 @@ export default function Sidebar() {
                 </Link>
               </li>
 
+              <li>
+                <Link to="/my-requests" className={linkClass("/my-requests")}>
+                  📦 {!collapsed && "My Requests"}
+                </Link>
+              </li>
+
               {/* ADMIN */}
               {isAdmin && (
                 <>

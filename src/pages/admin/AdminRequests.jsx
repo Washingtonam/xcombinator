@@ -6,10 +6,14 @@ const API_BASE = "https://xcombinator.onrender.com";
 export default function AdminRequests() {
 
   const [requests, setRequests] = useState([]);
+  const [filter, setFilter] = useState("all");
+
   const [selected, setSelected] = useState(null);
 
   const [note, setNote] = useState("");
   const [comment, setComment] = useState("");
+
+  const [loadingId, setLoadingId] = useState(null);
 
   const headers = {
     email: localStorage.getItem("email"),
@@ -20,7 +24,14 @@ export default function AdminRequests() {
   // =========================
   const fetchRequests = async () => {
     const res = await axios.get(`${API_BASE}/api/admin/requests`, { headers });
-    setRequests(res.data);
+
+    const sorted = res.data.sort((a, b) => {
+      if (a.status === "pending") return -1;
+      if (b.status === "pending") return 1;
+      return 0;
+    });
+
+    setRequests(sorted);
   };
 
   useEffect(() => {
@@ -28,11 +39,50 @@ export default function AdminRequests() {
   }, []);
 
   // =========================
+  // FILTER
+  // =========================
+  const filtered = requests.filter(r =>
+    filter === "all" ? true : r.status === filter
+  );
+
+  // =========================
   // OPEN MODAL
   // =========================
   const open = (r) => {
     setSelected(r);
     setNote(r.adminNotes || "");
+  };
+
+  // =========================
+  // APPROVE
+  // =========================
+  const approve = async (id) => {
+    setLoadingId(id);
+
+    await axios.post(
+      `${API_BASE}/api/admin/requests/${id}/approve`,
+      {},
+      { headers }
+    );
+
+    fetchRequests();
+    setLoadingId(null);
+  };
+
+  // =========================
+  // REJECT
+  // =========================
+  const reject = async (id) => {
+    setLoadingId(id);
+
+    await axios.post(
+      `${API_BASE}/api/admin/requests/${id}/reject`,
+      {},
+      { headers }
+    );
+
+    fetchRequests();
+    setLoadingId(null);
   };
 
   // =========================
@@ -44,6 +94,7 @@ export default function AdminRequests() {
       { note },
       { headers }
     );
+
     fetchRequests();
     alert("Note saved");
   };
@@ -67,24 +118,103 @@ export default function AdminRequests() {
     fetchRequests();
   };
 
+  // =========================
+  // STATUS STYLE
+  // =========================
+  const statusStyle = (status) => {
+    switch (status) {
+      case "pending":
+        return "bg-yellow-400";
+      case "approved":
+        return "bg-green-500 text-white";
+      case "completed":
+        return "bg-blue-600 text-white";
+      default:
+        return "bg-red-500 text-white";
+    }
+  };
+
   return (
     <div className="p-6 max-w-6xl mx-auto">
 
-      <h1 className="text-2xl font-bold mb-6">
-        Requests
+      <h1 className="text-2xl font-bold mb-4">
+        NIN Service Requests
       </h1>
 
-      <div className="grid md:grid-cols-2 gap-4">
+      {/* FILTER */}
+      <div className="flex gap-3 mb-6 flex-wrap">
+        {["all", "pending", "approved", "completed", "rejected"].map(f => (
+          <button
+            key={f}
+            onClick={() => setFilter(f)}
+            className={`px-4 py-1 rounded text-sm ${
+              filter === f ? "bg-blue-600 text-white" : "bg-gray-200"
+            }`}
+          >
+            {f.toUpperCase()}
+          </button>
+        ))}
+      </div>
 
-        {requests.map(r => (
+      {/* GRID */}
+      <div className="grid md:grid-cols-2 gap-5">
+
+        {filtered.map(r => (
           <div
             key={r._id}
-            onClick={() => open(r)}
-            className="p-4 border rounded cursor-pointer hover:shadow"
+            className="bg-white p-5 rounded-xl shadow border"
           >
-            <p className="font-semibold">{r.userId?.email}</p>
-            <p>{r.service} - {r.type}</p>
-            <p>₦{r.amount}</p>
+
+            {/* TOP */}
+            <div className="flex justify-between mb-2">
+              <p className="font-semibold text-sm">
+                {r.userId?.email}
+              </p>
+
+              <span className={`text-xs px-2 py-1 rounded ${statusStyle(r.status)}`}>
+                {r.status}
+              </span>
+            </div>
+
+            {/* DETAILS */}
+            <p className="text-sm">
+              {r.service} - {r.type}
+            </p>
+
+            <p className="text-sm mb-2">
+              ₦{r.amount}
+            </p>
+
+            {/* ACTION BUTTONS */}
+            <div className="flex gap-2 mb-2">
+
+              <button
+                onClick={() => open(r)}
+                className="flex-1 bg-black text-white py-2 rounded text-sm"
+              >
+                View
+              </button>
+
+              {r.status === "pending" && (
+                <>
+                  <button
+                    onClick={() => approve(r._id)}
+                    disabled={loadingId === r._id}
+                    className="flex-1 bg-green-600 text-white py-2 rounded text-sm"
+                  >
+                    Approve
+                  </button>
+
+                  <button
+                    onClick={() => reject(r._id)}
+                    className="flex-1 bg-red-600 text-white py-2 rounded text-sm"
+                  >
+                    Reject
+                  </button>
+                </>
+              )}
+            </div>
+
           </div>
         ))}
 
@@ -100,11 +230,10 @@ export default function AdminRequests() {
               Full Request Details
             </h2>
 
-            {/* BASIC */}
             <p><b>NIN:</b> {selected.nin}</p>
             <p><b>Type:</b> {selected.type}</p>
 
-            {/* 🔥 FORM DATA */}
+            {/* FORM DATA */}
             <div className="mt-4">
               <h3 className="font-semibold">Form Data</h3>
 
@@ -126,11 +255,13 @@ export default function AdminRequests() {
             {/* NOTES */}
             <div className="mt-4">
               <h3 className="font-semibold">Admin Notes</h3>
+
               <textarea
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
                 className="w-full border p-2 rounded mt-2"
               />
+
               <button
                 onClick={saveNote}
                 className="bg-blue-600 text-white px-4 py-2 mt-2 rounded"
@@ -166,7 +297,6 @@ export default function AdminRequests() {
               </button>
             </div>
 
-            {/* CLOSE */}
             <button
               onClick={() => setSelected(null)}
               className="mt-4 text-red-500"

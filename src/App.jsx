@@ -70,6 +70,7 @@ function Layout() {
           <Route path="/verify-nin" element={<VerifyNIN />} />
           <Route path="/verify-bvn" element={<VerifyBVN />} />
           <Route path="/verify-result" element={<VerifyResult />} />
+          <Route path="/my-requests" element={<UserRequests />} />
 
           {/* NIN SERVICES */}
           <Route path="/nin-services" element={<NINServices />} />

@@ -229,4 +229,19 @@ router.put("/admin/requests/:id/note", async (req, res) => {
   }
 });
 
+// ==============================
+// 👤 USER GET OWN REQUESTS
+// ==============================
+router.get("/user/requests/:userId", async (req, res) => {
+  try {
+    const data = await ServiceRequest.find({
+      userId: req.params.userId
+    }).sort({ createdAt: -1 });
+
+    res.json(data);
+  } catch {
+    res.status(500).json({ message: "Failed to fetch user requests" });
+  }
+});
+
 module.exports = router;
