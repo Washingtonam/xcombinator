@@ -1,5 +1,20 @@
 const mongoose = require("mongoose");
 
+// ==============================
+// 💬 COMMENT SCHEMA (MULTI ADMIN)
+// ==============================
+const commentSchema = new mongoose.Schema({
+  text: String,
+  by: String,
+  date: {
+    type: Date,
+    default: Date.now,
+  },
+});
+
+// ==============================
+// 🧾 SERVICE REQUEST
+// ==============================
 const serviceRequestSchema = new mongoose.Schema({
   userId: {
     type: mongoose.Schema.Types.ObjectId,
@@ -11,7 +26,7 @@ const serviceRequestSchema = new mongoose.Schema({
     enum: ["validation", "ipe", "modification"],
   },
 
-  type: String, // e.g. "noRecord", "updateRecord"
+  type: String,
 
   nin: String,
 
@@ -25,13 +40,34 @@ const serviceRequestSchema = new mongoose.Schema({
 
   proof: String,
 
+  // =========================
+  // 🔥 FULL FORM DATA (CRITICAL)
+  // =========================
+  formData: {
+    type: Object,
+    default: {},
+  },
+
+  // =========================
+  // 🧠 ADMIN NOTES
+  // =========================
+  adminNotes: {
+    type: String,
+    default: "",
+  },
+
+  // =========================
+  // 💬 COMMENTS (TEAM SYSTEM)
+  // =========================
+  comments: [commentSchema],
+
   status: {
     type: String,
     enum: ["pending", "approved", "rejected", "completed"],
     default: "pending",
   },
 
-  resultSlip: String, // 🔥 PDF URL after processing
+  resultSlip: String,
 
 }, { timestamps: true });
 

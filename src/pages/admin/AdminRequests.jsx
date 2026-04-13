@@ -6,9 +6,10 @@ const API_BASE = "https://xcombinator.onrender.com";
 export default function AdminRequests() {
 
   const [requests, setRequests] = useState([]);
-  const [filter, setFilter] = useState("all");
-  const [loadingId, setLoadingId] = useState(null);
-  const [files, setFiles] = useState({});
+  const [selected, setSelected] = useState(null);
+
+  const [note, setNote] = useState("");
+  const [comment, setComment] = useState("");
 
   const headers = {
     email: localStorage.getItem("email"),
@@ -18,19 +19,8 @@ export default function AdminRequests() {
   // FETCH
   // =========================
   const fetchRequests = async () => {
-    try {
-      const res = await axios.get(`${API_BASE}/api/admin/requests`, { headers });
-
-      const sorted = res.data.sort((a, b) => {
-        if (a.status === "pending") return -1;
-        if (b.status === "pending") return 1;
-        return 0;
-      });
-
-      setRequests(sorted);
-    } catch (err) {
-      console.error(err);
-    }
+    const res = await axios.get(`${API_BASE}/api/admin/requests`, { headers });
+    setRequests(res.data);
   };
 
   useEffect(() => {
@@ -38,253 +28,155 @@ export default function AdminRequests() {
   }, []);
 
   // =========================
-  // ACTIONS
+  // OPEN MODAL
   // =========================
-  const approve = async (id) => {
-    setLoadingId(id);
-    try {
-      await axios.post(`${API_BASE}/api/admin/requests/${id}/approve`, {}, { headers });
-      fetchRequests();
-    } catch {
-      alert("Approval failed");
-    }
-    setLoadingId(null);
-  };
-
-  const reject = async (id) => {
-    setLoadingId(id);
-    try {
-      await axios.post(`${API_BASE}/api/admin/requests/${id}/reject`, {}, { headers });
-      fetchRequests();
-    } catch {
-      alert("Rejection failed");
-    }
-    setLoadingId(null);
+  const open = (r) => {
+    setSelected(r);
+    setNote(r.adminNotes || "");
   };
 
   // =========================
-  // FILE HANDLING
+  // SAVE NOTE
   // =========================
-  const handleFile = (e, id) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    if (file.type !== "application/pdf") {
-      return alert("Only PDF allowed");
-    }
-
-    if (file.size > 2 * 1024 * 1024) {
-      return alert("Max size is 2MB");
-    }
-
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-
-    reader.onloadend = () => {
-      setFiles(prev => ({
-        ...prev,
-        [id]: {
-          data: reader.result,
-          name: file.name,
-        },
-      }));
-    };
-  };
-
-  const uploadSlip = async (id) => {
-    if (!files[id]) return alert("Select PDF first");
-
-    setLoadingId(id);
-
-    try {
-      await axios.post(
-        `${API_BASE}/api/admin/requests/${id}/upload-slip`,
-        { pdf: files[id].data },
-        { headers }
-      );
-
-      // clear file
-      setFiles(prev => {
-        const copy = { ...prev };
-        delete copy[id];
-        return copy;
-      });
-
-      fetchRequests();
-
-    } catch {
-      alert("Upload failed");
-    }
-
-    setLoadingId(null);
+  const saveNote = async () => {
+    await axios.put(
+      `${API_BASE}/api/admin/requests/${selected._id}/note`,
+      { note },
+      { headers }
+    );
+    fetchRequests();
+    alert("Note saved");
   };
 
   // =========================
-  // FILTER
+  // ADD COMMENT
   // =========================
-  const filtered = requests.filter(r =>
-    filter === "all" ? true : r.status === filter
-  );
+  const addComment = async () => {
+    if (!comment) return;
 
-  // =========================
-  // HELPERS
-  // =========================
-  const serviceStyle = (service) => {
-    switch (service) {
-      case "validation":
-        return "bg-blue-100 text-blue-700";
-      case "ipe":
-        return "bg-purple-100 text-purple-700";
-      case "modification":
-        return "bg-orange-100 text-orange-700";
-      default:
-        return "bg-gray-100";
-    }
-  };
+    await axios.post(
+      `${API_BASE}/api/admin/requests/${selected._id}/comment`,
+      {
+        text: comment,
+        by: headers.email
+      },
+      { headers }
+    );
 
-  const statusStyle = (status) => {
-    switch (status) {
-      case "pending":
-        return "bg-yellow-400";
-      case "approved":
-        return "bg-green-500 text-white";
-      case "completed":
-        return "bg-blue-600 text-white";
-      default:
-        return "bg-red-500 text-white";
-    }
+    setComment("");
+    fetchRequests();
   };
 
   return (
     <div className="p-6 max-w-6xl mx-auto">
 
-      {/* HEADER */}
-      <h1 className="text-2xl font-bold mb-2">
-        NIN Service Requests
+      <h1 className="text-2xl font-bold mb-6">
+        Requests
       </h1>
 
-      <p className="text-gray-500 mb-6">
-        Payment → Approval → Processing → Delivery
-      </p>
+      <div className="grid md:grid-cols-2 gap-4">
 
-      {/* FILTER */}
-      <div className="flex gap-3 mb-6 flex-wrap">
-        {["all", "pending", "approved", "completed", "rejected"].map(f => (
-          <button
-            key={f}
-            onClick={() => setFilter(f)}
-            className={`px-4 py-1 rounded text-sm ${
-              filter === f ? "bg-blue-600 text-white" : "bg-gray-200"
-            }`}
+        {requests.map(r => (
+          <div
+            key={r._id}
+            onClick={() => open(r)}
+            className="p-4 border rounded cursor-pointer hover:shadow"
           >
-            {f.toUpperCase()}
-          </button>
-        ))}
-      </div>
-
-      {/* GRID */}
-      <div className="grid md:grid-cols-2 gap-5">
-
-        {filtered.map(r => (
-          <div key={r._id} className="bg-white p-5 rounded-xl shadow border">
-
-            {/* TOP */}
-            <div className="flex justify-between items-center mb-2">
-              <p className="font-semibold text-sm">
-                {r.userId?.email}
-              </p>
-
-              <span className={`text-xs px-2 py-1 rounded ${statusStyle(r.status)}`}>
-                {r.status}
-              </span>
-            </div>
-
-            {/* SERVICE BADGE */}
-            <div className={`inline-block px-3 py-1 text-xs rounded mb-2 ${serviceStyle(r.service)}`}>
-              {r.service?.toUpperCase()}
-            </div>
-
-            {/* DETAILS */}
-            <div className="text-sm space-y-1 mb-3">
-              <p><b>Type:</b> {r.type}</p>
-              <p><b>NIN:</b> {r.nin}</p>
-              <p><b>Slip:</b> {r.slipType}</p>
-              <p><b>Amount:</b> ₦{r.amount}</p>
-            </div>
-
-            {/* PROOF */}
-            {r.proof && (
-              <img
-                src={r.proof}
-                alt="proof"
-                className="w-full h-40 object-cover rounded mb-3"
-              />
-            )}
-
-            {/* PENDING */}
-            {r.status === "pending" && (
-              <div className="flex gap-2">
-                <button
-                  onClick={() => approve(r._id)}
-                  disabled={loadingId === r._id}
-                  className="flex-1 py-2 rounded bg-green-600 text-white"
-                >
-                  {loadingId === r._id ? "Processing..." : "Approve"}
-                </button>
-
-                <button
-                  onClick={() => reject(r._id)}
-                  disabled={loadingId === r._id}
-                  className="flex-1 py-2 rounded bg-red-600 text-white"
-                >
-                  Reject
-                </button>
-              </div>
-            )}
-
-            {/* APPROVED */}
-            {r.status === "approved" && (
-              <div className="mt-3">
-
-                <input
-                  type="file"
-                  accept="application/pdf"
-                  onChange={(e) => handleFile(e, r._id)}
-                  className="mb-2"
-                />
-
-                {files[r._id] && (
-                  <p className="text-xs text-gray-500 mb-2">
-                    📄 {files[r._id].name}
-                  </p>
-                )}
-
-                <button
-                  onClick={() => uploadSlip(r._id)}
-                  disabled={loadingId === r._id}
-                  className="w-full py-2 rounded bg-blue-600 text-white"
-                >
-                  {loadingId === r._id ? "Uploading..." : "Upload Slip"}
-                </button>
-
-              </div>
-            )}
-
-            {/* COMPLETED */}
-            {r.status === "completed" && r.resultSlip && (
-              <a
-                href={r.resultSlip}
-                download="nin-slip.pdf"
-                className="block text-center mt-3 bg-blue-600 text-white py-2 rounded"
-              >
-                Download Slip
-              </a>
-            )}
-
+            <p className="font-semibold">{r.userId?.email}</p>
+            <p>{r.service} - {r.type}</p>
+            <p>₦{r.amount}</p>
           </div>
         ))}
 
       </div>
+
+      {/* ================= MODAL ================= */}
+      {selected && (
+        <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50">
+
+          <div className="bg-white w-full max-w-2xl p-6 rounded-xl max-h-[90vh] overflow-y-auto">
+
+            <h2 className="text-xl font-bold mb-4">
+              Full Request Details
+            </h2>
+
+            {/* BASIC */}
+            <p><b>NIN:</b> {selected.nin}</p>
+            <p><b>Type:</b> {selected.type}</p>
+
+            {/* 🔥 FORM DATA */}
+            <div className="mt-4">
+              <h3 className="font-semibold">Form Data</h3>
+
+              {selected.formData &&
+                Object.entries(selected.formData).map(([k, v]) => (
+                  <p key={k}><b>{k}:</b> {v}</p>
+                ))
+              }
+            </div>
+
+            {/* PROOF */}
+            {selected.proof && (
+              <img
+                src={selected.proof}
+                className="w-full mt-4 rounded"
+              />
+            )}
+
+            {/* NOTES */}
+            <div className="mt-4">
+              <h3 className="font-semibold">Admin Notes</h3>
+              <textarea
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                className="w-full border p-2 rounded mt-2"
+              />
+              <button
+                onClick={saveNote}
+                className="bg-blue-600 text-white px-4 py-2 mt-2 rounded"
+              >
+                Save Note
+              </button>
+            </div>
+
+            {/* COMMENTS */}
+            <div className="mt-4">
+              <h3 className="font-semibold">Comments</h3>
+
+              <div className="space-y-2 max-h-40 overflow-y-auto">
+                {selected.comments?.map((c, i) => (
+                  <div key={i} className="bg-gray-100 p-2 rounded text-sm">
+                    <b>{c.by}</b>: {c.text}
+                  </div>
+                ))}
+              </div>
+
+              <input
+                value={comment}
+                onChange={(e) => setComment(e.target.value)}
+                placeholder="Add comment..."
+                className="w-full border p-2 mt-2 rounded"
+              />
+
+              <button
+                onClick={addComment}
+                className="bg-black text-white px-4 py-2 mt-2 rounded"
+              >
+                Send
+              </button>
+            </div>
+
+            {/* CLOSE */}
+            <button
+              onClick={() => setSelected(null)}
+              className="mt-4 text-red-500"
+            >
+              Close
+            </button>
+
+          </div>
+        </div>
+      )}
 
     </div>
   );

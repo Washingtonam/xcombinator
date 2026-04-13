@@ -10,7 +10,15 @@ const Transaction = require("../models/Transaction");
 // ==============================
 router.post("/nin-services/request", async (req, res) => {
   try {
-    const { userId, service, type, nin, slipType, proof } = req.body;
+    const {
+      userId,
+      service,
+      type,
+      nin,
+      slipType,
+      proof,
+      formData // 🔥 NEW
+    } = req.body;
 
     if (!userId || !service || !type || !nin || !proof) {
       return res.status(400).json({ message: "Missing required fields" });
@@ -56,11 +64,12 @@ router.post("/nin-services/request", async (req, res) => {
       slipType: slipType || "none",
       amount: total,
       proof,
+      formData: formData || {}, // 🔥 SAVE FORM
       status: "pending",
     });
 
     // =========================
-    // 🔥 CREATE TRANSACTION (LINKED)
+    // CREATE TRANSACTION
     // =========================
     await Transaction.create({
       type: "SERVICE",
@@ -69,7 +78,7 @@ router.post("/nin-services/request", async (req, res) => {
       userId,
       nin,
       proof,
-      requestId: request._id, // 🔥 CRITICAL FIX
+      requestId: request._id,
     });
 
     res.json({
@@ -93,7 +102,7 @@ router.get("/admin/requests", async (req, res) => {
       .sort({ createdAt: -1 });
 
     res.json(data);
-  } catch (err) {
+  } catch {
     res.status(500).json({ message: "Failed to fetch requests" });
   }
 });
@@ -112,7 +121,6 @@ router.post("/admin/requests/:id/approve", async (req, res) => {
     request.status = "approved";
     await request.save();
 
-    // 🔥 SAFE UPDATE
     await Transaction.findOneAndUpdate(
       { requestId: request._id },
       { status: "approved" }
@@ -120,7 +128,7 @@ router.post("/admin/requests/:id/approve", async (req, res) => {
 
     res.json({ message: "Approved" });
 
-  } catch (err) {
+  } catch {
     res.status(500).json({ message: "Approval failed" });
   }
 });
@@ -139,7 +147,6 @@ router.post("/admin/requests/:id/reject", async (req, res) => {
     request.status = "rejected";
     await request.save();
 
-    // 🔥 SAFE UPDATE
     await Transaction.findOneAndUpdate(
       { requestId: request._id },
       { status: "rejected" }
@@ -147,7 +154,7 @@ router.post("/admin/requests/:id/reject", async (req, res) => {
 
     res.json({ message: "Rejected" });
 
-  } catch (err) {
+  } catch {
     res.status(500).json({ message: "Rejection failed" });
   }
 });
@@ -165,28 +172,60 @@ router.post("/admin/requests/:id/upload-slip", async (req, res) => {
 
     const request = await ServiceRequest.findById(req.params.id);
 
-    if (!request) {
-      return res.status(404).json({ message: "Request not found" });
-    }
-
     request.resultSlip = pdf;
     request.status = "completed";
 
     await request.save();
 
-    // 🔥 FINAL SAFE UPDATE
     await Transaction.findOneAndUpdate(
       { requestId: request._id },
       { status: "success" }
     );
 
-    res.json({
-      message: "Slip uploaded & request completed",
-    });
+    res.json({ message: "Completed" });
 
-  } catch (error) {
-    console.error("UPLOAD SLIP ERROR:", error);
+  } catch {
     res.status(500).json({ message: "Upload failed" });
+  }
+});
+
+// ==============================
+// 📝 ADD COMMENT (MULTI ADMIN)
+// ==============================
+router.post("/admin/requests/:id/comment", async (req, res) => {
+  try {
+    const { text, by } = req.body;
+
+    const request = await ServiceRequest.findById(req.params.id);
+
+    request.comments.push({ text, by });
+
+    await request.save();
+
+    res.json({ message: "Comment added" });
+
+  } catch {
+    res.status(500).json({ message: "Failed to add comment" });
+  }
+});
+
+// ==============================
+// 🧠 SAVE ADMIN NOTE
+// ==============================
+router.put("/admin/requests/:id/note", async (req, res) => {
+  try {
+    const { note } = req.body;
+
+    const request = await ServiceRequest.findById(req.params.id);
+
+    request.adminNotes = note;
+
+    await request.save();
+
+    res.json({ message: "Note saved" });
+
+  } catch {
+    res.status(500).json({ message: "Failed to save note" });
   }
 });
 
