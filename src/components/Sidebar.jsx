@@ -1,4 +1,4 @@
-import { Link, useNavigate, useLocation } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { useState, useEffect } from "react";
 import axios from "axios";
 import { useTheme } from "../context/ThemeContext";
@@ -6,14 +6,12 @@ import { useTheme } from "../context/ThemeContext";
 const API_BASE = "https://xcombinator.onrender.com";
 
 export default function Sidebar() {
-  const navigate = useNavigate();
   const location = useLocation();
-
   const { theme, toggleTheme } = useTheme();
 
-  const [collapsed, setCollapsed] = useState(false);
-  const [mobileOpen, setMobileOpen] = useState(false);
+  const [open, setOpen] = useState(false);
   const [pendingPayments, setPendingPayments] = useState(0);
+  const [pendingRequests, setPendingRequests] = useState(0);
 
   const user = JSON.parse(localStorage.getItem("user"));
   const isAdmin = user?.email === "washingtonamedu@gmail.com";
@@ -22,32 +20,31 @@ export default function Sidebar() {
     email: localStorage.getItem("email"),
   };
 
-  // =========================
-  // 🔥 FIXED LOGOUT (CRITICAL)
-  // =========================
   const handleLogout = () => {
-    localStorage.removeItem("user");
-    localStorage.removeItem("email");
-
-    // 🔥 FORCE FULL RESET (prevents auto-login bug)
+    localStorage.clear();
     window.location.href = "/login";
   };
 
   // =========================
   // FETCH ADMIN DATA
   // =========================
-  const fetchPendingPayments = async () => {
-    try {
-      const res = await axios.get(`${API_BASE}/api/admin/payments`, { headers });
-      const pending = res.data.filter(p => p.status === "pending").length;
-      setPendingPayments(pending);
-    } catch (err) {
-      console.error("Payment fetch error:", err);
-    }
-  };
-
   useEffect(() => {
-    if (isAdmin) fetchPendingPayments();
+    if (!isAdmin) return;
+
+    const fetchData = async () => {
+      try {
+        const payRes = await axios.get(`${API_BASE}/api/admin/payments`, { headers });
+        setPendingPayments(payRes.data.filter(p => p.status === "pending").length);
+
+        const reqRes = await axios.get(`${API_BASE}/api/admin/requests`, { headers });
+        setPendingRequests(reqRes.data.filter(r => r.status === "pending").length);
+
+      } catch (err) {
+        console.error(err);
+      }
+    };
+
+    fetchData();
   }, []);
 
   // =========================
@@ -56,104 +53,100 @@ export default function Sidebar() {
   const isActive = (path) => location.pathname === path;
 
   const linkClass = (path) =>
-    `flex items-center gap-3 p-3 rounded-lg transition ${
+    `flex items-center justify-between p-3 rounded-lg transition ${
       isActive(path)
         ? "bg-blue-700"
         : "hover:bg-blue-800"
     }`;
 
-  // =========================
-  // SIDEBAR CONTENT
-  // =========================
-  const SidebarContent = () => (
+  return (
     <>
-      {/* HEADER */}
-      <div>
-        <div className="flex items-center justify-between mb-8">
+      {/* 🔥 FLOATING MENU BUTTON */}
+      <button
+        onClick={() => setOpen(true)}
+        className="fixed top-4 left-4 z-50 bg-black text-white px-3 py-2 rounded-lg shadow-lg"
+      >
+        ☰
+      </button>
 
-          {!collapsed && (
-            <h1 className="text-xl font-bold">NIN Portal</h1>
-          )}
+      {/* 🔥 OVERLAY */}
+      {open && (
+        <div
+          onClick={() => setOpen(false)}
+          className="fixed inset-0 bg-black/50 z-40"
+        />
+      )}
 
-          <div className="flex items-center gap-2">
+      {/* 🔥 SIDEBAR */}
+      <div
+        className={`fixed top-0 left-0 h-full w-64 bg-blue-900 text-white p-5 z-50 transform transition-transform duration-300 ${
+          open ? "translate-x-0" : "-translate-x-full"
+        }`}
+      >
 
-            {/* THEME */}
-            <button
-              onClick={toggleTheme}
-              className="bg-gray-700 hover:bg-gray-600 px-3 py-1 rounded text-xs transition"
-            >
-              {theme === "dark" ? "☀️" : "🌙"}
-            </button>
+        {/* HEADER */}
+        <div className="flex justify-between items-center mb-8">
+          <h1 className="text-xl font-bold">NIN Portal</h1>
 
-            {/* COLLAPSE */}
-            <button
-              onClick={() => setCollapsed(!collapsed)}
-              className="bg-blue-700 px-2 py-1 rounded text-xs"
-            >
-              {collapsed ? "➡️" : "⬅️"}
-            </button>
-          </div>
+          <button onClick={() => setOpen(false)}>✕</button>
         </div>
 
         {/* MENU */}
         <ul className="space-y-2 text-sm">
 
-          {/* 🔥 FIXED DASHBOARD ROUTE */}
           <li>
-            <Link to="/dashboard" className={linkClass("/dashboard")}>
-              📊 {!collapsed && "Dashboard"}
+            <Link to="/dashboard" className={linkClass("/dashboard")} onClick={() => setOpen(false)}>
+              <span>📊 Dashboard</span>
             </Link>
           </li>
 
           <li>
-            <Link to="/verify-nin" className={linkClass("/verify-nin")}>
-              🆔 {!collapsed && "Verify NIN"}
+            <Link to="/verify-nin" className={linkClass("/verify-nin")} onClick={() => setOpen(false)}>
+              <span>🆔 Verify NIN</span>
             </Link>
           </li>
 
           <li>
-            <Link to="/nin-services" className={linkClass("/nin-services")}>
-              🏦 {!collapsed && "NIN Services"}
+            <Link to="/nin-services" className={linkClass("/nin-services")} onClick={() => setOpen(false)}>
+              <span>🏦 NIN Services</span>
             </Link>
           </li>
 
           <li>
-            <Link to="/transactions" className={linkClass("/transactions")}>
-              📜 {!collapsed && "Transactions"}
+            <Link to="/transactions" className={linkClass("/transactions")} onClick={() => setOpen(false)}>
+              <span>📜 Transactions</span>
             </Link>
           </li>
 
           <li>
-            <Link to="/wallet" className={linkClass("/wallet")}>
-              ⚡ {!collapsed && "Buy Units"}
+            <Link to="/wallet" className={linkClass("/wallet")} onClick={() => setOpen(false)}>
+              <span>⚡ Buy Units</span>
             </Link>
           </li>
 
           {/* ADMIN */}
           {isAdmin && (
             <>
-              <li className="mt-6 text-gray-300 text-xs">
-                {!collapsed && "ADMIN"}
-              </li>
+              <li className="mt-6 text-xs text-gray-300">ADMIN</li>
 
               <li>
-                <Link to="/admin" className={linkClass("/admin")}>
-                  ⚙️ {!collapsed && "Dashboard"}
+                <Link to="/admin" className={linkClass("/admin")} onClick={() => setOpen(false)}>
+                  <span>⚙️ Dashboard</span>
                 </Link>
               </li>
 
               <li>
-                <Link to="/admin/users" className={linkClass("/admin/users")}>
-                  👥 {!collapsed && "Users"}
+                <Link to="/admin/users" className={linkClass("/admin/users")} onClick={() => setOpen(false)}>
+                  <span>👥 Users</span>
                 </Link>
               </li>
 
               <li>
-                <Link to="/admin/payments" className={linkClass("/admin/payments")}>
-                  💳 {!collapsed && "Payments"}
+                <Link to="/admin/payments" className={linkClass("/admin/payments")} onClick={() => setOpen(false)}>
+                  <span>💳 Payments</span>
 
                   {pendingPayments > 0 && (
-                    <span className="ml-auto bg-red-500 text-xs px-2 py-0.5 rounded-full">
+                    <span className="bg-red-500 text-xs px-2 py-0.5 rounded-full">
                       {pendingPayments}
                     </span>
                   )}
@@ -161,55 +154,44 @@ export default function Sidebar() {
               </li>
 
               <li>
-                <Link to="/admin/pricing" className={linkClass("/admin/pricing")}>
-                  💲 {!collapsed && "Pricing"}
+                <Link to="/admin/requests" className={linkClass("/admin/requests")} onClick={() => setOpen(false)}>
+                  <span>📥 Requests</span>
+
+                  {pendingRequests > 0 && (
+                    <span className="bg-yellow-500 text-xs px-2 py-0.5 rounded-full">
+                      {pendingRequests}
+                    </span>
+                  )}
+                </Link>
+              </li>
+
+              <li>
+                <Link to="/admin/pricing" className={linkClass("/admin/pricing")} onClick={() => setOpen(false)}>
+                  <span>💲 Pricing</span>
                 </Link>
               </li>
             </>
           )}
         </ul>
-      </div>
 
-      {/* LOGOUT */}
-      <button
-        onClick={handleLogout}
-        className="bg-red-600 hover:bg-red-700 px-4 py-2 rounded text-sm transition"
-      >
-        {!collapsed ? "Logout" : "🚪"}
-      </button>
-    </>
-  );
+        {/* FOOTER */}
+        <div className="mt-10 space-y-3">
 
-  return (
-    <>
-      {/* MOBILE TOP BAR */}
-      <div className="md:hidden flex items-center justify-between bg-blue-900 text-white p-3">
-        <button onClick={() => setMobileOpen(true)}>☰</button>
+          <button
+            onClick={toggleTheme}
+            className="w-full bg-gray-700 py-2 rounded"
+          >
+            {theme === "dark" ? "☀️ Light" : "🌙 Dark"}
+          </button>
 
-        <h1 className="font-bold">NIN Portal</h1>
+          <button
+            onClick={handleLogout}
+            className="w-full bg-red-600 py-2 rounded"
+          >
+            Logout
+          </button>
 
-        <button onClick={toggleTheme}>
-          {theme === "dark" ? "☀️" : "🌙"}
-        </button>
-      </div>
-
-      {/* MOBILE OVERLAY */}
-      {mobileOpen && (
-        <div
-          onClick={() => setMobileOpen(false)}
-          className="fixed inset-0 bg-black/50 z-40"
-        />
-      )}
-
-      {/* SIDEBAR */}
-      <div
-        className={`
-          fixed md:relative z-50 h-screen bg-blue-900 text-white p-4 flex flex-col justify-between transition-all duration-300
-          ${collapsed ? "w-20" : "w-64"}
-          ${mobileOpen ? "left-0" : "-left-full md:left-0"}
-        `}
-      >
-        <SidebarContent />
+        </div>
       </div>
     </>
   );
