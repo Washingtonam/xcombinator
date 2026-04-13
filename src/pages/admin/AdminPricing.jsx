@@ -23,54 +23,70 @@ export default function AdminPricing() {
   // 🟩 VALIDATION
   // =========================
   const [validation, setValidation] = useState({
-    noRecord: "",
-    updateRecord: "",
-    validateModification: "",
-    vnin: "",
-    photoError: "",
-    bypass: "",
-    slipPrice: ""
+    noRecord: 1000,
+    updateRecord: 1150,
+    validateModification: 1150,
+    vnin: 1000,
+    photoError: 1150,
+    bypass: 1150,
+    slipPrice: 150
   });
 
   // =========================
   // 🟨 IPE
   // =========================
   const [ipe, setIpe] = useState({
-    inProcessingError: "",
-    stillProcessing: "",
-    newEnrollment: "",
-    invalidTracking: ""
+    inProcessingError: 1000,
+    stillProcessing: 1000,
+    newEnrollment: 1000,
+    invalidTracking: 1000
   });
 
   // =========================
   // 🟥 MODIFICATION
   // =========================
   const [modification, setModification] = useState({
-    name: "",
-    phone: "",
-    address: "",
-    dob: ""
+    name: 12000,
+    phone: 12000,
+    address: 12000,
+    dob: 50000
   });
 
   // =========================
-  // FETCH
+  // FETCH (FIXED)
   // =========================
   const fetchPricing = async () => {
     try {
       const res = await axios.get(`${API_BASE}/api/pricing`);
       const data = res.data;
 
-      setUnitPrice(data?.nin?.unitPrice || 250);
-      setAgentPrice(data?.nin?.agentPrice || 150);
-      setMode(data?.nin?.mode || "bundle");
+      setUnitPrice(data?.nin?.unitPrice ?? 250);
+      setAgentPrice(data?.nin?.agentPrice ?? 150);
+      setMode(data?.nin?.mode ?? "bundle");
 
       setValidation({
-        ...data?.ninServices?.validation,
-        slipPrice: data?.ninServices?.slipPrice || 150
+        noRecord: data?.ninServices?.validation?.noRecord ?? 1000,
+        updateRecord: data?.ninServices?.validation?.updateRecord ?? 1150,
+        validateModification: data?.ninServices?.validation?.validateModification ?? 1150,
+        vnin: data?.ninServices?.validation?.vnin ?? 1000,
+        photoError: data?.ninServices?.validation?.photoError ?? 1150,
+        bypass: data?.ninServices?.validation?.bypass ?? 1150,
+        slipPrice: data?.ninServices?.slipPrice ?? 150
       });
 
-      setIpe(data?.ninServices?.ipe || {});
-      setModification(data?.ninServices?.modification || {});
+      setIpe({
+        inProcessingError: data?.ninServices?.ipe?.inProcessingError ?? 1000,
+        stillProcessing: data?.ninServices?.ipe?.stillProcessing ?? 1000,
+        newEnrollment: data?.ninServices?.ipe?.newEnrollment ?? 1000,
+        invalidTracking: data?.ninServices?.ipe?.invalidTracking ?? 1000
+      });
+
+      setModification({
+        name: data?.ninServices?.modification?.name ?? 12000,
+        phone: data?.ninServices?.modification?.phone ?? 12000,
+        address: data?.ninServices?.modification?.address ?? 12000,
+        dob: data?.ninServices?.modification?.dob ?? 50000
+      });
 
     } catch (err) {
       console.error(err);
@@ -85,7 +101,7 @@ export default function AdminPricing() {
   }, []);
 
   // =========================
-  // 🔥 SINGLE SAVE FUNCTION
+  // 🔥 SAVE
   // =========================
   const saveSection = async (payload) => {
     setLoading(true);
