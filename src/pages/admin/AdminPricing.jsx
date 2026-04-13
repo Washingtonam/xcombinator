@@ -4,30 +4,79 @@ import axios from "axios";
 const API_BASE = "https://xcombinator.onrender.com";
 
 export default function AdminPricing() {
-  const [unitPrice, setUnitPrice] = useState("");
-  const [agentPrice, setAgentPrice] = useState("");
-  const [mode, setMode] = useState("bundle");
-
-  const [loading, setLoading] = useState(false);
-  const [fetching, setFetching] = useState(true);
-  const [success, setSuccess] = useState(false);
 
   const headers = {
     email: localStorage.getItem("email"),
   };
 
+  const [loading, setLoading] = useState(false);
+  const [fetching, setFetching] = useState(true);
+
   // =========================
-  // FETCH PRICING
+  // 🟦 UNIT PRICING
+  // =========================
+  const [unitPrice, setUnitPrice] = useState("");
+  const [agentPrice, setAgentPrice] = useState("");
+  const [mode, setMode] = useState("bundle");
+
+  // =========================
+  // 🟩 VALIDATION
+  // =========================
+  const [validation, setValidation] = useState({
+    noRecord: "",
+    updateRecord: "",
+    validateModification: "",
+    vnin: "",
+    photoError: "",
+    bypass: "",
+    slipPrice: ""
+  });
+
+  // =========================
+  // 🟨 IPE
+  // =========================
+  const [ipe, setIpe] = useState({
+    inProcessingError: "",
+    stillProcessing: "",
+    newEnrollment: "",
+    invalidTracking: ""
+  });
+
+  // =========================
+  // 🟥 MODIFICATION
+  // =========================
+  const [modification, setModification] = useState({
+    name: "",
+    phone: "",
+    address: "",
+    dob: ""
+  });
+
+  // =========================
+  // FETCH
   // =========================
   const fetchPricing = async () => {
     try {
       const res = await axios.get(`${API_BASE}/api/pricing`);
 
-      const nin = res.data?.nin || {};
+      const data = res.data;
 
-      setUnitPrice(nin.unitPrice || 250);
-      setAgentPrice(nin.agentPrice || 150);
-      setMode(nin.mode || "bundle");
+      // UNIT
+      setUnitPrice(data?.nin?.unitPrice || 250);
+      setAgentPrice(data?.nin?.agentPrice || 150);
+      setMode(data?.nin?.mode || "bundle");
+
+      // VALIDATION
+      setValidation({
+        ...data?.ninServices?.validation,
+        slipPrice: data?.ninServices?.slipPrice || 150
+      });
+
+      // IPE
+      setIpe(data?.ninServices?.ipe || {});
+
+      // MODIFICATION
+      setModification(data?.ninServices?.modification || {});
 
     } catch (err) {
       console.error(err);
@@ -42,132 +91,138 @@ export default function AdminPricing() {
   }, []);
 
   // =========================
-  // UPDATE PRICING
+  // UPDATE HANDLERS
   // =========================
-  const handleUpdate = async () => {
-    if (!unitPrice || !agentPrice) {
-      return alert("All fields are required");
-    }
-
+  const updateUnits = async () => {
     setLoading(true);
-    setSuccess(false);
+    await axios.put(`${API_BASE}/api/admin/pricing/units`, {
+      unitPrice: Number(unitPrice),
+      agentPrice: Number(agentPrice),
+      mode
+    }, { headers });
+    setLoading(false);
+    fetchPricing();
+  };
 
-    try {
-      await axios.put(
-        `${API_BASE}/api/admin/pricing`,
-        {
-          unitPrice: Number(unitPrice),
-          agentPrice: Number(agentPrice),
-          mode,
-        },
-        { headers }
-      );
+  const updateValidation = async () => {
+    setLoading(true);
+    await axios.put(`${API_BASE}/api/admin/pricing/validation`, validation, { headers });
+    setLoading(false);
+  };
 
-      setSuccess(true);
-      await fetchPricing();
+  const updateIpe = async () => {
+    setLoading(true);
+    await axios.put(`${API_BASE}/api/admin/pricing/ipe`, ipe, { headers });
+    setLoading(false);
+  };
 
-    } catch (err) {
-      console.error(err);
-      alert("Update failed");
-    }
-
+  const updateModification = async () => {
+    setLoading(true);
+    await axios.put(`${API_BASE}/api/admin/pricing/modification`, modification, { headers });
     setLoading(false);
   };
 
   if (fetching) {
-    return (
-      <div className="p-6 text-center text-gray-500">
-        Loading pricing...
-      </div>
-    );
+    return <div className="p-6 text-center">Loading...</div>;
   }
 
   return (
-    <div className="max-w-lg mx-auto bg-white dark:bg-[#1A1A1A] p-6 rounded-2xl shadow-lg">
+    <div className="max-w-4xl mx-auto space-y-8">
 
-      {/* HEADER */}
-      <h2 className="text-2xl font-bold mb-2 dark:text-white">
-        Unit Pricing Control
-      </h2>
-
-      <p className="text-sm text-gray-500 mb-6">
-        Control how users are charged for verification.
-      </p>
-
-      {/* UNIT PRICE */}
-      <div className="mb-4">
-        <label className="text-sm text-gray-600 dark:text-gray-300">
-          Price Per Unit (₦)
-        </label>
-        <input
-          type="number"
-          value={unitPrice}
-          onChange={(e) => setUnitPrice(e.target.value)}
-          className="w-full border p-3 rounded-xl mt-1"
-        />
-      </div>
-
-      {/* AGENT PRICE */}
-      <div className="mb-4">
-        <label className="text-sm text-gray-600 dark:text-gray-300">
-          Agent Price (₦)
-        </label>
-        <input
-          type="number"
-          value={agentPrice}
-          onChange={(e) => setAgentPrice(e.target.value)}
-          className="w-full border p-3 rounded-xl mt-1"
-        />
-      </div>
-
-      {/* MODE */}
-      <div className="mb-4">
-        <label className="text-sm font-semibold dark:text-white">
-          Pricing Mode
-        </label>
+      {/* ================= UNIT ================= */}
+      <Section title="Unit Pricing">
+        <Input label="Unit Price" value={unitPrice} set={setUnitPrice} />
+        <Input label="Agent Price" value={agentPrice} set={setAgentPrice} />
 
         <select
           value={mode}
           onChange={(e) => setMode(e.target.value)}
-          className="w-full border p-3 rounded-xl mt-1"
+          className="w-full border p-2 rounded"
         >
-          <option value="bundle">Bundle (1 Unit = All Slips)</option>
-          <option value="single">Single (1 Unit = 1 Slip)</option>
+          <option value="bundle">Bundle</option>
+          <option value="single">Single</option>
         </select>
-      </div>
 
-      {/* SUMMARY */}
-      <div className="mt-6 p-4 bg-gray-50 dark:bg-[#111] rounded-xl text-sm">
-        <p>💡 System Behavior:</p>
+        <Button onClick={updateUnits} loading={loading} />
+      </Section>
 
-        {mode === "bundle" ? (
-          <p>• 1 Unit unlocks ALL slips</p>
-        ) : (
-          <p>• 1 Unit per slip</p>
-        )}
+      {/* ================= VALIDATION ================= */}
+      <Section title="Validation Pricing">
+        {Object.keys(validation).map((key) => (
+          <Input
+            key={key}
+            label={key}
+            value={validation[key]}
+            set={(val) => setValidation({ ...validation, [key]: val })}
+          />
+        ))}
+        <Button onClick={updateValidation} loading={loading} />
+      </Section>
 
-        <p>• User Price: ₦{unitPrice}</p>
-        <p>• Agent Price: ₦{agentPrice}</p>
-      </div>
+      {/* ================= IPE ================= */}
+      <Section title="IPE Pricing">
+        {Object.keys(ipe).map((key) => (
+          <Input
+            key={key}
+            label={key}
+            value={ipe[key]}
+            set={(val) => setIpe({ ...ipe, [key]: val })}
+          />
+        ))}
+        <Button onClick={updateIpe} loading={loading} />
+      </Section>
 
-      {/* BUTTON */}
-      <button
-        onClick={handleUpdate}
-        disabled={loading}
-        className={`w-full mt-6 py-3 rounded-xl text-white ${
-          loading ? "bg-gray-400" : "bg-blue-600"
-        }`}
-      >
-        {loading ? "Updating..." : "Save Settings"}
-      </button>
-
-      {/* SUCCESS */}
-      {success && (
-        <div className="mt-4 text-green-600 text-center text-sm">
-          ✅ Settings updated successfully
-        </div>
-      )}
+      {/* ================= MODIFICATION ================= */}
+      <Section title="Modification Pricing">
+        {Object.keys(modification).map((key) => (
+          <Input
+            key={key}
+            label={key}
+            value={modification[key]}
+            set={(val) => setModification({ ...modification, [key]: val })}
+          />
+        ))}
+        <Button onClick={updateModification} loading={loading} />
+      </Section>
 
     </div>
+  );
+}
+
+// =========================
+// UI COMPONENTS
+// =========================
+function Section({ title, children }) {
+  return (
+    <div className="bg-white p-6 rounded-xl shadow">
+      <h2 className="text-xl font-bold mb-4">{title}</h2>
+      <div className="space-y-3">{children}</div>
+    </div>
+  );
+}
+
+function Input({ label, value, set }) {
+  return (
+    <div>
+      <label className="text-sm">{label}</label>
+      <input
+        type="number"
+        value={value || ""}
+        onChange={(e) => set(e.target.value)}
+        className="w-full border p-2 rounded"
+      />
+    </div>
+  );
+}
+
+function Button({ onClick, loading }) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={loading}
+      className="w-full bg-blue-600 text-white py-2 rounded mt-3"
+    >
+      {loading ? "Saving..." : "Save"}
+    </button>
   );
 }

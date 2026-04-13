@@ -4,11 +4,10 @@ import axios from "axios";
 const API_BASE = "https://xcombinator.onrender.com";
 
 export default function AdminRequests() {
+
   const [requests, setRequests] = useState([]);
   const [filter, setFilter] = useState("all");
   const [loadingId, setLoadingId] = useState(null);
-
-  // 🔥 store file per request (NOT global)
   const [files, setFiles] = useState({});
 
   const headers = {
@@ -16,14 +15,11 @@ export default function AdminRequests() {
   };
 
   // =========================
-  // FETCH REQUESTS
+  // FETCH
   // =========================
   const fetchRequests = async () => {
     try {
-      const res = await axios.get(
-        `${API_BASE}/api/admin/requests`,
-        { headers }
-      );
+      const res = await axios.get(`${API_BASE}/api/admin/requests`, { headers });
 
       const sorted = res.data.sort((a, b) => {
         if (a.status === "pending") return -1;
@@ -33,7 +29,7 @@ export default function AdminRequests() {
 
       setRequests(sorted);
     } catch (err) {
-      console.error("Fetch error:", err);
+      console.error(err);
     }
   };
 
@@ -42,71 +38,50 @@ export default function AdminRequests() {
   }, []);
 
   // =========================
-  // APPROVE
+  // ACTIONS
   // =========================
   const approve = async (id) => {
     setLoadingId(id);
-
     try {
-      await axios.post(
-        `${API_BASE}/api/admin/requests/${id}/approve`,
-        {},
-        { headers }
-      );
-
+      await axios.post(`${API_BASE}/api/admin/requests/${id}/approve`, {}, { headers });
       fetchRequests();
-    } catch (err) {
-      console.error(err);
+    } catch {
       alert("Approval failed");
     }
-
     setLoadingId(null);
   };
 
-  // =========================
-  // REJECT
-  // =========================
   const reject = async (id) => {
     setLoadingId(id);
-
     try {
-      await axios.post(
-        `${API_BASE}/api/admin/requests/${id}/reject`,
-        {},
-        { headers }
-      );
-
+      await axios.post(`${API_BASE}/api/admin/requests/${id}/reject`, {}, { headers });
       fetchRequests();
-    } catch (err) {
-      console.error(err);
+    } catch {
       alert("Rejection failed");
     }
-
     setLoadingId(null);
   };
 
   // =========================
-  // HANDLE FILE (PER CARD)
+  // FILE HANDLING
   // =========================
   const handleFile = (e, id) => {
     const file = e.target.files[0];
     if (!file) return;
 
-    // 🔥 VALIDATE TYPE
     if (file.type !== "application/pdf") {
       return alert("Only PDF allowed");
     }
 
-    // 🔥 VALIDATE SIZE (~2MB)
     if (file.size > 2 * 1024 * 1024) {
-      return alert("File too large (max 2MB)");
+      return alert("Max size is 2MB");
     }
 
     const reader = new FileReader();
     reader.readAsDataURL(file);
 
     reader.onloadend = () => {
-      setFiles((prev) => ({
+      setFiles(prev => ({
         ...prev,
         [id]: {
           data: reader.result,
@@ -116,13 +91,8 @@ export default function AdminRequests() {
     };
   };
 
-  // =========================
-  // UPLOAD SLIP
-  // =========================
   const uploadSlip = async (id) => {
-    if (!files[id]) {
-      return alert("Select a PDF first");
-    }
+    if (!files[id]) return alert("Select PDF first");
 
     setLoadingId(id);
 
@@ -133,17 +103,16 @@ export default function AdminRequests() {
         { headers }
       );
 
-      // 🔥 CLEAR FILE AFTER UPLOAD
-      setFiles((prev) => {
-        const updated = { ...prev };
-        delete updated[id];
-        return updated;
+      // clear file
+      setFiles(prev => {
+        const copy = { ...prev };
+        delete copy[id];
+        return copy;
       });
 
       fetchRequests();
 
-    } catch (err) {
-      console.error(err);
+    } catch {
       alert("Upload failed");
     }
 
@@ -153,10 +122,38 @@ export default function AdminRequests() {
   // =========================
   // FILTER
   // =========================
-  const filtered = requests.filter((r) => {
-    if (filter === "all") return true;
-    return r.status === filter;
-  });
+  const filtered = requests.filter(r =>
+    filter === "all" ? true : r.status === filter
+  );
+
+  // =========================
+  // HELPERS
+  // =========================
+  const serviceStyle = (service) => {
+    switch (service) {
+      case "validation":
+        return "bg-blue-100 text-blue-700";
+      case "ipe":
+        return "bg-purple-100 text-purple-700";
+      case "modification":
+        return "bg-orange-100 text-orange-700";
+      default:
+        return "bg-gray-100";
+    }
+  };
+
+  const statusStyle = (status) => {
+    switch (status) {
+      case "pending":
+        return "bg-yellow-400";
+      case "approved":
+        return "bg-green-500 text-white";
+      case "completed":
+        return "bg-blue-600 text-white";
+      default:
+        return "bg-red-500 text-white";
+    }
+  };
 
   return (
     <div className="p-6 max-w-6xl mx-auto">
@@ -167,19 +164,17 @@ export default function AdminRequests() {
       </h1>
 
       <p className="text-gray-500 mb-6">
-        Manage validation, IPE & modification jobs
+        Payment → Approval → Processing → Delivery
       </p>
 
       {/* FILTER */}
       <div className="flex gap-3 mb-6 flex-wrap">
-        {["all", "pending", "approved", "rejected", "completed"].map((f) => (
+        {["all", "pending", "approved", "completed", "rejected"].map(f => (
           <button
             key={f}
             onClick={() => setFilter(f)}
             className={`px-4 py-1 rounded text-sm ${
-              filter === f
-                ? "bg-blue-600 text-white"
-                : "bg-gray-200"
+              filter === f ? "bg-blue-600 text-white" : "bg-gray-200"
             }`}
           >
             {f.toUpperCase()}
@@ -187,19 +182,11 @@ export default function AdminRequests() {
         ))}
       </div>
 
-      {/* EMPTY */}
-      {filtered.length === 0 && (
-        <p className="text-gray-500">No requests found</p>
-      )}
-
       {/* GRID */}
       <div className="grid md:grid-cols-2 gap-5">
 
-        {filtered.map((r) => (
-          <div
-            key={r._id}
-            className="bg-white p-5 rounded-xl shadow border"
-          >
+        {filtered.map(r => (
+          <div key={r._id} className="bg-white p-5 rounded-xl shadow border">
 
             {/* TOP */}
             <div className="flex justify-between items-center mb-2">
@@ -207,24 +194,18 @@ export default function AdminRequests() {
                 {r.userId?.email}
               </p>
 
-              <span
-                className={`text-xs px-2 py-1 rounded ${
-                  r.status === "pending"
-                    ? "bg-yellow-400"
-                    : r.status === "approved"
-                    ? "bg-green-500 text-white"
-                    : r.status === "completed"
-                    ? "bg-blue-600 text-white"
-                    : "bg-red-500 text-white"
-                }`}
-              >
+              <span className={`text-xs px-2 py-1 rounded ${statusStyle(r.status)}`}>
                 {r.status}
               </span>
             </div>
 
+            {/* SERVICE BADGE */}
+            <div className={`inline-block px-3 py-1 text-xs rounded mb-2 ${serviceStyle(r.service)}`}>
+              {r.service?.toUpperCase()}
+            </div>
+
             {/* DETAILS */}
             <div className="text-sm space-y-1 mb-3">
-              <p><b>Service:</b> {r.service}</p>
               <p><b>Type:</b> {r.type}</p>
               <p><b>NIN:</b> {r.nin}</p>
               <p><b>Slip:</b> {r.slipType}</p>
@@ -240,17 +221,13 @@ export default function AdminRequests() {
               />
             )}
 
-            {/* PENDING ACTION */}
+            {/* PENDING */}
             {r.status === "pending" && (
               <div className="flex gap-2">
                 <button
                   onClick={() => approve(r._id)}
                   disabled={loadingId === r._id}
-                  className={`flex-1 py-2 rounded text-white text-sm ${
-                    loadingId === r._id
-                      ? "bg-gray-400"
-                      : "bg-green-600"
-                  }`}
+                  className="flex-1 py-2 rounded bg-green-600 text-white"
                 >
                   {loadingId === r._id ? "Processing..." : "Approve"}
                 </button>
@@ -258,14 +235,14 @@ export default function AdminRequests() {
                 <button
                   onClick={() => reject(r._id)}
                   disabled={loadingId === r._id}
-                  className="flex-1 py-2 rounded bg-red-600 text-white text-sm"
+                  className="flex-1 py-2 rounded bg-red-600 text-white"
                 >
                   Reject
                 </button>
               </div>
             )}
 
-            {/* APPROVED → UPLOAD */}
+            {/* APPROVED */}
             {r.status === "approved" && (
               <div className="mt-3">
 
@@ -278,18 +255,14 @@ export default function AdminRequests() {
 
                 {files[r._id] && (
                   <p className="text-xs text-gray-500 mb-2">
-                    Selected: {files[r._id].name}
+                    📄 {files[r._id].name}
                   </p>
                 )}
 
                 <button
                   onClick={() => uploadSlip(r._id)}
                   disabled={loadingId === r._id}
-                  className={`w-full py-2 rounded text-white ${
-                    loadingId === r._id
-                      ? "bg-gray-400"
-                      : "bg-blue-600"
-                  }`}
+                  className="w-full py-2 rounded bg-blue-600 text-white"
                 >
                   {loadingId === r._id ? "Uploading..." : "Upload Slip"}
                 </button>

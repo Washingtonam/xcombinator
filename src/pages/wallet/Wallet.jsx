@@ -146,9 +146,9 @@ export default function Wallet() {
         <h2 className="font-semibold mb-3">Manual Bank Transfer</h2>
 
         <div className="bg-gray-100 p-4 rounded text-sm space-y-1">
-          <p><b>Bank:</b> Moniepoint</p>
-          <p><b>Account Number:</b> 8161495298</p>
-          <p><b>Account Name:</b> Steve Computer Warehouse Limited</p>
+          <p><b>Bank:</b> OPAY </p>
+          <p><b>Account Number:</b> 6104102697 </p>
+          <p><b>Account Name:</b> WASHINGTON AMEDU</p>
         </div>
 
         {/* AMOUNT */}
