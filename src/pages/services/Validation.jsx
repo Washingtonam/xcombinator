@@ -15,7 +15,7 @@ export default function Validation() {
   const [loading, setLoading] = useState(false);
 
   // =========================
-  // FETCH PRICING
+  // FETCH PRICING (SAFE)
   // =========================
   useEffect(() => {
     fetch(`${API}/api/pricing`)
@@ -34,11 +34,15 @@ export default function Validation() {
   const total = basePrice + extraSlip;
 
   // =========================
-  // HANDLE FILE
+  // HANDLE FILE (WITH VALIDATION)
   // =========================
   const handleFile = (e) => {
     const file = e.target.files[0];
     if (!file) return;
+
+    if (file.size > 2 * 1024 * 1024) {
+      return alert("File too large (max 2MB)");
+    }
 
     const reader = new FileReader();
     reader.readAsDataURL(file);
@@ -49,7 +53,7 @@ export default function Validation() {
   };
 
   // =========================
-  // SUBMIT (PAYMENT FLOW)
+  // SUBMIT (LOCKED PAYMENT FLOW)
   // =========================
   const submit = async () => {
     if (!selectedService || !nin) {
@@ -63,22 +67,18 @@ export default function Validation() {
     setLoading(true);
 
     try {
-      const res = await fetch(`${API}/api/submit-payment`, {
+      const res = await fetch(`${API}/api/nin-services/request`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
           userId: JSON.parse(localStorage.getItem("user")).id,
-          amount: total,
-          proof,
-
-          // 🔥 SERVICE DATA
-          type: "SERVICE",
           service: "validation",
-          serviceType: selectedService,
+          type: selectedService,
           nin,
           slipType: slip,
+          proof
         }),
       });
 
@@ -86,7 +86,7 @@ export default function Validation() {
 
       if (!res.ok) throw new Error(data.message);
 
-      alert(`✅ Payment submitted! Await admin approval`);
+      alert("✅ Payment submitted. Await admin approval.");
 
       // RESET
       setSelectedService(null);
@@ -121,10 +121,10 @@ export default function Validation() {
           <button
             key={s.key}
             onClick={() => setSelectedService(s.key)}
-            className={`p-4 rounded border ${
+            className={`p-4 rounded border transition ${
               selectedService === s.key
                 ? "bg-blue-600 text-white"
-                : "bg-white"
+                : "bg-white hover:bg-gray-100"
             }`}
           >
             <div className="font-semibold">
@@ -141,8 +141,10 @@ export default function Validation() {
           <button
             key={s}
             onClick={() => setSlip(s)}
-            className={`p-3 border rounded ${
-              slip === s ? "bg-black text-white" : ""
+            className={`p-3 border rounded transition ${
+              slip === s
+                ? "bg-black text-white"
+                : "bg-white hover:bg-gray-100"
             }`}
           >
             {s === "none"
@@ -165,20 +167,23 @@ export default function Validation() {
       <div className="bg-gray-100 p-4 rounded mb-4">
         <p>Service: ₦{basePrice}</p>
         <p>Slip: ₦{extraSlip}</p>
-        <p className="font-bold mt-2">
-          Total: ₦{total}
-        </p>
+        <p className="font-bold mt-2">Total: ₦{total}</p>
       </div>
 
       {/* BANK DETAILS */}
       <div className="bg-yellow-50 p-4 rounded mb-4 text-sm">
-        <p><b>Bank:</b> Moniepoint</p>
-        <p><b>Account Number:</b> 8161495298</p>
-        <p><b>Account Name:</b> Steve Computer Warehouse Limited</p>
+        <p><b>Bank:</b> OPAY</p>
+        <p><b>Account Number:</b> 6104102697</p>
+        <p><b>Account Name:</b> WASHINGTON AMEDU</p>
       </div>
 
-      {/* UPLOAD */}
-      <input type="file" onChange={handleFile} className="mb-4" />
+      {/* FILE UPLOAD */}
+      <input
+        type="file"
+        accept="image/*,application/pdf"
+        onChange={handleFile}
+        className="mb-4"
+      />
 
       {/* BUTTON */}
       <button

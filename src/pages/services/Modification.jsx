@@ -7,6 +7,7 @@ export default function Modification() {
   const [pricing, setPricing] = useState({});
   const [selectedType, setSelectedType] = useState(null);
   const [formData, setFormData] = useState({});
+  const [proof, setProof] = useState(null);
   const [loading, setLoading] = useState(false);
 
   // =========================
@@ -35,11 +36,34 @@ export default function Modification() {
   };
 
   // =========================
-  // SUBMIT
+  // FILE UPLOAD
+  // =========================
+  const handleFile = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (file.size > 2 * 1024 * 1024) {
+      return alert("File too large (max 2MB)");
+    }
+
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+
+    reader.onloadend = () => {
+      setProof(reader.result);
+    };
+  };
+
+  // =========================
+  // SUBMIT (LOCKED FLOW)
   // =========================
   const submit = async () => {
     if (!selectedType || !formData.nin) {
       return alert("Fill all required fields");
+    }
+
+    if (!proof) {
+      return alert("Upload payment proof");
     }
 
     setLoading(true);
@@ -56,19 +80,19 @@ export default function Modification() {
           type: selectedType,
           nin: formData.nin,
           slipType: "none",
-          amount: total,
-          proof: "manual", // 🔥 placeholder (you can upgrade later)
-          formData // 🔥 FULL FORM SENT
+          proof,
+          formData
         })
       });
 
       const data = await res.json();
       if (!res.ok) throw new Error(data.message);
 
-      alert(`Submitted successfully (₦${total})`);
+      alert("✅ Request submitted. Await admin approval.");
 
       setSelectedType(null);
       setFormData({});
+      setProof(null);
 
     } catch (err) {
       alert(err.message);
@@ -78,7 +102,7 @@ export default function Modification() {
   };
 
   // =========================
-  // SERVICE OPTIONS
+  // SERVICES
   // =========================
   const services = [
     { key: "name", label: "Name Modification" },
@@ -94,71 +118,74 @@ export default function Modification() {
         NIN Modification
       </h1>
 
-      {/* SELECT SERVICE */}
+      {/* SERVICES */}
       <div className="grid md:grid-cols-2 gap-4 mb-6">
         {services.map(s => (
           <button
             key={s.key}
             onClick={() => setSelectedType(s.key)}
-            className={`p-4 rounded border ${
+            className={`p-4 rounded-xl border transition ${
               selectedType === s.key
                 ? "bg-blue-600 text-white"
-                : "bg-white"
+                : "bg-white hover:bg-gray-100"
             }`}
           >
-            ₦{pricing?.[s.key] || 0}
+            <div className="font-bold text-lg">
+              ₦{pricing?.[s.key] || 0}
+            </div>
             <div className="text-sm">{s.label}</div>
           </button>
         ))}
       </div>
 
-      {/* ========================= */}
-      {/* 🔥 DYNAMIC FORM */}
-      {/* ========================= */}
+      {/* FORM */}
       {selectedType && (
-        <div className="bg-white p-6 rounded-xl shadow mb-6 space-y-3">
+        <div className="bg-white p-6 rounded-2xl shadow mb-6 space-y-3">
+
+          <h2 className="font-semibold text-lg mb-2">
+            Fill Details
+          </h2>
 
           {/* COMMON */}
-          <input name="nin" placeholder="NIN" onChange={handleChange} className="input" />
-          <input name="surname" placeholder="Surname" onChange={handleChange} className="input" />
-          <input name="firstname" placeholder="First Name" onChange={handleChange} className="input" />
-          <input name="middlename" placeholder="Middle Name" onChange={handleChange} className="input" />
-          <input name="email" placeholder="Email" onChange={handleChange} className="input" />
+          <Input name="nin" placeholder="NIN" onChange={handleChange} />
+          <Input name="surname" placeholder="Surname" onChange={handleChange} />
+          <Input name="firstname" placeholder="First Name" onChange={handleChange} />
+          <Input name="middlename" placeholder="Middle Name (Optional)" onChange={handleChange} />
+          <Input name="email" placeholder="Email" onChange={handleChange} />
 
-          {/* ================= NAME ================= */}
+          {/* NAME */}
           {selectedType === "name" && (
             <>
-              <input name="gsm" placeholder="Phone Number" onChange={handleChange} className="input" />
-              <input name="previousModification" placeholder="Previous Modification (Yes/No)" onChange={handleChange} className="input" />
+              <Input name="gsm" placeholder="Phone Number" onChange={handleChange} />
+              <Input name="previousModification" placeholder="Previous Modification (Yes/No)" onChange={handleChange} />
             </>
           )}
 
-          {/* ================= PHONE ================= */}
+          {/* PHONE */}
           {selectedType === "phone" && (
             <>
-              <input name="oldGsm" placeholder="Old Phone" onChange={handleChange} className="input" />
-              <input name="newGsm" placeholder="New Phone" onChange={handleChange} className="input" />
-              <input name="previousModification" placeholder="Previous Modification (Yes/No)" onChange={handleChange} className="input" />
+              <Input name="oldGsm" placeholder="Old Phone Number" onChange={handleChange} />
+              <Input name="newGsm" placeholder="New Phone Number" onChange={handleChange} />
             </>
           )}
 
-          {/* ================= ADDRESS ================= */}
+          {/* ADDRESS */}
           {selectedType === "address" && (
             <>
-              <input name="address" placeholder="New Address" onChange={handleChange} className="input" />
-              <input name="gsm" placeholder="Phone Number" onChange={handleChange} className="input" />
-              <input name="previousModification" placeholder="Previous Modification (Yes/No)" onChange={handleChange} className="input" />
+              <Input name="address" placeholder="New Address" onChange={handleChange} />
+              <Input name="gsm" placeholder="Phone Number" onChange={handleChange} />
             </>
           )}
 
-          {/* ================= DOB ================= */}
+          {/* DOB */}
           {selectedType === "dob" && (
             <>
-              <input name="gsm" placeholder="Phone" onChange={handleChange} className="input" />
-              <input name="newDob" placeholder="New Date of Birth" onChange={handleChange} className="input" />
-              <input name="oldDob" placeholder="Old Date of Birth" onChange={handleChange} className="input" />
-              <input name="gender" placeholder="Gender" onChange={handleChange} className="input" />
-              <input name="occupation" placeholder="Occupation" onChange={handleChange} className="input" />
+              <Input name="gsm" placeholder="Phone Number" onChange={handleChange} />
+              <Input name="newDob" placeholder="New Date of Birth" onChange={handleChange} />
+              <Input name="oldDob" placeholder="Old Date of Birth" onChange={handleChange} />
+              <Input name="gender" placeholder="Gender" onChange={handleChange} />
+              <Input name="maritalStatus" placeholder="Marital Status" onChange={handleChange} />
+              <Input name="occupation" placeholder="Occupation" onChange={handleChange} />
             </>
           )}
 
@@ -167,22 +194,55 @@ export default function Modification() {
 
       {/* TOTAL */}
       {selectedType && (
-        <div className="bg-gray-100 p-4 rounded mb-6">
+        <div className="bg-gray-100 p-4 rounded mb-4">
           <p className="font-bold">Total: ₦{total}</p>
         </div>
       )}
 
-      {/* SUBMIT */}
+      {/* BANK */}
+      {selectedType && (
+        <div className="bg-yellow-50 p-4 rounded mb-4 text-sm">
+          <p><b>Bank:</b> OPAY</p>
+          <p><b>Account Number:</b> 6104102697</p>
+          <p><b>Account Name:</b> WASHINGTON AMEDU</p>
+        </div>
+      )}
+
+      {/* FILE */}
+      {selectedType && (
+        <input
+          type="file"
+          accept="image/*,application/pdf"
+          onChange={handleFile}
+          className="mb-4"
+        />
+      )}
+
+      {/* BUTTON */}
       {selectedType && (
         <button
           onClick={submit}
           disabled={loading}
           className="w-full bg-blue-600 text-white py-3 rounded"
         >
-          {loading ? "Processing..." : "Submit Request"}
+          {loading ? "Submitting..." : "Submit Request"}
         </button>
       )}
 
     </div>
+  );
+}
+
+// =========================
+// INPUT COMPONENT
+// =========================
+function Input({ name, placeholder, onChange }) {
+  return (
+    <input
+      name={name}
+      placeholder={placeholder}
+      onChange={onChange}
+      className="w-full border p-3 rounded-lg"
+    />
   );
 }

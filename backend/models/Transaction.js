@@ -7,10 +7,11 @@ const transactionSchema = new mongoose.Schema({
   type: {
     type: String,
     enum: [
-      "UNIT_ADD",     // Admin adds units / payment approved
-      "UNIT_DEDUCT",  // Manual deduction
-      "NIN",          // NIN verification
-      "BVN",          // BVN verification
+      "UNIT_ADD",
+      "UNIT_DEDUCT",
+      "NIN",
+      "BVN",
+      "SERVICE", // 🔥 ADD THIS (VERY IMPORTANT)
     ],
     required: true,
   },
@@ -50,16 +51,16 @@ const transactionSchema = new mongoose.Schema({
   },
 
   // ==============================
-  // 📌 STATUS (🔥 FIXED HERE)
+  // 📌 STATUS
   // ==============================
   status: {
     type: String,
     enum: [
-      "pending",   // waiting for admin
-      "approved",  // admin approved
-      "rejected",  // admin rejected
-      "success",   // completed action (NIN/BVN)
-      "failed",    // failed action
+      "pending",
+      "approved",
+      "rejected",
+      "success",
+      "failed",
     ],
     default: "pending",
   },
@@ -77,8 +78,14 @@ const transactionSchema = new mongoose.Schema({
   // ==============================
   nin: String,
 
+  // 🔥 ADD THIS (LINK TO REQUEST)
+  requestId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "ServiceRequest",
+  },
+
   // ==============================
-  // 📷 PROOF (🔥 YOU NEED THIS)
+  // 📷 PROOF
   // ==============================
   proof: {
     type: String,
@@ -97,7 +104,7 @@ const transactionSchema = new mongoose.Schema({
   timestamps: true,
 });
 
-// ✅ FIX: prevent model crash on reload
+// ✅ SAFE EXPORT
 module.exports =
   mongoose.models.Transaction ||
   mongoose.model("Transaction", transactionSchema);

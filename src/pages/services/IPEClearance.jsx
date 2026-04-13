@@ -28,11 +28,15 @@ export default function IPEClearance() {
   const total = pricing?.[selectedType] || 0;
 
   // =========================
-  // HANDLE FILE
+  // HANDLE FILE (VALIDATED)
   // =========================
   const handleFile = (e) => {
     const file = e.target.files[0];
     if (!file) return;
+
+    if (file.size > 2 * 1024 * 1024) {
+      return alert("File too large (max 2MB)");
+    }
 
     const reader = new FileReader();
     reader.readAsDataURL(file);
@@ -43,7 +47,7 @@ export default function IPEClearance() {
   };
 
   // =========================
-  // SUBMIT (PAYMENT FLOW)
+  // SUBMIT (LOCKED PAYMENT FLOW)
   // =========================
   const submit = async () => {
     if (!selectedType || !nin) {
@@ -57,21 +61,18 @@ export default function IPEClearance() {
     setLoading(true);
 
     try {
-      const res = await fetch(`${API}/api/submit-payment`, {
+      const res = await fetch(`${API}/api/nin-services/request`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
           userId: JSON.parse(localStorage.getItem("user")).id,
-          amount: total,
-          proof,
-
-          // 🔥 SERVICE DATA
-          type: "SERVICE",
           service: "ipe",
-          serviceType: selectedType,
+          type: selectedType,
           nin,
+          slipType: "none", // 🔥 no slip here
+          proof
         }),
       });
 
@@ -79,7 +80,7 @@ export default function IPEClearance() {
 
       if (!res.ok) throw new Error(data.message);
 
-      alert("✅ Payment submitted! Await admin approval");
+      alert("✅ Payment submitted. Await admin approval.");
 
       // RESET
       setSelectedType(null);
@@ -117,10 +118,10 @@ export default function IPEClearance() {
           <button
             key={s.key}
             onClick={() => setSelectedType(s.key)}
-            className={`p-4 rounded border ${
+            className={`p-4 rounded border transition ${
               selectedType === s.key
                 ? "bg-blue-600 text-white"
-                : "bg-white"
+                : "bg-white hover:bg-gray-100"
             }`}
           >
             <div className="font-semibold">
@@ -142,20 +143,23 @@ export default function IPEClearance() {
 
       {/* TOTAL */}
       <div className="bg-gray-100 p-4 rounded mb-4">
-        <p className="font-bold">
-          Total: ₦{total}
-        </p>
+        <p className="font-bold">Total: ₦{total}</p>
       </div>
 
       {/* BANK DETAILS */}
       <div className="bg-yellow-50 p-4 rounded mb-4 text-sm">
-        <p><b>Bank:</b> Moniepoint</p>
-        <p><b>Account Number:</b> 8161495298</p>
-        <p><b>Account Name:</b> Steve Computer Warehouse Limited</p>
+        <p><b>Bank:</b> OPAY</p>
+        <p><b>Account Number:</b> 6104102697</p>
+        <p><b>Account Name:</b> WASHINGTON AMEDU</p>
       </div>
 
-      {/* UPLOAD */}
-      <input type="file" onChange={handleFile} className="mb-4" />
+      {/* FILE */}
+      <input
+        type="file"
+        accept="image/*,application/pdf"
+        onChange={handleFile}
+        className="mb-4"
+      />
 
       {/* BUTTON */}
       <button
