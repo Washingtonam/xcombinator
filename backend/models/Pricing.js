@@ -2,7 +2,7 @@ const mongoose = require("mongoose");
 
 const pricingSchema = new mongoose.Schema({
   // ==============================
-  // 🆔 NIN PRICING
+  // 🆔 NIN PRICING (UNITS ONLY)
   // ==============================
   nin: {
     mode: {
@@ -26,9 +26,13 @@ const pricingSchema = new mongoose.Schema({
   },
 
   // ==============================
-  // 🔥 NIN SERVICES
+  // 🔥 NIN SERVICES (DIRECT PAYMENT)
   // ==============================
   ninServices: {
+
+    // =========================
+    // VALIDATION
+    // =========================
     validation: {
       noRecord: { type: Number, default: 1000 },
       updateRecord: { type: Number, default: 1150 },
@@ -38,6 +42,9 @@ const pricingSchema = new mongoose.Schema({
       bypass: { type: Number, default: 1150 },
     },
 
+    // =========================
+    // IPE CLEARANCE
+    // =========================
     ipe: {
       inProcessingError: { type: Number, default: 1000 },
       stillProcessing: { type: Number, default: 1000 },
@@ -45,11 +52,24 @@ const pricingSchema = new mongoose.Schema({
       invalidTracking: { type: Number, default: 1000 },
     },
 
+    // =========================
+    // 🔥 MODIFICATION (NEW)
+    // =========================
+    modification: {
+      name: { type: Number, default: 12000 },
+      phone: { type: Number, default: 12000 },
+      address: { type: Number, default: 12000 },
+      dob: { type: Number, default: 50000 },
+    },
+
+    // =========================
+    // SLIP PRICE
+    // =========================
     slipPrice: {
       type: Number,
       default: 150,
     },
-  }, // ✅🔥 THIS COMMA WAS MISSING
+  },
 
   // ==============================
   // 🏦 BVN PRICING

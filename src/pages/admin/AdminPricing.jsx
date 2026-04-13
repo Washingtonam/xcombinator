@@ -58,24 +58,18 @@ export default function AdminPricing() {
   const fetchPricing = async () => {
     try {
       const res = await axios.get(`${API_BASE}/api/pricing`);
-
       const data = res.data;
 
-      // UNIT
       setUnitPrice(data?.nin?.unitPrice || 250);
       setAgentPrice(data?.nin?.agentPrice || 150);
       setMode(data?.nin?.mode || "bundle");
 
-      // VALIDATION
       setValidation({
         ...data?.ninServices?.validation,
         slipPrice: data?.ninServices?.slipPrice || 150
       });
 
-      // IPE
       setIpe(data?.ninServices?.ipe || {});
-
-      // MODIFICATION
       setModification(data?.ninServices?.modification || {});
 
     } catch (err) {
@@ -91,34 +85,20 @@ export default function AdminPricing() {
   }, []);
 
   // =========================
-  // UPDATE HANDLERS
+  // 🔥 SINGLE SAVE FUNCTION
   // =========================
-  const updateUnits = async () => {
+  const saveSection = async (payload) => {
     setLoading(true);
-    await axios.put(`${API_BASE}/api/admin/pricing/units`, {
-      unitPrice: Number(unitPrice),
-      agentPrice: Number(agentPrice),
-      mode
-    }, { headers });
-    setLoading(false);
-    fetchPricing();
-  };
 
-  const updateValidation = async () => {
-    setLoading(true);
-    await axios.put(`${API_BASE}/api/admin/pricing/validation`, validation, { headers });
-    setLoading(false);
-  };
+    try {
+      await axios.put(`${API_BASE}/api/admin/pricing`, payload, { headers });
+      alert("Updated successfully");
+      fetchPricing();
+    } catch (err) {
+      console.error(err);
+      alert("Update failed");
+    }
 
-  const updateIpe = async () => {
-    setLoading(true);
-    await axios.put(`${API_BASE}/api/admin/pricing/ipe`, ipe, { headers });
-    setLoading(false);
-  };
-
-  const updateModification = async () => {
-    setLoading(true);
-    await axios.put(`${API_BASE}/api/admin/pricing/modification`, modification, { headers });
     setLoading(false);
   };
 
@@ -143,7 +123,16 @@ export default function AdminPricing() {
           <option value="single">Single</option>
         </select>
 
-        <Button onClick={updateUnits} loading={loading} />
+        <Button
+          onClick={() =>
+            saveSection({
+              unitPrice: Number(unitPrice),
+              agentPrice: Number(agentPrice),
+              mode
+            })
+          }
+          loading={loading}
+        />
       </Section>
 
       {/* ================= VALIDATION ================= */}
@@ -156,7 +145,18 @@ export default function AdminPricing() {
             set={(val) => setValidation({ ...validation, [key]: val })}
           />
         ))}
-        <Button onClick={updateValidation} loading={loading} />
+
+        <Button
+          onClick={() => {
+            const { slipPrice, ...validationData } = validation;
+
+            saveSection({
+              validation: validationData,
+              slipPrice: Number(slipPrice)
+            });
+          }}
+          loading={loading}
+        />
       </Section>
 
       {/* ================= IPE ================= */}
@@ -169,7 +169,15 @@ export default function AdminPricing() {
             set={(val) => setIpe({ ...ipe, [key]: val })}
           />
         ))}
-        <Button onClick={updateIpe} loading={loading} />
+
+        <Button
+          onClick={() =>
+            saveSection({
+              ipe
+            })
+          }
+          loading={loading}
+        />
       </Section>
 
       {/* ================= MODIFICATION ================= */}
@@ -182,7 +190,15 @@ export default function AdminPricing() {
             set={(val) => setModification({ ...modification, [key]: val })}
           />
         ))}
-        <Button onClick={updateModification} loading={loading} />
+
+        <Button
+          onClick={() =>
+            saveSection({
+              modification
+            })
+          }
+          loading={loading}
+        />
       </Section>
 
     </div>
@@ -204,7 +220,7 @@ function Section({ title, children }) {
 function Input({ label, value, set }) {
   return (
     <div>
-      <label className="text-sm">{label}</label>
+      <label className="text-sm capitalize">{label}</label>
       <input
         type="number"
         value={value || ""}
