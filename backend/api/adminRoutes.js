@@ -184,29 +184,73 @@ router.post("/user/:id/units", isAdmin, async (req, res) => {
 // ==============================
 router.put("/pricing", isAdmin, async (req, res) => {
   try {
-    const { unitPrice, agentPrice, mode } = req.body;
+    const {
+      unitPrice,
+      agentPrice,
+      mode,
+
+      validation,
+      ipe,
+      modification,
+      slipPrice
+    } = req.body;
 
     let pricing = await Pricing.findOne();
 
     if (!pricing) {
-      pricing = new Pricing({
-        nin: {
-          unitPrice,
-          agentPrice,
-          mode: mode || "bundle",
-        },
+      pricing = new Pricing({});
+    }
+
+    // =========================
+    // 🔢 UNIT PRICING
+    // =========================
+    if (unitPrice !== undefined) pricing.nin.unitPrice = unitPrice;
+    if (agentPrice !== undefined) pricing.nin.agentPrice = agentPrice;
+    if (mode) pricing.nin.mode = mode;
+
+    // =========================
+    // 🔍 VALIDATION
+    // =========================
+    if (validation) {
+      Object.keys(validation).forEach(key => {
+        pricing.ninServices.validation[key] = validation[key];
       });
-    } else {
-      if (unitPrice !== undefined) pricing.nin.unitPrice = unitPrice;
-      if (agentPrice !== undefined) pricing.nin.agentPrice = agentPrice;
-      if (mode) pricing.nin.mode = mode;
+    }
+
+    // =========================
+    // 🧾 IPE
+    // =========================
+    if (ipe) {
+      Object.keys(ipe).forEach(key => {
+        pricing.ninServices.ipe[key] = ipe[key];
+      });
+    }
+
+    // =========================
+    // 🔧 MODIFICATION
+    // =========================
+    if (modification) {
+      Object.keys(modification).forEach(key => {
+        pricing.ninServices.modification[key] = modification[key];
+      });
+    }
+
+    // =========================
+    // 📄 SLIP PRICE
+    // =========================
+    if (slipPrice !== undefined) {
+      pricing.ninServices.slipPrice = slipPrice;
     }
 
     await pricing.save();
 
-    res.json({ message: "Pricing updated", pricing });
+    res.json({
+      message: "Full pricing updated successfully",
+      pricing,
+    });
 
   } catch (error) {
+    console.error("PRICING UPDATE ERROR:", error);
     res.status(500).json({ message: "Failed to update pricing" });
   }
 });
