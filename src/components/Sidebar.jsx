@@ -25,6 +25,9 @@ export default function Sidebar() {
     window.location.href = "/login";
   };
 
+  // =========================
+  // FETCH ADMIN DATA
+  // =========================
   useEffect(() => {
     if (!isAdmin) return;
 
@@ -43,10 +46,13 @@ export default function Sidebar() {
     fetchData();
   }, []);
 
+  // =========================
+  // ACTIVE LINK
+  // =========================
   const isActive = (path) => location.pathname === path;
 
   const linkClass = (path) =>
-    `flex items-center justify-between px-4 py-3 rounded-xl transition-all duration-200 group ${
+    `flex items-center justify-between px-4 py-3 rounded-xl transition-all duration-200 ${
       isActive(path)
         ? "bg-white/10 border-l-4 border-white"
         : "hover:bg-white/5"
@@ -54,7 +60,7 @@ export default function Sidebar() {
 
   return (
     <>
-      {/* 🔥 FLOATING BUTTON */}
+      {/* 🔥 FLOATING TOGGLE BUTTON */}
       <button
         onClick={() => setOpen(true)}
         className="fixed top-4 left-4 z-50 backdrop-blur-lg bg-black/70 text-white px-3 py-2 rounded-xl shadow-lg hover:scale-105 transition"
@@ -62,7 +68,7 @@ export default function Sidebar() {
         ☰
       </button>
 
-      {/* OVERLAY */}
+      {/* 🔥 OVERLAY */}
       {open && (
         <div
           onClick={() => setOpen(false)}
@@ -70,13 +76,13 @@ export default function Sidebar() {
         />
       )}
 
-      {/* SIDEBAR */}
+      {/* 🔥 SIDEBAR */}
       <div
         className={`fixed top-0 left-0 h-full w-72 z-50 transform transition-transform duration-300 ${
           open ? "translate-x-0" : "-translate-x-full"
         }`}
       >
-        <div className="h-full bg-blue-900/90 backdrop-blur-xl text-white p-6 flex flex-col justify-between shadow-2xl">
+        <div className="h-full bg-gradient-to-b from-blue-900/95 to-blue-800/90 backdrop-blur-xl text-white p-6 flex flex-col justify-between shadow-2xl">
 
           {/* HEADER */}
           <div>
@@ -98,37 +104,37 @@ export default function Sidebar() {
 
               <li>
                 <Link to="/dashboard" className={linkClass("/dashboard")} onClick={() => setOpen(false)}>
-                  <span>📊 Dashboard</span>
+                  📊 Dashboard
                 </Link>
               </li>
 
               <li>
                 <Link to="/verify-nin" className={linkClass("/verify-nin")} onClick={() => setOpen(false)}>
-                  <span>🆔 Verify NIN</span>
+                  🆔 Verify NIN
                 </Link>
               </li>
 
               <li>
                 <Link to="/nin-services" className={linkClass("/nin-services")} onClick={() => setOpen(false)}>
-                  <span>🏦 NIN Services</span>
+                  🏦 NIN Services
                 </Link>
               </li>
 
               <li>
                 <Link to="/transactions" className={linkClass("/transactions")} onClick={() => setOpen(false)}>
-                  <span>📜 Transactions</span>
+                  📜 Transactions
                 </Link>
               </li>
 
               <li>
                 <Link to="/wallet" className={linkClass("/wallet")} onClick={() => setOpen(false)}>
-                  <span>⚡ Buy Units</span>
+                  ⚡ Buy Units
                 </Link>
               </li>
 
               <li>
-                <Link to="/my-requests" className={linkClass("/my-requests")}>
-                  📦 {!collapsed && "My Requests"}
+                <Link to="/my-requests" className={linkClass("/my-requests")} onClick={() => setOpen(false)}>
+                  📦 My Requests
                 </Link>
               </li>
 
