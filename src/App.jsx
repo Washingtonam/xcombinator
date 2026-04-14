@@ -17,6 +17,7 @@ import Dashboard from "./pages/dashboard/Dashboard";
 import VerifyNIN from "./pages/verification/VerifyNIN";
 import VerifyBVN from "./pages/verification/VerifyBVN";
 import VerifyResult from "./pages/verification/VerifyResult";
+import UserRequests from "./pages/UserRequests";
 
 import NINServices from "./pages/services/NINServices";
 import Validation from "./pages/services/Validation";
