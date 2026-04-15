@@ -12,6 +12,7 @@ export default function VerifyNIN() {
 
   const [nin, setNin] = useState("");
   const [phone, setPhone] = useState("");
+  const [trackingId, setTrackingId] = useState("");
 
   const [form, setForm] = useState({
     firstname: "",
@@ -21,7 +22,13 @@ export default function VerifyNIN() {
   });
 
   // =========================
-  // VERIFY (FIXED)
+  // 🔥 UNIT DISPLAY
+  // =========================
+  const unitsRequired =
+    method === "phone" || method === "demographic" ? 2 : 1;
+
+  // =========================
+  // VERIFY
   // =========================
   const handleVerify = async () => {
     if (loading) return;
@@ -37,49 +44,69 @@ export default function VerifyNIN() {
       return alert("Enter valid phone number");
     }
 
-    if (method === "demo") {
+    if (method === "tracking" && !trackingId) {
+      return alert("Enter tracking ID");
+    }
+
+    if (method === "demographic") {
       if (!form.firstname || !form.surname || !form.gender || !form.birthdate) {
         return alert("Complete all demographic fields");
       }
     }
 
-    // =========================
-    // 🔥 ADMIN BYPASS FIX
-    // =========================
     const isAdmin =
       user?.email?.toLowerCase().trim() === "washingtonamedu@gmail.com";
 
-    if (!isAdmin && units < 1) {
-      return alert("Insufficient units");
+    if (!isAdmin && units < unitsRequired) {
+      return alert(`This action requires ${unitsRequired} units`);
     }
 
     setLoading(true);
 
     try {
-      // =========================
-      // ⚡ WAKE SERVER (Render sleep fix)
-      // =========================
+      // Wake server
       await fetch("https://xcombinator.onrender.com/api/pricing");
 
-      // =========================
-      // ⏱ TIMEOUT CONTROL
-      // =========================
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 15000);
 
+      // =========================
+      // 🔥 BUILD PAYLOAD
+      // =========================
+      let payloadData = {};
+
+      if (method === "nin") {
+        payloadData = { nin };
+      }
+
+      if (method === "phone") {
+        payloadData = { phone };
+      }
+
+      if (method === "tracking") {
+        payloadData = { tracking_id: trackingId };
+      }
+
+      if (method === "demographic") {
+        payloadData = {
+          firstname: form.firstname,
+          lastname: form.surname,
+          gender: form.gender.toLowerCase(),
+          dob: form.birthdate,
+        };
+      }
+
       const res = await fetch(
-        "https://xcombinator.onrender.com/api/verify-nin",
+        "https://xcombinator.onrender.com/api/verify",
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            method,
-            nin,
-            phone,
-            ...form,
             userId: user.id,
+            method,
+            data: payloadData,
           }),
           signal: controller.signal,
         }
@@ -94,7 +121,7 @@ export default function VerifyNIN() {
       }
 
       // =========================
-      // ✅ SUCCESS FLOW
+      // SUCCESS
       // =========================
       setUnits(data.units);
       setMode(data.mode || "bundle");
@@ -104,12 +131,12 @@ export default function VerifyNIN() {
       navigate("/verify-result");
 
     } catch (err) {
-      console.error("VERIFY ERROR:", err);
+      console.error(err);
 
       if (err.name === "AbortError") {
         alert("⏳ Server timeout. Try again.");
       } else {
-        alert("⚠️ Server waking up... try again.");
+        alert(err.message || "Verification failed");
       }
     }
 
@@ -124,21 +151,27 @@ export default function VerifyNIN() {
 
       <p className="text-gray-500 mb-6">
         {mode === "bundle"
-          ? "Use 1 unit to unlock all NIN slips"
-          : "Use 1 unit per slip"}
+          ? "Use units to unlock verification"
+          : "Pay per verification"}
       </p>
 
       {/* BALANCE */}
-      <div className="bg-black text-white p-4 rounded-lg mb-6">
+      <div className="bg-black text-white p-4 rounded-lg mb-4">
         Units Available: <b>{units}</b>
       </div>
 
+      {/* 🔥 COST DISPLAY */}
+      <div className="bg-blue-50 text-blue-700 p-3 rounded mb-6 text-sm">
+        This verification will cost <b>{unitsRequired} unit(s)</b>
+      </div>
+
       {/* METHOD */}
-      <div className="grid grid-cols-3 gap-3 mb-6">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
         {[
           { key: "nin", label: "NIN" },
           { key: "phone", label: "Phone" },
-          { key: "demo", label: "Demographic" },
+          { key: "demographic", label: "Demographic" },
+          { key: "tracking", label: "Tracking ID" },
         ].map((m) => (
           <div
             key={m.key}
@@ -177,7 +210,17 @@ export default function VerifyNIN() {
           />
         )}
 
-        {method === "demo" && (
+        {method === "tracking" && (
+          <input
+            type="text"
+            placeholder="Enter Tracking ID"
+            value={trackingId}
+            onChange={(e) => setTrackingId(e.target.value)}
+            className="w-full border p-3 rounded"
+          />
+        )}
+
+        {method === "demographic" && (
           <div className="grid grid-cols-2 gap-3">
             <input
               placeholder="First Name"
@@ -202,8 +245,8 @@ export default function VerifyNIN() {
               className="border p-3 rounded"
             >
               <option value="">Gender</option>
-              <option>Male</option>
-              <option>Female</option>
+              <option value="male">Male</option>
+              <option value="female">Female</option>
             </select>
 
             <input
@@ -218,13 +261,13 @@ export default function VerifyNIN() {
 
       </div>
 
-      {/* VERIFY BUTTON */}
+      {/* BUTTON */}
       <button
         onClick={handleVerify}
         disabled={loading}
         className="w-full bg-black text-white py-3 rounded-lg"
       >
-        {loading ? "Verifying... ⏳" : "Verify Identity"}
+        {loading ? "Verifying... ⏳" : `Verify (${unitsRequired} unit${unitsRequired > 1 ? "s" : ""})`}
       </button>
 
       {/* LOADING */}

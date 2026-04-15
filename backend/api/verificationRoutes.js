@@ -11,30 +11,15 @@ const API_KEY = process.env.NIN_API_KEY;
 const API_KEY_BACKUP = process.env.NIN_API_KEY_BACKUP;
 const ADMIN_EMAIL = "washingtonamedu@gmail.com";
 
-// MOCK DATA
-const mockData = {
-  firstname: "JOHN",
-  middlename: "DOE",
-  surname: "TEST",
-  nin: "00000000000",
-  birthdate: "1995-01-01",
-  gender: "Male",
-  telephoneno: "08000000000",
-  residence_address: "Test Address, Lagos",
-  residence_state: "Lagos",
-  residence_lga: "Ikeja",
-  photo: null,
-};
-
-router.post("/verify-nin", async (req, res) => {
-  const { nin, userId } = req.body;
+// ==============================
+// 🔥 UNIVERSAL VERIFY ROUTE
+// ==============================
+router.post("/verify", async (req, res) => {
+  const { userId, method, data } = req.body;
 
   try {
-    // ==========================
-    // VALIDATION
-    // ==========================
-    if (!nin || nin.length !== 11) {
-      return res.status(400).json({ error: "Invalid NIN" });
+    if (!userId || !method) {
+      return res.status(400).json({ error: "Missing fields" });
     }
 
     const user = await User.findById(userId);
@@ -52,39 +37,65 @@ router.post("/verify-nin", async (req, res) => {
     const mode = pricing?.nin?.mode || "bundle";
 
     // ==========================
-    // 🧪 MOCK MODE (ALWAYS WORKS)
+    // 🔥 UNIT LOGIC
     // ==========================
-    if (nin === "00000000000") {
-      if (!isAdmin) {
-        if (user.units < 1) {
-          return res.status(400).json({ error: "Insufficient units" });
-        }
+    let unitsRequired = 1;
 
-        user.units -= 1;
-        await user.save();
-      }
-
-      await Transaction.create({
-        type: "NIN",
-        nin,
-        unitsUsed: isAdmin ? 0 : 1,
-        status: "success",
-        userId: user._id,
-      });
-
-      return res.json({
-        status: "success",
-        data: mockData,
-        units: user.units,
-        mode,
-      });
+    if (method === "phone" || method === "demographic") {
+      unitsRequired = 2;
     }
 
     // ==========================
     // 💳 UNIT CHECK
     // ==========================
-    if (!isAdmin && user.units < 1) {
+    if (!isAdmin && user.units < unitsRequired) {
       return res.status(400).json({ error: "Insufficient units" });
+    }
+
+    // ==========================
+    // 🔥 API CONFIG
+    // ==========================
+    let url = "";
+    let payload = {};
+
+    if (method === "nin") {
+      if (!data?.nin || data.nin.length !== 11) {
+        return res.status(400).json({ error: "Invalid NIN" });
+      }
+
+      url = "https://ninbvnportal.com.ng/api/nin-verification";
+      payload = { nin: data.nin, consent: true };
+    }
+
+    if (method === "phone") {
+      url = "https://checkmyninbvn.com.ng/api/nin-phone";
+      payload = {
+        phone: data.phone,
+        consent: true,
+      };
+    }
+
+    if (method === "tracking") {
+      url = "https://checkmyninbvn.com.ng/api/nin-tracking";
+      payload = {
+        tracking_id: data.tracking_id,
+        consent: true,
+      };
+    }
+
+    if (method === "demographic") {
+      url = "https://checkmyninbvn.com.ng/api/nin-demography";
+      payload = {
+        firstname: data.firstname,
+        lastname: data.lastname,
+        gender: data.gender,
+        dob: data.dob,
+        consent: true,
+      };
+    }
+
+    if (!url) {
+      return res.status(400).json({ error: "Invalid method" });
     }
 
     // ==========================
@@ -93,78 +104,63 @@ router.post("/verify-nin", async (req, res) => {
     let apiData;
 
     try {
-      const primary = await axios.post(
-        "https://ninbvnportal.com.ng/api/nin-verification",
-        { nin, consent: true },
-        {
+      const primary = await axios.post(url, payload, {
+        headers: {
+          "x-api-key": API_KEY,
+          "Content-Type": "application/json",
+        },
+        timeout: 15000,
+      });
+
+      apiData = primary.data;
+      console.log("✅ PRIMARY USED");
+
+    } catch (err) {
+      console.log("⚠️ PRIMARY FAILED → TRY BACKUP");
+
+      try {
+        const backup = await axios.post(url, payload, {
           headers: {
-            "x-api-key": API_KEY,
+            "x-api-key": API_KEY_BACKUP,
             "Content-Type": "application/json",
           },
           timeout: 15000,
-        }
-      );
+        });
 
-      if (primary.data.status === "success") {
-        apiData = primary.data;
-        console.log("✅ PRIMARY API USED");
-      } else {
-        throw new Error("Primary failed");
-      }
+        apiData = backup.data;
+        console.log("✅ BACKUP USED");
 
-    } catch (primaryError) {
-      console.log("⚠️ PRIMARY FAILED → SWITCHING TO BACKUP");
-
-      try {
-        const backup = await axios.post(
-          "https://ninbvnportal.com.ng/api/nin-verification",
-          { nin, consent: true },
-          {
-            headers: {
-              "x-api-key": API_KEY_BACKUP,
-              "Content-Type": "application/json",
-            },
-            timeout: 15000,
-          }
-        );
-
-        if (backup.data.status === "success") {
-          apiData = backup.data;
-          console.log("✅ BACKUP API USED");
-        } else {
-          throw new Error("Backup failed");
-        }
-
-      } catch (backupError) {
-        console.error("❌ BOTH APIs FAILED");
-
+      } catch (backupErr) {
         return res.status(500).json({
-          error: "Verification service unavailable. Try again later.",
+          error: "Verification service unavailable",
         });
       }
     }
 
-    const cleanData = apiData.data?.data || apiData.data;
+    const cleanData = apiData?.data?.data || apiData?.data || apiData;
 
     // ==========================
-    // 🔥 DEDUCT UNIT
+    // 🔥 DEDUCT UNITS
     // ==========================
     if (!isAdmin) {
-      user.units -= 1;
+      user.units -= unitsRequired;
       await user.save();
     }
 
+    // ==========================
+    // 🔥 TRANSACTION LOG
+    // ==========================
     await Transaction.create({
       type: "NIN",
-      nin,
-      unitsUsed: isAdmin ? 0 : 1,
-      status: "success",
+      unitsUsed: isAdmin ? 0 : unitsRequired,
       userId: user._id,
+      status: "success",
     });
 
     return res.json({
       status: "success",
       data: cleanData,
+      unitsUsed: unitsRequired,
       units: user.units,
       mode,
     });
