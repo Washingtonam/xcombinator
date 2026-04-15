@@ -21,21 +21,14 @@ export default function VerifyNIN() {
     birthdate: "",
   });
 
-  // =========================
-  // 🔥 UNIT DISPLAY
-  // =========================
+  // 🔥 FIXED UNIT LOGIC
   const unitsRequired =
-    method === "phone" || method === "demographic" ? 2 : 1;
+    ["phone", "demographic", "tracking"].includes(method) ? 2 : 1;
 
-  // =========================
-  // VERIFY
-  // =========================
   const handleVerify = async () => {
     if (loading) return;
 
-    // =========================
-    // VALIDATION
-    // =========================
+    // ================= VALIDATION =================
     if (method === "nin" && nin.length !== 11) {
       return alert("Enter valid 11-digit NIN");
     }
@@ -64,36 +57,34 @@ export default function VerifyNIN() {
     setLoading(true);
 
     try {
-      // Wake server
       await fetch("https://xcombinator.onrender.com/api/pricing");
 
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 15000);
 
-      // =========================
-      // 🔥 BUILD PAYLOAD
-      // =========================
-      let payloadData = {};
+      // ================= 🔥 FIXED PAYLOAD =================
+      let payload = {
+        userId: user.id,
+        method,
+      };
 
       if (method === "nin") {
-        payloadData = { nin };
+        payload.nin = nin;
       }
 
       if (method === "phone") {
-        payloadData = { phone };
+        payload.phone = phone;
       }
 
       if (method === "tracking") {
-        payloadData = { tracking_id: trackingId };
+        payload.tracking_id = trackingId;
       }
 
       if (method === "demographic") {
-        payloadData = {
-          firstname: form.firstname,
-          lastname: form.surname,
-          gender: form.gender.toLowerCase(),
-          dob: form.birthdate,
-        };
+        payload.firstname = form.firstname;
+        payload.surname = form.surname;
+        payload.gender = form.gender;
+        payload.birthdate = form.birthdate;
       }
 
       const res = await fetch(
@@ -103,11 +94,7 @@ export default function VerifyNIN() {
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({
-            userId: user.id,
-            method,
-            data: payloadData,
-          }),
+          body: JSON.stringify(payload),
           signal: controller.signal,
         }
       );
@@ -120,14 +107,11 @@ export default function VerifyNIN() {
         throw new Error(data.error || "Verification failed");
       }
 
-      // =========================
-      // SUCCESS
-      // =========================
+      // ================= SUCCESS =================
       setUnits(data.units);
       setMode(data.mode || "bundle");
 
       localStorage.setItem("nin_result", JSON.stringify(data));
-
       navigate("/verify-result");
 
     } catch (err) {
@@ -146,23 +130,22 @@ export default function VerifyNIN() {
   return (
     <div className="max-w-2xl mx-auto">
 
-      {/* HEADER */}
       <h1 className="text-2xl font-bold mb-2">Verify Identity</h1>
 
-      <p className="text-gray-500 mb-6">
+      <p className="text-gray-500 mb-4">
         {mode === "bundle"
-          ? "Use units to unlock verification"
+          ? "Use units to verify identities"
           : "Pay per verification"}
       </p>
 
       {/* BALANCE */}
-      <div className="bg-black text-white p-4 rounded-lg mb-4">
+      <div className="bg-black text-white p-4 rounded-lg mb-3">
         Units Available: <b>{units}</b>
       </div>
 
-      {/* 🔥 COST DISPLAY */}
+      {/* COST */}
       <div className="bg-blue-50 text-blue-700 p-3 rounded mb-6 text-sm">
-        This verification will cost <b>{unitsRequired} unit(s)</b>
+        Cost: <b>{unitsRequired} unit(s)</b>
       </div>
 
       {/* METHOD */}
@@ -171,15 +154,15 @@ export default function VerifyNIN() {
           { key: "nin", label: "NIN" },
           { key: "phone", label: "Phone" },
           { key: "demographic", label: "Demographic" },
-          { key: "tracking", label: "Tracking ID" },
+          { key: "tracking", label: "Tracking" },
         ].map((m) => (
           <div
             key={m.key}
             onClick={() => setMethod(m.key)}
-            className={`p-3 rounded-lg border cursor-pointer text-center ${
+            className={`p-3 rounded-lg border cursor-pointer text-center transition ${
               method === m.key
                 ? "bg-blue-600 text-white"
-                : "bg-white"
+                : "bg-white hover:bg-gray-100"
             }`}
           >
             {m.label}
@@ -187,13 +170,12 @@ export default function VerifyNIN() {
         ))}
       </div>
 
-      {/* INPUT */}
+      {/* INPUTS */}
       <div className="mb-6">
 
         {method === "nin" && (
           <input
-            type="text"
-            placeholder="Enter 11-digit NIN"
+            placeholder="Enter NIN"
             value={nin}
             onChange={(e) => setNin(e.target.value)}
             className="w-full border p-3 rounded"
@@ -202,8 +184,7 @@ export default function VerifyNIN() {
 
         {method === "phone" && (
           <input
-            type="text"
-            placeholder="Enter Phone Number"
+            placeholder="Enter phone"
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
             className="w-full border p-3 rounded"
@@ -212,8 +193,7 @@ export default function VerifyNIN() {
 
         {method === "tracking" && (
           <input
-            type="text"
-            placeholder="Enter Tracking ID"
+            placeholder="Enter tracking ID"
             value={trackingId}
             onChange={(e) => setTrackingId(e.target.value)}
             className="w-full border p-3 rounded"
@@ -224,36 +204,25 @@ export default function VerifyNIN() {
           <div className="grid grid-cols-2 gap-3">
             <input
               placeholder="First Name"
-              onChange={(e) =>
-                setForm({ ...form, firstname: e.target.value })
-              }
+              onChange={(e) => setForm({ ...form, firstname: e.target.value })}
               className="border p-3 rounded"
             />
-
             <input
               placeholder="Surname"
-              onChange={(e) =>
-                setForm({ ...form, surname: e.target.value })
-              }
+              onChange={(e) => setForm({ ...form, surname: e.target.value })}
               className="border p-3 rounded"
             />
-
             <select
-              onChange={(e) =>
-                setForm({ ...form, gender: e.target.value })
-              }
+              onChange={(e) => setForm({ ...form, gender: e.target.value })}
               className="border p-3 rounded"
             >
               <option value="">Gender</option>
               <option value="male">Male</option>
               <option value="female">Female</option>
             </select>
-
             <input
               type="date"
-              onChange={(e) =>
-                setForm({ ...form, birthdate: e.target.value })
-              }
+              onChange={(e) => setForm({ ...form, birthdate: e.target.value })}
               className="border p-3 rounded"
             />
           </div>
@@ -265,24 +234,10 @@ export default function VerifyNIN() {
       <button
         onClick={handleVerify}
         disabled={loading}
-        className="w-full bg-black text-white py-3 rounded-lg"
+        className="w-full bg-black text-white py-3 rounded-lg hover:opacity-90"
       >
-        {loading ? "Verifying... ⏳" : `Verify (${unitsRequired} unit${unitsRequired > 1 ? "s" : ""})`}
+        {loading ? "Verifying..." : `Verify (${unitsRequired} unit${unitsRequired > 1 ? "s" : ""})`}
       </button>
-
-      {/* LOADING */}
-      {loading && (
-        <div className="mt-4 text-sm text-gray-500 text-center">
-          🔍 Connecting to server...
-        </div>
-      )}
-
-      {/* TRUST */}
-      <div className="mt-10 text-xs text-gray-500 space-y-2">
-        <p>✔ Secure verification</p>
-        <p>✔ User consent required</p>
-        <p>✔ Not affiliated with NIMC</p>
-      </div>
 
     </div>
   );

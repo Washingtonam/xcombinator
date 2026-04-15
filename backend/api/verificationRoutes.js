@@ -8,26 +8,32 @@ const Pricing = require("../models/Pricing");
 const router = express.Router();
 
 const API_KEY = process.env.NIN_API_KEY;
-const API_KEY_BACKUP = process.env.NIN_API_KEY_BACKUP;
 const ADMIN_EMAIL = "washingtonamedu@gmail.com";
 
-// ✅ MOCK (CRITICAL FOR TESTING)
+// ✅ MOCK
 const mockData = {
   firstname: "JOHN",
-  middlename: "DOE",
   surname: "TEST",
   nin: "00000000000",
   birthdate: "1995-01-01",
   gender: "Male",
-  telephoneno: "08000000000",
-  residence_address: "Test Address, Lagos",
 };
 
 // ==============================
-// 🔥 UNIVERSAL VERIFY ROUTE
+// 🔥 VERIFY
 // ==============================
 router.post("/verify", async (req, res) => {
-  const { userId, method, nin, phone, tracking_id, firstname, surname, gender, birthdate } = req.body;
+  const {
+    userId,
+    method,
+    nin,
+    phone,
+    tracking_id,
+    firstname,
+    surname,
+    gender,
+    birthdate,
+  } = req.body;
 
   try {
     if (!userId || !method) {
@@ -45,7 +51,7 @@ router.post("/verify", async (req, res) => {
     const mode = pricing?.nin?.mode || "bundle";
 
     // ==========================
-    // 🔥 MOCK TEST (ALWAYS WORKS)
+    // 🔥 MOCK
     // ==========================
     if (nin === "00000000000") {
       if (!isAdmin && user.units < 1) {
@@ -77,7 +83,7 @@ router.post("/verify", async (req, res) => {
     // ==========================
     let unitsRequired = 1;
 
-    if (method === "phone" || method === "demographic") {
+    if (["phone", "demographic", "tracking"].includes(method)) {
       unitsRequired = 2;
     }
 
@@ -86,7 +92,7 @@ router.post("/verify", async (req, res) => {
     }
 
     // ==========================
-    // 🔥 ENDPOINT SWITCH
+    // 🔥 ENDPOINTS (FIXED)
     // ==========================
     let url = "";
     let payload = {};
@@ -97,21 +103,21 @@ router.post("/verify", async (req, res) => {
     }
 
     else if (method === "phone") {
-      url = "https://checkmyninbvn.com.ng/api/nin-phone";
+      url = "https://ninbvnportal.com.ng/api/nin-phone";
       payload = { phone, consent: true };
     }
 
     else if (method === "tracking") {
-      url = "https://checkmyninbvn.com.ng/api/nin-tracking";
+      url = "https://ninbvnportal.com.ng/api/nin-tracking";
       payload = { tracking_id, consent: true };
     }
 
     else if (method === "demographic") {
-      url = "https://checkmyninbvn.com.ng/api/nin-demography";
+      url = "https://ninbvnportal.com.ng/api/nin-demography";
       payload = {
         firstname,
         lastname: surname,
-        gender,
+        gender: gender?.toLowerCase(),
         dob: birthdate,
         consent: true,
       };
@@ -122,12 +128,12 @@ router.post("/verify", async (req, res) => {
     }
 
     // ==========================
-    // 🔥 API FAILOVER
+    // 🔥 CALL API
     // ==========================
     let apiData;
 
     try {
-      const primary = await axios.post(url, payload, {
+      const response = await axios.post(url, payload, {
         headers: {
           "x-api-key": API_KEY,
           "Content-Type": "application/json",
@@ -135,30 +141,15 @@ router.post("/verify", async (req, res) => {
         timeout: 15000,
       });
 
-      apiData = primary.data;
-      console.log("✅ PRIMARY USED");
+      apiData = response.data;
+      console.log("✅ API SUCCESS");
 
     } catch (err) {
-      console.log("⚠️ PRIMARY FAILED → BACKUP");
+      console.error("❌ API ERROR:", err.response?.data || err.message);
 
-      try {
-        const backup = await axios.post(url, payload, {
-          headers: {
-            "x-api-key": API_KEY_BACKUP,
-            "Content-Type": "application/json",
-          },
-          timeout: 15000,
-        });
-
-        apiData = backup.data;
-        console.log("✅ BACKUP USED");
-
-      } catch (backupErr) {
-        console.error("❌ BOTH APIs FAILED");
-        return res.status(500).json({
-          error: "Verification service unavailable",
-        });
-      }
+      return res.status(500).json({
+        error: err.response?.data?.message || "Verification failed",
+      });
     }
 
     const cleanData = apiData?.data?.data || apiData?.data || apiData;
@@ -191,7 +182,6 @@ router.post("/verify", async (req, res) => {
 
     return res.status(500).json({
       error: "Verification failed",
-      details: error.message,
     });
   }
 });
