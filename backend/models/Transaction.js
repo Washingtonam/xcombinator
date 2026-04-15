@@ -1,110 +1,29 @@
-const mongoose = require("mongoose");
+const express = require("express");
+const router = express.Router();
 
-const transactionSchema = new mongoose.Schema({
-  // ==============================
-  // 🧾 TYPE
-  // ==============================
-  type: {
-    type: String,
-    enum: [
-      "UNIT_ADD",
-      "UNIT_DEDUCT",
-      "NIN",
-      "BVN",
-      "SERVICE", // 🔥 ADD THIS (VERY IMPORTANT)
-    ],
-    required: true,
-  },
+const Transaction = require("../models/Transaction");
 
-  // ==============================
-  // 💰 MONEY (₦)
-  // ==============================
-  amount: {
-    type: Number,
-    default: 0,
-  },
+// ==============================
+// 📥 GET USER TRANSACTIONS
+// ==============================
+router.get("/transactions", async (req, res) => {
+  try {
+    const { userId } = req.query;
 
-  // ==============================
-  // 🔢 UNITS
-  // ==============================
-  units: {
-    type: Number,
-    default: 0,
-  },
+    if (!userId) {
+      return res.status(400).json({ message: "User ID required" });
+    }
 
-  unitsUsed: {
-    type: Number,
-    default: 0,
-  },
+    const transactions = await Transaction.find({ userId })
+      .populate("requestId") // 🔥 link service request if needed later
+      .sort({ createdAt: -1 });
 
-  // ==============================
-  // 📊 BUSINESS METRICS
-  // ==============================
-  cost: {
-    type: Number,
-    default: 0,
-  },
+    res.json(transactions);
 
-  profit: {
-    type: Number,
-    default: 0,
-  },
-
-  // ==============================
-  // 📌 STATUS
-  // ==============================
-  status: {
-    type: String,
-    enum: [
-      "pending",
-      "approved",
-      "rejected",
-      "success",
-      "failed",
-    ],
-    default: "pending",
-  },
-
-  // ==============================
-  // 👤 USER
-  // ==============================
-  userId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "User",
-  },
-
-  // ==============================
-  // 🆔 OPTIONAL DATA
-  // ==============================
-  nin: String,
-
-  // 🔥 ADD THIS (LINK TO REQUEST)
-  requestId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "ServiceRequest",
-  },
-
-  // ==============================
-  // 📷 PROOF
-  // ==============================
-  proof: {
-    type: String,
-    default: null,
-  },
-
-  // ==============================
-  // 🕒 DATE
-  // ==============================
-  date: {
-    type: Date,
-    default: Date.now,
-  },
-
-}, {
-  timestamps: true,
+  } catch (err) {
+    console.error("FETCH TRANSACTIONS ERROR:", err);
+    res.status(500).json({ message: "Failed to fetch transactions" });
+  }
 });
 
-// ✅ SAFE EXPORT
-module.exports =
-  mongoose.models.Transaction ||
-  mongoose.model("Transaction", transactionSchema);
+module.exports = router;

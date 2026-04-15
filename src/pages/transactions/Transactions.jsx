@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 
+const API_BASE = "https://xcombinator.onrender.com";
+
 export default function Transactions() {
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -7,105 +9,196 @@ export default function Transactions() {
   const user = JSON.parse(localStorage.getItem("user"));
 
   // =========================
-  // FETCH TRANSACTIONS
+  // FETCH
   // =========================
   useEffect(() => {
     const fetchTransactions = async () => {
       try {
         const res = await fetch(
-          `https://xcombinator.onrender.com/api/transactions?userId=${user.id}`
+          `${API_BASE}/api/transactions?userId=${user?.id}`
         );
 
         const data = await res.json();
 
         if (res.ok) {
           setTransactions(data);
-        } else {
-          console.error(data.message);
         }
       } catch (err) {
-        console.error("Transaction fetch error:", err);
+        console.error(err);
       }
 
       setLoading(false);
     };
 
-    fetchTransactions();
+    if (user?.id) fetchTransactions();
   }, []);
 
+  // =========================
+  // HELPERS
+  // =========================
+  const getTitle = (tx) => {
+    switch (tx.type) {
+      case "UNIT_ADD":
+        return "Wallet Funding";
+      case "UNIT_DEDUCT":
+        return "Unit Usage";
+      case "NIN":
+        return "NIN Verification";
+      case "SERVICE":
+        return "NIN Service Request";
+      default:
+        return "Transaction";
+    }
+  };
+
+  const getAmount = (tx) => {
+    if (tx.amount > 0) return `₦${tx.amount}`;
+    if (tx.unitsUsed > 0) return `-${tx.unitsUsed} unit(s)`;
+    if (tx.units > 0) return `+${tx.units} unit(s)`;
+    return "-";
+  };
+
+  const isCredit = (tx) => tx.type === "UNIT_ADD";
+
+  const statusStyle = (status) => {
+    switch (status) {
+      case "success":
+      case "approved":
+        return "bg-green-100 text-green-700";
+      case "pending":
+        return "bg-yellow-100 text-yellow-700";
+      case "rejected":
+      case "failed":
+        return "bg-red-100 text-red-700";
+      default:
+        return "bg-gray-100 text-gray-600";
+    }
+  };
+
+  const icon = (type) => {
+    switch (type) {
+      case "UNIT_ADD":
+        return "💰";
+      case "SERVICE":
+        return "🧾";
+      case "NIN":
+        return "🆔";
+      default:
+        return "📌";
+    }
+  };
+
+  // =========================
+  // UI
+  // =========================
   return (
-    <div className="max-w-5xl mx-auto">
+    <div className="max-w-4xl mx-auto p-4">
 
       {/* HEADER */}
-      <h1 className="text-2xl font-bold mb-6">Transactions</h1>
+      <h1 className="text-2xl font-bold mb-2">
+        Transactions
+      </h1>
 
-      <div className="bg-white p-6 rounded shadow">
+      <p className="text-gray-500 mb-6">
+        Track all payments, services, and usage
+      </p>
 
-        {loading ? (
-          <p className="text-gray-500">Loading transactions...</p>
-        ) : transactions.length === 0 ? (
-          <p className="text-gray-500">No transactions yet.</p>
-        ) : (
-          <table className="w-full text-sm">
+      {/* LOADING */}
+      {loading && (
+        <div className="text-center text-gray-500">
+          Loading transactions...
+        </div>
+      )}
 
-            <thead>
-              <tr className="text-left border-b">
-                <th className="py-2">Type</th>
-                <th>Details</th>
-                <th>Units</th>
-                <th>Status</th>
-                <th>Date</th>
-              </tr>
-            </thead>
+      {/* EMPTY */}
+      {!loading && transactions.length === 0 && (
+        <div className="bg-white p-6 rounded-xl shadow text-center">
+          No transactions yet
+        </div>
+      )}
 
-            <tbody>
-              {transactions.map((tx) => (
-                <tr key={tx._id} className="border-b">
+      {/* LIST */}
+      <div className="space-y-4">
 
-                  {/* TYPE */}
-                  <td className="py-2 font-medium">
-                    {tx.type === "UNIT_ADD" && "💰 Funding"}
-                    {tx.type === "NIN" && "🆔 NIN Verification"}
-                    {tx.type === "UNIT_DEDUCT" && "📉 Usage"}
-                  </td>
+        {transactions.map((tx) => (
+          <div
+            key={tx._id}
+            className="bg-white p-4 rounded-2xl shadow hover:shadow-lg transition flex justify-between items-center"
+          >
 
-                  {/* DETAILS */}
-                  <td>
-                    {tx.nin || "-"}
-                  </td>
+            {/* LEFT */}
+            <div className="flex gap-3 items-start">
 
-                  {/* UNITS */}
-                  <td>
-                    {tx.units || tx.unitsUsed || 0}
-                  </td>
+              <div className="text-2xl">
+                {icon(tx.type)}
+              </div>
 
-                  {/* STATUS */}
-                  <td>
-                    <span
-                      className={`px-2 py-1 text-xs rounded ${
-                        tx.status === "success" || tx.status === "approved"
-                          ? "bg-green-500 text-white"
-                          : tx.status === "pending"
-                          ? "bg-yellow-400"
-                          : "bg-red-500 text-white"
-                      }`}
-                    >
-                      {tx.status}
-                    </span>
-                  </td>
+              <div>
+                <p className="font-semibold text-gray-800">
+                  {getTitle(tx)}
+                </p>
 
-                  {/* DATE */}
-                  <td>
-                    {new Date(tx.createdAt).toLocaleString()}
-                  </td>
+                <p className="text-xs text-gray-500">
+                  {new Date(tx.createdAt).toLocaleString()}
+                </p>
 
-                </tr>
-              ))}
-            </tbody>
+                {/* SERVICE INFO */}
+                {tx.requestId?.service && (
+                  <p className="text-xs text-gray-400">
+                    {tx.requestId.service} ({tx.requestId.type})
+                  </p>
+                )}
 
-          </table>
-        )}
+                {/* NIN */}
+                {tx.nin && (
+                  <p className="text-xs text-gray-400">
+                    NIN: {tx.nin}
+                  </p>
+                )}
+
+                {/* PROOF */}
+                {tx.proof && (
+                  <a
+                    href={tx.proof}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-xs text-blue-600 underline"
+                  >
+                    View Proof
+                  </a>
+                )}
+              </div>
+
+            </div>
+
+            {/* RIGHT */}
+            <div className="text-right">
+
+              {/* AMOUNT */}
+              <p
+                className={`font-semibold text-lg ${
+                  isCredit(tx)
+                    ? "text-green-600"
+                    : "text-red-500"
+                }`}
+              >
+                {getAmount(tx)}
+              </p>
+
+              {/* STATUS */}
+              <span
+                className={`text-xs px-2 py-1 rounded-full ${statusStyle(tx.status)}`}
+              >
+                {tx.status}
+              </span>
+
+            </div>
+
+          </div>
+        ))}
+
       </div>
+
     </div>
   );
 }

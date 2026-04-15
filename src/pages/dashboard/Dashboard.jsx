@@ -1,17 +1,50 @@
 import { useNavigate } from "react-router-dom";
 import { useUser } from "../../context/UserContext";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import axios from "axios";
+
+const API = "https://xcombinator.onrender.com";
 
 export default function Dashboard() {
   const navigate = useNavigate();
   const { user, units, refreshUnits } = useUser();
 
-  // 🔥 FORCE SYNC ON LOAD
+  const [stats, setStats] = useState({
+    total: 0,
+    completed: 0,
+    pending: 0,
+  });
+
+  const [recent, setRecent] = useState([]);
+
+  // =========================
+  // LOAD DATA
+  // =========================
   useEffect(() => {
     if (user?.id) {
       refreshUnits();
+      fetchRequests();
     }
   }, [user]);
+
+  const fetchRequests = async () => {
+    try {
+      const res = await axios.get(`${API}/api/user/requests/${user.id}`);
+
+      const data = res.data || [];
+
+      setRecent(data.slice(0, 4));
+
+      setStats({
+        total: data.length,
+        completed: data.filter(r => r.status === "completed").length,
+        pending: data.filter(r => r.status === "pending").length,
+      });
+
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   return (
     <div className="max-w-6xl mx-auto">
@@ -19,28 +52,35 @@ export default function Dashboard() {
       {/* HEADER */}
       <div className="mb-6">
         <h1 className="text-2xl md:text-3xl font-bold text-gray-800 dark:text-white">
-          Welcome, {user?.email}
+          Welcome back 👋
         </h1>
 
         <p className="text-gray-500 dark:text-gray-400 mt-1">
-          Manage your verifications and usage from here
+          Here’s what’s happening with your account
         </p>
       </div>
 
-      {/* UNITS CARD */}
+      {/* =========================
+          🔥 MAIN CARD
+      ========================= */}
       <div className="bg-gradient-to-r from-blue-600 to-indigo-500 text-white p-6 rounded-2xl mb-8 shadow-lg">
-        <p className="text-sm opacity-80">Available Units</p>
 
-        <h2 className="text-4xl font-bold mt-1">
-          {units}
-        </h2>
+        <div className="flex justify-between items-center">
 
-        <p className="text-xs mt-2 opacity-80">
-          1 Unit = 1 Verification
-        </p>
+          <div>
+            <p className="text-sm opacity-80">Available Units</p>
+            <h2 className="text-4xl font-bold">{units}</h2>
+          </div>
+
+          <div className="text-right text-sm">
+            <p>Total Requests: <b>{stats.total}</b></p>
+            <p>Completed: <b>{stats.completed}</b></p>
+            <p>Pending: <b>{stats.pending}</b></p>
+          </div>
+
+        </div>
 
         <div className="mt-4 flex gap-3 flex-wrap">
-
           <button
             onClick={() => navigate("/wallet")}
             className="bg-white text-blue-600 px-4 py-2 rounded-lg text-sm font-semibold"
@@ -49,22 +89,24 @@ export default function Dashboard() {
           </button>
 
           <button
-            onClick={() => navigate("/transactions")}
+            onClick={() => navigate("/my-requests")}
             className="bg-white/20 px-4 py-2 rounded-lg text-sm font-semibold"
           >
-            View Usage
+            View Requests
           </button>
-
         </div>
       </div>
 
-      {/* QUICK ACTIONS */}
+      {/* =========================
+          🔥 QUICK ACTIONS
+      ========================= */}
       <h2 className="text-lg font-semibold mb-4 text-gray-700 dark:text-gray-300">
         Quick Actions
       </h2>
 
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
 
+        {/* VERIFY NIN */}
         <div
           onClick={() => navigate("/verify-nin")}
           className="bg-white dark:bg-[#1A1A1A] p-5 rounded-2xl shadow hover:shadow-xl transition cursor-pointer border"
@@ -73,37 +115,31 @@ export default function Dashboard() {
           <h3 className="font-semibold text-gray-800 dark:text-white">
             Verify NIN
           </h3>
-          <p className="text-sm text-gray-500">
-            Check NIN details instantly
-          </p>
         </div>
 
+        {/* 🔥 NIN SERVICES (REPLACED BVN) */}
         <div
-          onClick={() => navigate("/verify-bvn")}
+          onClick={() => navigate("/nin-services")}
           className="bg-white dark:bg-[#1A1A1A] p-5 rounded-2xl shadow hover:shadow-xl transition cursor-pointer border"
         >
           <p className="text-2xl mb-2">🏦</p>
           <h3 className="font-semibold text-gray-800 dark:text-white">
-            Verify BVN
+            NIN Services
           </h3>
-          <p className="text-sm text-gray-500">
-            Verify BVN records
-          </p>
         </div>
 
+        {/* MY REQUESTS */}
         <div
-          onClick={() => navigate("/wallet")}
+          onClick={() => navigate("/my-requests")}
           className="bg-white dark:bg-[#1A1A1A] p-5 rounded-2xl shadow hover:shadow-xl transition cursor-pointer border"
         >
-          <p className="text-2xl mb-2">⚡</p>
+          <p className="text-2xl mb-2">📦</p>
           <h3 className="font-semibold text-gray-800 dark:text-white">
-            Buy Units
+            My Requests
           </h3>
-          <p className="text-sm text-gray-500">
-            Fund account for verifications
-          </p>
         </div>
 
+        {/* TRANSACTIONS */}
         <div
           onClick={() => navigate("/transactions")}
           className="bg-white dark:bg-[#1A1A1A] p-5 rounded-2xl shadow hover:shadow-xl transition cursor-pointer border"
@@ -112,9 +148,59 @@ export default function Dashboard() {
           <h3 className="font-semibold text-gray-800 dark:text-white">
             Transactions
           </h3>
-          <p className="text-sm text-gray-500">
-            View your usage history
-          </p>
+        </div>
+
+      </div>
+
+      {/* =========================
+          🔥 RECENT ACTIVITY
+      ========================= */}
+      <div className="mt-10">
+
+        <h2 className="text-lg font-semibold mb-4 text-gray-700 dark:text-gray-300">
+          Recent Activity
+        </h2>
+
+        <div className="bg-white dark:bg-[#1A1A1A] rounded-2xl shadow border p-4">
+
+          {recent.length === 0 && (
+            <p className="text-gray-500 text-sm">
+              No activity yet
+            </p>
+          )}
+
+          <div className="space-y-3">
+
+            {recent.map((r) => (
+              <div
+                key={r._id}
+                className="flex justify-between items-center border-b pb-2 text-sm"
+              >
+                <div>
+                  <p className="font-medium">
+                    {r.service} - {r.type}
+                  </p>
+                  <p className="text-gray-500 text-xs">
+                    {new Date(r.createdAt).toLocaleString()}
+                  </p>
+                </div>
+
+                <span className={`px-2 py-1 rounded text-xs ${
+                  r.status === "completed"
+                    ? "bg-blue-100 text-blue-700"
+                    : r.status === "approved"
+                    ? "bg-green-100 text-green-700"
+                    : r.status === "pending"
+                    ? "bg-yellow-100 text-yellow-700"
+                    : "bg-red-100 text-red-700"
+                }`}>
+                  {r.status}
+                </span>
+              </div>
+            ))}
+
+          </div>
+
         </div>
 
       </div>
@@ -122,11 +208,11 @@ export default function Dashboard() {
       {/* TRUST */}
       <div className="mt-10 p-5 bg-white dark:bg-[#1A1A1A] rounded-2xl shadow border">
         <h3 className="font-semibold text-gray-800 dark:text-white mb-2">
-          🔐 Secure & Verified Platform
+          🔐 Secure & Trusted Platform
         </h3>
 
         <p className="text-sm text-gray-500">
-          All verifications are processed securely. Ensure you have proper consent before verifying any identity.
+          Your requests are processed securely with real-time updates and full transparency.
         </p>
       </div>
 
