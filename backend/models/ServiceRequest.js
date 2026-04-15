@@ -5,7 +5,7 @@ const mongoose = require("mongoose");
 // ==============================
 const commentSchema = new mongoose.Schema({
   text: String,
-  by: String, // email or "admin"
+  by: String,
   role: {
     type: String,
     enum: ["admin", "user"],
@@ -18,7 +18,7 @@ const commentSchema = new mongoose.Schema({
 });
 
 // ==============================
-// 🧾 STATUS HISTORY (🔥 FINTECH FEEL)
+// 🧾 STATUS HISTORY
 // ==============================
 const statusHistorySchema = new mongoose.Schema({
   status: String,
@@ -44,7 +44,6 @@ const serviceRequestSchema = new mongoose.Schema({
   },
 
   type: String,
-
   nin: String,
 
   slipType: {
@@ -54,7 +53,6 @@ const serviceRequestSchema = new mongoose.Schema({
   },
 
   amount: Number,
-
   proof: String,
 
   // =========================
@@ -74,7 +72,7 @@ const serviceRequestSchema = new mongoose.Schema({
   },
 
   // =========================
-  // 💬 COMMENTS (VISIBLE TO USER)
+  // 💬 COMMENTS
   // =========================
   comments: [commentSchema],
 
@@ -88,7 +86,7 @@ const serviceRequestSchema = new mongoose.Schema({
   },
 
   // =========================
-  // 🧾 STATUS HISTORY (🔥 NEW)
+  // 🧾 STATUS HISTORY
   // =========================
   statusHistory: {
     type: [statusHistorySchema],
@@ -102,17 +100,40 @@ const serviceRequestSchema = new mongoose.Schema({
 
 }, { timestamps: true });
 
+
 // ==============================
-// 🔥 AUTO TRACK STATUS CHANGES
+// 🔥 SAFE STATUS TRACKING (FIXED)
 // ==============================
 serviceRequestSchema.pre("save", function (next) {
-  if (this.isModified("status")) {
-    this.statusHistory.push({
-      status: this.status,
-      note: `Status changed to ${this.status}`,
-    });
+
+  // 🛑 prevent undefined crash
+  if (!this.statusHistory) {
+    this.statusHistory = [];
   }
+
+  // 🔥 only track if modified AND not duplicate
+  if (this.isModified("status")) {
+
+    const lastStatus =
+      this.statusHistory.length > 0
+        ? this.statusHistory[this.statusHistory.length - 1].status
+        : null;
+
+    if (lastStatus !== this.status) {
+      this.statusHistory.push({
+        status: this.status,
+        note: `Status changed to ${this.status}`,
+      });
+    }
+  }
+
   next();
 });
 
-module.exports = mongoose.model("ServiceRequest", serviceRequestSchema);
+
+// ==============================
+// ✅ SAFE EXPORT
+// ==============================
+module.exports =
+  mongoose.models.ServiceRequest ||
+  mongoose.model("ServiceRequest", serviceRequestSchema);

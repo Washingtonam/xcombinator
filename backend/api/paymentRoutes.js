@@ -1,7 +1,10 @@
 const express = require("express");
 const router = express.Router();
 
-const Transaction = require("../models/Transaction");
+// 🔥 SAFE IMPORT (PREVENTS .find ERROR)
+const TransactionModel = require("../models/Transaction");
+const Transaction = TransactionModel.default || TransactionModel;
+
 const User = require("../models/User");
 const AuditLog = require("../models/AuditLog");
 const Pricing = require("../models/Pricing");
@@ -20,7 +23,7 @@ function isAdmin(req, res, next) {
     return res.status(403).json({ message: "Access denied" });
   }
 
-  next(); // ✅ SIMPLE. NO DRAMA.
+  next();
 }
 
 // ==============================
@@ -30,20 +33,12 @@ router.post("/submit-payment", async (req, res) => {
   try {
     const { userId, amount, proof, units } = req.body;
 
-    console.log("🔥 PAYMENT RECEIVED:", {
-      userId,
-      amount,
-      units,
-      proofLength: proof?.length
-    });
-
     if (!userId || !amount || !proof) {
       return res.status(400).json({
         message: "userId, amount and proof required",
       });
     }
 
-    // 🔥 PREVENT HUGE IMAGE CRASH
     if (proof.length > 5 * 1024 * 1024) {
       return res.status(400).json({
         message: "Image too large. Reduce file size.",
@@ -53,7 +48,7 @@ router.post("/submit-payment", async (req, res) => {
     const user = await User.findById(userId);
     if (!user) return res.status(404).json({ message: "User not found" });
 
-    // 🚫 BLOCK DUPLICATE
+    // 🔥 BLOCK MULTIPLE PENDING
     const existingPending = await Transaction.findOne({
       userId,
       type: "UNIT_ADD",
@@ -84,7 +79,7 @@ router.post("/submit-payment", async (req, res) => {
     console.error("🔥 SUBMIT ERROR:", error);
     res.status(500).json({
       message: "Submission failed",
-      error: error.message
+      error: error.message,
     });
   }
 });
@@ -117,22 +112,19 @@ router.post("/admin/payments/:id/approve", isAdmin, async (req, res) => {
     const payment = await Transaction.findById(req.params.id);
     if (!payment) return res.status(404).json({ message: "Not found" });
 
-    if (payment.status === "approved") {
-      return res.status(400).json({ message: "Already approved" });
+    // 🔥 GUARD: ONLY PENDING CAN BE APPROVED
+    if (payment.status !== "pending") {
+      return res.status(400).json({
+        message: `Cannot approve a ${payment.status} payment`,
+      });
     }
 
     const user = await User.findById(payment.userId);
     if (!user) return res.status(404).json({ message: "User not found" });
 
-    // ==============================
-    // 🔥 GET PRICE
-    // ==============================
     const pricing = await Pricing.findOne();
     const pricePerUnit = pricing?.nin?.unitPrice || 250;
 
-    // ==============================
-    // 🔥 CALCULATE UNITS
-    // ==============================
     let unitsToAdd = payment.units;
 
     if (!unitsToAdd || unitsToAdd < 1) {
@@ -145,24 +137,15 @@ router.post("/admin/payments/:id/approve", isAdmin, async (req, res) => {
       });
     }
 
-    // ==============================
-    // 🔥 CREDIT UNITS
-    // ==============================
     const beforeUnits = user.units;
 
     user.units += unitsToAdd;
     await user.save();
 
-    // ==============================
-    // 🔥 UPDATE PAYMENT
-    // ==============================
     payment.status = "approved";
     payment.units = unitsToAdd;
     await payment.save();
 
-    // ==============================
-    // 🧾 AUDIT LOG
-    // ==============================
     await AuditLog.create({
       action: "APPROVE_PAYMENT",
       performedBy: adminEmail,
@@ -175,14 +158,14 @@ router.post("/admin/payments/:id/approve", isAdmin, async (req, res) => {
 
     res.json({
       message: `Approved. ${unitsToAdd} units added`,
-      units: user.units
+      units: user.units,
     });
 
   } catch (error) {
     console.error("🔥 APPROVAL ERROR:", error);
     res.status(500).json({
       message: "Approval failed",
-      error: error.message
+      error: error.message,
     });
   }
 });
@@ -196,6 +179,12 @@ router.post("/admin/payments/:id/reject", isAdmin, async (req, res) => {
 
     if (!payment) {
       return res.status(404).json({ message: "Not found" });
+    }
+
+    if (payment.status !== "pending") {
+      return res.status(400).json({
+        message: `Cannot reject a ${payment.status} payment`,
+      });
     }
 
     payment.status = "rejected";
