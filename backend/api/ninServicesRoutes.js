@@ -6,7 +6,7 @@ const Pricing = require("../models/Pricing");
 const Transaction = require("../models/Transaction");
 
 // ==============================
-// 📤 CREATE REQUEST (LOCKED PAYMENT FLOW)
+// 📤 CREATE REQUEST
 // ==============================
 router.post("/nin-services/request", async (req, res) => {
   try {
@@ -17,7 +17,7 @@ router.post("/nin-services/request", async (req, res) => {
       nin,
       slipType,
       proof,
-      formData // 🔥 NEW
+      formData
     } = req.body;
 
     if (!userId || !service || !type || !nin || !proof) {
@@ -64,8 +64,11 @@ router.post("/nin-services/request", async (req, res) => {
       slipType: slipType || "none",
       amount: total,
       proof,
-      formData: formData || {}, // 🔥 SAVE FORM
+      formData: formData || {},
       status: "pending",
+      statusHistory: [
+        { status: "pending", note: "Request submitted" }
+      ]
     });
 
     // =========================
@@ -119,6 +122,12 @@ router.post("/admin/requests/:id/approve", async (req, res) => {
     }
 
     request.status = "approved";
+
+    request.statusHistory.push({
+      status: "approved",
+      note: "Approved by admin"
+    });
+
     await request.save();
 
     await Transaction.findOneAndUpdate(
@@ -138,6 +147,8 @@ router.post("/admin/requests/:id/approve", async (req, res) => {
 // ==============================
 router.post("/admin/requests/:id/reject", async (req, res) => {
   try {
+    const { reason } = req.body;
+
     const request = await ServiceRequest.findById(req.params.id);
 
     if (!request) {
@@ -145,6 +156,12 @@ router.post("/admin/requests/:id/reject", async (req, res) => {
     }
 
     request.status = "rejected";
+
+    request.statusHistory.push({
+      status: "rejected",
+      note: reason || "Rejected by admin"
+    });
+
     await request.save();
 
     await Transaction.findOneAndUpdate(
@@ -175,6 +192,11 @@ router.post("/admin/requests/:id/upload-slip", async (req, res) => {
     request.resultSlip = pdf;
     request.status = "completed";
 
+    request.statusHistory.push({
+      status: "completed",
+      note: "Slip uploaded and completed"
+    });
+
     await request.save();
 
     await Transaction.findOneAndUpdate(
@@ -190,7 +212,7 @@ router.post("/admin/requests/:id/upload-slip", async (req, res) => {
 });
 
 // ==============================
-// 📝 ADD COMMENT (MULTI ADMIN)
+// 💬 ADD COMMENT (VISIBLE TO USER)
 // ==============================
 router.post("/admin/requests/:id/comment", async (req, res) => {
   try {
@@ -198,7 +220,11 @@ router.post("/admin/requests/:id/comment", async (req, res) => {
 
     const request = await ServiceRequest.findById(req.params.id);
 
-    request.comments.push({ text, by });
+    request.comments.push({
+      text,
+      by,
+      role: "admin"
+    });
 
     await request.save();
 
@@ -210,7 +236,7 @@ router.post("/admin/requests/:id/comment", async (req, res) => {
 });
 
 // ==============================
-// 🧠 SAVE ADMIN NOTE
+// 🧠 SAVE ADMIN NOTE (PRIVATE)
 // ==============================
 router.put("/admin/requests/:id/note", async (req, res) => {
   try {

@@ -4,26 +4,24 @@ import axios from "axios";
 const API_BASE = "https://xcombinator.onrender.com";
 
 export default function UserRequests() {
-
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [active, setActive] = useState(null);
 
   const user = JSON.parse(localStorage.getItem("user"));
 
   // =========================
-  // FETCH USER REQUESTS
+  // FETCH
   // =========================
   const fetchRequests = async () => {
     try {
       const res = await axios.get(
         `${API_BASE}/api/user/requests/${user?.id}`
       );
-
       setRequests(res.data || []);
     } catch (err) {
-      console.error("Fetch error:", err);
+      console.error(err);
     }
-
     setLoading(false);
   };
 
@@ -50,52 +48,25 @@ export default function UserRequests() {
   };
 
   // =========================
-  // STATUS MESSAGE
-  // =========================
-  const statusMessage = (status) => {
-    switch (status) {
-      case "pending":
-        return "⏳ Waiting for admin approval";
-      case "approved":
-        return "⚙️ Processing in progress";
-      case "completed":
-        return "🎉 Completed — ready for download";
-      case "rejected":
-        return "❌ Rejected — contact support";
-      default:
-        return "";
-    }
-  };
-
-  // =========================
-  // LOADING UI
+  // LOADING
   // =========================
   if (loading) {
-    return (
-      <div className="p-6 text-center text-gray-500">
-        Loading your requests...
-      </div>
-    );
+    return <div className="p-6 text-center">Loading...</div>;
   }
 
   return (
     <div className="p-6 max-w-6xl mx-auto">
 
       {/* HEADER */}
-      <h1 className="text-2xl font-bold mb-2">
-        My Requests
-      </h1>
-
+      <h1 className="text-2xl font-bold mb-2">My Requests</h1>
       <p className="text-gray-500 mb-6">
-        Track your payments, approvals and completed services
+        Track your payments, processing, and completed services
       </p>
 
-      {/* EMPTY STATE */}
+      {/* EMPTY */}
       {requests.length === 0 && (
-        <div className="bg-white p-6 rounded-xl shadow text-center">
-          <p className="text-gray-500">
-            No requests yet — start a service to see activity here
-          </p>
+        <div className="bg-white p-6 rounded-xl text-center shadow">
+          No requests yet
         </div>
       )}
 
@@ -105,66 +76,123 @@ export default function UserRequests() {
         {requests.map((r) => (
           <div
             key={r._id}
-            className="bg-white p-5 rounded-2xl shadow border hover:shadow-lg transition"
+            onClick={() => setActive(r)}
+            className="bg-white p-5 rounded-2xl shadow hover:shadow-lg transition cursor-pointer"
           >
 
             {/* TOP */}
             <div className="flex justify-between items-center mb-3">
-
-              <div className="text-sm font-semibold">
+              <div className="font-semibold text-sm">
                 {r.service?.toUpperCase()}
               </div>
 
-              <span
-                className={`text-xs px-3 py-1 rounded-full ${statusStyle(r.status)}`}
-              >
+              <span className={`px-3 py-1 text-xs rounded-full ${statusStyle(r.status)}`}>
                 {r.status}
               </span>
+            </div>
 
+            {/* AMOUNT */}
+            <div className="text-xl font-bold mb-2">
+              ₦{r.amount}
             </div>
 
             {/* DETAILS */}
-            <div className="text-sm space-y-1 mb-3">
-              <p><b>Type:</b> {r.type}</p>
-              <p><b>NIN:</b> {r.nin}</p>
-              <p><b>Amount:</b> ₦{r.amount}</p>
-              <p>
-                <b>Date:</b>{" "}
-                {r.createdAt
-                  ? new Date(r.createdAt).toLocaleString()
-                  : "-"}
-              </p>
+            <div className="text-sm text-gray-600">
+              {r.type} • {r.nin}
             </div>
-
-            {/* STATUS MESSAGE */}
-            <div className="text-sm mb-3 text-gray-600">
-              {statusMessage(r.status)}
-            </div>
-
-            {/* PROOF PREVIEW */}
-            {r.proof && (
-              <img
-                src={r.proof}
-                alt="payment proof"
-                className="w-full h-32 object-cover rounded mb-3"
-              />
-            )}
-
-            {/* DOWNLOAD */}
-            {r.status === "completed" && r.resultSlip && (
-              <a
-                href={r.resultSlip}
-                download="nin-slip.pdf"
-                className="block text-center bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg transition"
-              >
-                📥 Download Slip
-              </a>
-            )}
 
           </div>
         ))}
 
       </div>
+
+      {/* ================= MODAL ================= */}
+      {active && (
+        <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50">
+
+          <div className="bg-white w-full max-w-2xl rounded-2xl p-6 max-h-[90vh] overflow-y-auto">
+
+            {/* HEADER */}
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-lg font-bold">
+                Request Details
+              </h2>
+
+              <button onClick={() => setActive(null)}>✕</button>
+            </div>
+
+            {/* BASIC */}
+            <div className="space-y-1 text-sm mb-4">
+              <p><b>Service:</b> {active.service}</p>
+              <p><b>Type:</b> {active.type}</p>
+              <p><b>NIN:</b> {active.nin}</p>
+              <p><b>Amount:</b> ₦{active.amount}</p>
+            </div>
+
+            {/* ================= STATUS TIMELINE ================= */}
+            <div className="mb-6">
+              <h3 className="font-semibold mb-2">Progress</h3>
+
+              <div className="space-y-2">
+                {active.statusHistory?.map((s, i) => (
+                  <div key={i} className="flex gap-2 items-start text-sm">
+                    <div className="w-2 h-2 bg-blue-500 rounded-full mt-2" />
+                    <div>
+                      <p className="font-medium">{s.status}</p>
+                      <p className="text-gray-500 text-xs">{s.note}</p>
+                      <p className="text-gray-400 text-xs">
+                        {new Date(s.date).toLocaleString()}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* ================= COMMENTS ================= */}
+            <div className="mb-6">
+              <h3 className="font-semibold mb-2">Conversation</h3>
+
+              <div className="space-y-2 max-h-40 overflow-y-auto">
+                {active.comments?.map((c, i) => (
+                  <div
+                    key={i}
+                    className={`p-2 rounded text-sm ${
+                      c.role === "admin"
+                        ? "bg-gray-100"
+                        : "bg-blue-100 text-blue-800"
+                    }`}
+                  >
+                    <b>{c.by}</b>
+                    <p>{c.text}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* PROOF */}
+            {active.proof && (
+              <img
+                src={active.proof}
+                className="w-full rounded mb-4"
+              />
+            )}
+
+            {/* DOWNLOAD */}
+            {active.status === "completed" && active.resultSlip && (
+              <a
+                href={active.resultSlip}
+                download="nin-slip.pdf"
+                className="block text-center bg-blue-600 text-white py-2 rounded"
+              >
+                Download Result
+              </a>
+            )}
+
+          </div>
+
+        </div>
+      )}
 
     </div>
   );

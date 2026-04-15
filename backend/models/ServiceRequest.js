@@ -1,11 +1,28 @@
 const mongoose = require("mongoose");
 
 // ==============================
-// 💬 COMMENT SCHEMA (MULTI ADMIN)
+// 💬 COMMENT SCHEMA (CHAT STYLE)
 // ==============================
 const commentSchema = new mongoose.Schema({
   text: String,
-  by: String,
+  by: String, // email or "admin"
+  role: {
+    type: String,
+    enum: ["admin", "user"],
+    default: "admin",
+  },
+  date: {
+    type: Date,
+    default: Date.now,
+  },
+});
+
+// ==============================
+// 🧾 STATUS HISTORY (🔥 FINTECH FEEL)
+// ==============================
+const statusHistorySchema = new mongoose.Schema({
+  status: String,
+  note: String,
   date: {
     type: Date,
     default: Date.now,
@@ -41,7 +58,7 @@ const serviceRequestSchema = new mongoose.Schema({
   proof: String,
 
   // =========================
-  // 🔥 FULL FORM DATA (CRITICAL)
+  // 🔥 FULL FORM DATA
   // =========================
   formData: {
     type: Object,
@@ -49,7 +66,7 @@ const serviceRequestSchema = new mongoose.Schema({
   },
 
   // =========================
-  // 🧠 ADMIN NOTES
+  // 🧠 ADMIN NOTES (PRIVATE)
   // =========================
   adminNotes: {
     type: String,
@@ -57,18 +74,45 @@ const serviceRequestSchema = new mongoose.Schema({
   },
 
   // =========================
-  // 💬 COMMENTS (TEAM SYSTEM)
+  // 💬 COMMENTS (VISIBLE TO USER)
   // =========================
   comments: [commentSchema],
 
+  // =========================
+  // 📊 STATUS
+  // =========================
   status: {
     type: String,
     enum: ["pending", "approved", "rejected", "completed"],
     default: "pending",
   },
 
+  // =========================
+  // 🧾 STATUS HISTORY (🔥 NEW)
+  // =========================
+  statusHistory: {
+    type: [statusHistorySchema],
+    default: [],
+  },
+
+  // =========================
+  // 📎 RESULT
+  // =========================
   resultSlip: String,
 
 }, { timestamps: true });
+
+// ==============================
+// 🔥 AUTO TRACK STATUS CHANGES
+// ==============================
+serviceRequestSchema.pre("save", function (next) {
+  if (this.isModified("status")) {
+    this.statusHistory.push({
+      status: this.status,
+      note: `Status changed to ${this.status}`,
+    });
+  }
+  next();
+});
 
 module.exports = mongoose.model("ServiceRequest", serviceRequestSchema);
