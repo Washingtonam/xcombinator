@@ -2,8 +2,7 @@ const express = require("express");
 const router = express.Router();
 
 // 🔥 SAFE IMPORT (PREVENTS .find ERROR)
-const TransactionModel = require("../models/Transaction");
-const Transaction = TransactionModel.default || TransactionModel;
+const Transaction = require("../models/Transaction");
 
 const User = require("../models/User");
 const AuditLog = require("../models/AuditLog");
