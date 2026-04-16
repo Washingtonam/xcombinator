@@ -102,16 +102,16 @@ const serviceRequestSchema = new mongoose.Schema({
 
 
 // ==============================
-// 🔥 SAFE STATUS TRACKING (FIXED)
+// 🔥 SAFE STATUS TRACKING (FIXED FINAL)
 // ==============================
-serviceRequestSchema.pre("save", function (next) {
+serviceRequestSchema.pre("save", function () {
 
-  // 🛑 prevent undefined crash
+  // 🛑 ensure array exists
   if (!this.statusHistory) {
     this.statusHistory = [];
   }
 
-  // 🔥 only track if modified AND not duplicate
+  // 🔥 track only when status changes
   if (this.isModified("status")) {
 
     const lastStatus =
@@ -127,9 +127,7 @@ serviceRequestSchema.pre("save", function (next) {
     }
   }
 
-  next();
 });
-
 
 // ==============================
 // ✅ SAFE EXPORT
