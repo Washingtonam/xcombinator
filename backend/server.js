@@ -11,6 +11,7 @@ const verificationRoutes = require("./api/verificationRoutes");
 const paymentRoutes = require("./api/paymentRoutes");
 const adminRoutes = require("./api/adminRoutes");
 const slipRoutes = require("./api/slipRoutes");
+const transactionsRoutes = require("./api/transactionsRoutes");
 const ninServicesRoutes = require("./api/ninServicesRoutes");
 
 
@@ -37,7 +38,7 @@ app.use(cors({
 // ==============================
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ limit: "10mb", extended: true }));
-app.use("/api", ninServicesRoutes);
+
 // ==============================
 // 🧠 HEALTH CHECK
 // ==============================
@@ -52,6 +53,8 @@ app.use("/api", authRoutes);
 app.use("/api", userRoutes);
 app.use("/api", verificationRoutes);
 app.use("/api", paymentRoutes);
+app.use("/api", transactionsRoutes);
+app.use("/api", ninServicesRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api", slipRoutes);
 

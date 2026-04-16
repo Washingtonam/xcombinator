@@ -1,29 +1,52 @@
-const express = require("express");
-const router = express.Router();
+const mongoose = require("mongoose");
 
-const Transaction = require("../models/Transaction");
+const transactionSchema = new mongoose.Schema({
+  type: {
+    type: String,
+    enum: ["UNIT_ADD", "UNIT_DEDUCT", "NIN", "BVN", "SERVICE"],
+    required: true,
+  },
 
-// ==============================
-// 📥 GET USER TRANSACTIONS
-// ==============================
-router.get("/transactions", async (req, res) => {
-  try {
-    const { userId } = req.query;
+  amount: {
+    type: Number,
+    default: 0,
+  },
 
-    if (!userId) {
-      return res.status(400).json({ message: "User ID required" });
-    }
+  units: {
+    type: Number,
+    default: 0,
+  },
 
-    const transactions = await Transaction.find({ userId })
-      .populate("requestId") // 🔥 link service request if needed later
-      .sort({ createdAt: -1 });
+  unitsUsed: {
+    type: Number,
+    default: 0,
+  },
 
-    res.json(transactions);
+  status: {
+    type: String,
+    enum: ["pending", "approved", "rejected", "success", "failed"],
+    default: "pending",
+  },
 
-  } catch (err) {
-    console.error("FETCH TRANSACTIONS ERROR:", err);
-    res.status(500).json({ message: "Failed to fetch transactions" });
-  }
-});
+  userId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+  },
 
-module.exports = router;
+  nin: String,
+
+  requestId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "ServiceRequest",
+  },
+
+  proof: {
+    type: String,
+    default: null,
+  },
+
+}, { timestamps: true });
+
+module.exports =
+  mongoose.models.Transaction ||
+  mongoose.model("Transaction", transactionSchema);
