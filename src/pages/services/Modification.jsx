@@ -179,14 +179,67 @@ export default function Modification() {
 
           {/* DOB */}
           {selectedType === "dob" && (
-            <>
-              <Input name="gsm" placeholder="Phone Number" onChange={handleChange} />
-              <Input name="newDob" placeholder="New Date of Birth" onChange={handleChange} />
-              <Input name="oldDob" placeholder="Old Date of Birth" onChange={handleChange} />
-              <Input name="gender" placeholder="Gender" onChange={handleChange} />
-              <Input name="maritalStatus" placeholder="Marital Status" onChange={handleChange} />
-              <Input name="occupation" placeholder="Occupation" onChange={handleChange} />
-            </>
+            <div className="space-y-6">
+
+              {/* BASIC INFO */}
+              <Section title="Basic Information">
+                <Input name="gsm" placeholder="Phone Number" onChange={handleChange} />
+                <Input name="newDob" placeholder="New Date of Birth" onChange={handleChange} />
+                <Input name="oldDob" placeholder="Old Date of Birth" onChange={handleChange} />
+                <Input name="gender" placeholder="Gender" onChange={handleChange} />
+                <Input name="maritalStatus" placeholder="Marital Status" onChange={handleChange} />
+              </Section>
+
+              {/* ORIGIN */}
+              <Section title="Origin Details">
+                <Input name="stateOfOrigin" placeholder="State of Origin" onChange={handleChange} />
+                <Input name="lgaOfOrigin" placeholder="LGA of Origin" onChange={handleChange} />
+                <Input name="townOfOrigin" placeholder="Town/Village of Origin" onChange={handleChange} />
+              </Section>
+
+              {/* BIRTH */}
+              <Section title="Birth Details">
+                <Input name="placeOfBirth" placeholder="Place of Birth" onChange={handleChange} />
+                <Input name="stateOfBirth" placeholder="State of Birth" onChange={handleChange} />
+                <Input name="lgaOfBirth" placeholder="LGA of Birth" onChange={handleChange} />
+              </Section>
+
+              {/* RESIDENCE */}
+              <Section title="Birth Registration Details">
+                <Input name="residentState" placeholder="Resident State" onChange={handleChange} />
+                <Input name="residentLga" placeholder="Resident LGA" onChange={handleChange} />
+                <Input name="registrationCenter" placeholder="Nearest Registration Center" onChange={handleChange} />
+                <Input name="houseAddress" placeholder="Full House Address" onChange={handleChange} />
+              </Section>
+
+              {/* EDUCATION & WORK */}
+              <Section title="Education & Work">
+                <Input name="educationLevel" placeholder="Education Level" onChange={handleChange} />
+                <Input name="occupation" placeholder="Occupation" onChange={handleChange} />
+                <Input name="workAddress" placeholder="Work Address" onChange={handleChange} />
+              </Section>
+
+              {/* FATHER */}
+              <Section title="Father’s Details">
+                <Input name="fatherSurname" placeholder="Surname" onChange={handleChange} />
+                <Input name="fatherFirstname" placeholder="First Name" onChange={handleChange} />
+                <Input name="fatherMiddlename" placeholder="Middle Name" onChange={handleChange} />
+                <Input name="fatherState" placeholder="State of Origin" onChange={handleChange} />
+                <Input name="fatherLga" placeholder="LGA of Origin" onChange={handleChange} />
+                <Input name="fatherTown" placeholder="Village/Town" onChange={handleChange} />
+              </Section>
+
+              {/* MOTHER */}
+              <Section title="Mother’s Details">
+                <Input name="motherSurname" placeholder="Surname" onChange={handleChange} />
+                <Input name="motherFirstname" placeholder="First Name" onChange={handleChange} />
+                <Input name="motherMaiden" placeholder="Maiden Name (Compulsory)" onChange={handleChange} />
+                <Input name="motherState" placeholder="State of Origin" onChange={handleChange} />
+                <Input name="motherLga" placeholder="LGA of Origin" onChange={handleChange} />
+                <Input name="motherTown" placeholder="Village/Town" onChange={handleChange} />
+              </Section>
+
+            </div>
           )}
 
         </div>
@@ -244,5 +297,18 @@ function Input({ name, placeholder, onChange }) {
       onChange={onChange}
       className="w-full border p-3 rounded-lg"
     />
+  );
+}
+
+function Section({ title, children }) {
+  return (
+    <div className="bg-gray-50 p-4 rounded-xl border">
+      <h3 className="font-semibold mb-3 text-gray-700">
+        {title}
+      </h3>
+      <div className="grid md:grid-cols-2 gap-3">
+        {children}
+      </div>
+    </div>
   );
 }
