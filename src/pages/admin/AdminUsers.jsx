@@ -8,31 +8,41 @@ export default function AdminUsers() {
   const [search, setSearch] = useState("");
   const [selectedUser, setSelectedUser] = useState(null);
   const [userActivity, setUserActivity] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const currentUserEmail = localStorage.getItem("email");
 
   const headers = {
-    email: localStorage.getItem("email"),
+    email: currentUserEmail,
   };
 
   // =========================
   // FETCH USERS
   // =========================
   const fetchUsers = async () => {
-    const res = await axios.get(`${API_BASE}/api/admin/users`, { headers });
-    setUsers(res.data);
+    setLoading(true);
+    try {
+      const res = await axios.get(`${API_BASE}/api/admin/users`, { headers });
+      const data = res.data?.data || res.data || [];
+      setUsers(data);
+    } catch (err) {
+      console.error(err);
+    }
+    setLoading(false);
   };
 
   // =========================
-  // SEARCH USERS
+  // SEARCH
   // =========================
   const handleSearch = async () => {
     if (!search) return fetchUsers();
 
     const res = await axios.get(
-      `${API_BASE}/api/admin/users/search?query=${search}`,
+      `${API_BASE}/api/admin/users?search=${search}`,
       { headers }
     );
 
-    setUsers(res.data);
+    setUsers(res.data?.data || []);
   };
 
   // =========================
@@ -49,7 +59,20 @@ export default function AdminUsers() {
   };
 
   // =========================
-  // USER CONTROL
+  // ROLE CONTROL (SUPER ADMIN)
+  // =========================
+  const makeAdmin = async (id) => {
+    await axios.put(`${API_BASE}/api/admin/user/${id}/make-admin`, {}, { headers });
+    fetchUsers();
+  };
+
+  const removeAdmin = async (id) => {
+    await axios.put(`${API_BASE}/api/admin/user/${id}/remove-admin`, {}, { headers });
+    fetchUsers();
+  };
+
+  // =========================
+  // BASIC ACTIONS
   // =========================
   const suspendUser = async (id) => {
     await axios.put(`${API_BASE}/api/admin/user/${id}/suspend`, {}, { headers });
@@ -63,16 +86,12 @@ export default function AdminUsers() {
 
   const deleteUser = async (id) => {
     if (!window.confirm("Delete this user?")) return;
-
     await axios.delete(`${API_BASE}/api/admin/user/${id}`, { headers });
     fetchUsers();
   };
 
-  // =========================
-  // 🔥 UNIT CONTROL (FIXED)
-  // =========================
   const addUnits = async (id) => {
-    const units = prompt("Enter units to ADD:");
+    const units = prompt("Units to add:");
     if (!units) return;
 
     await axios.post(
@@ -85,7 +104,7 @@ export default function AdminUsers() {
   };
 
   const deductUnits = async (id) => {
-    const units = prompt("Enter units to DEDUCT:");
+    const units = prompt("Units to deduct:");
     if (!units) return;
 
     await axios.post(
@@ -101,155 +120,201 @@ export default function AdminUsers() {
     fetchUsers();
   }, []);
 
-  return (
-    <div className="p-6">
+  const isSuperAdmin = currentUserEmail === "washingtonamedu@gmail.com";
 
-      <h1 className="text-xl font-bold mb-6">User Management</h1>
+  return (
+    <div className="p-6 max-w-7xl mx-auto">
+
+      {/* HEADER */}
+      <h1 className="text-2xl font-bold mb-2">User Management</h1>
+      <p className="text-gray-500 mb-6">
+        Control users, roles, and system access
+      </p>
 
       {/* SEARCH */}
       <div className="flex gap-2 mb-6">
         <input
           type="text"
-          placeholder="Search by email or name..."
+          placeholder="Search users..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="border p-2 w-full rounded"
+          className="border p-3 w-full rounded-lg"
         />
         <button
           onClick={handleSearch}
-          className="bg-blue-600 text-white px-4 rounded"
+          className="bg-blue-600 text-white px-6 rounded-lg"
         >
           Search
         </button>
       </div>
 
-      {/* USERS TABLE */}
-      <div className="bg-white p-6 rounded shadow mb-10 overflow-x-auto">
+      {/* LOADING */}
+      {loading && (
+        <div className="text-center py-10 text-gray-500">
+          Loading users...
+        </div>
+      )}
 
-        <table className="w-full text-sm">
+      {/* GRID */}
+      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
 
-          <thead>
-            <tr className="text-left border-b">
-              <th>Email</th>
-              <th>Units</th>
-              <th>Status</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
+        {users.map((u) => (
+          <div
+            key={u._id}
+            className="bg-white p-5 rounded-2xl shadow border hover:shadow-lg transition"
+          >
 
-          <tbody>
-            {users.map(u => (
-              <tr key={u._id} className="border-t">
+            {/* TOP */}
+            <div className="flex justify-between mb-2">
+              <p
+                onClick={() => fetchUserActivity(u._id)}
+                className="text-sm font-semibold text-blue-600 cursor-pointer"
+              >
+                {u.email}
+              </p>
 
-                {/* CLICK USER */}
-                <td
-                  className="cursor-pointer text-blue-600"
-                  onClick={() => fetchUserActivity(u._id)}
-                >
-                  {u.email}
-                </td>
+              <span className={`text-xs px-2 py-1 rounded-full ${
+                u.role === "super_admin"
+                  ? "bg-black text-white"
+                  : u.role === "admin"
+                  ? "bg-blue-600 text-white"
+                  : "bg-gray-200"
+              }`}>
+                {u.role}
+              </span>
+            </div>
 
-                {/* 🔥 SHOW UNITS */}
-                <td><b>{u.units || 0}</b></td>
+            {/* INFO */}
+            <p className="text-sm text-gray-600">
+              Units: <b>{u.units || 0}</b>
+            </p>
 
-                <td>
-                  <span
-                    className={`px-2 py-1 text-white text-xs rounded ${
-                      u.status === "active"
-                        ? "bg-green-500"
-                        : "bg-red-500"
-                    }`}
+            <p className="text-sm text-gray-600">
+              Status:
+              <span className={`ml-2 px-2 py-1 text-xs rounded ${
+                u.status === "active"
+                  ? "bg-green-100 text-green-700"
+                  : "bg-red-100 text-red-700"
+              }`}>
+                {u.status}
+              </span>
+            </p>
+
+            {/* ACTIONS */}
+            {u.role !== "super_admin" && (
+              <div className="flex flex-wrap gap-2 mt-4">
+
+                {/* STATUS */}
+                {u.status === "active" ? (
+                  <button
+                    onClick={() => suspendUser(u._id)}
+                    className="bg-yellow-500 text-white px-3 py-1 rounded text-xs"
                   >
-                    {u.status}
-                  </span>
-                </td>
+                    Suspend
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => activateUser(u._id)}
+                    className="bg-green-600 text-white px-3 py-1 rounded text-xs"
+                  >
+                    Activate
+                  </button>
+                )}
 
-                <td className="space-x-2">
+                {/* UNITS */}
+                <button
+                  onClick={() => addUnits(u._id)}
+                  className="bg-blue-600 text-white px-3 py-1 rounded text-xs"
+                >
+                  +Units
+                </button>
 
-                  {/* PROTECT ADMIN */}
-                  {u.email !== "washingtonamedu@gmail.com" && (
-                    <>
-                      {u.status === "active" ? (
-                        <button
-                          onClick={() => suspendUser(u._id)}
-                          className="bg-yellow-500 text-white px-2 py-1 rounded text-xs"
-                        >
-                          Suspend
-                        </button>
-                      ) : (
-                        <button
-                          onClick={() => activateUser(u._id)}
-                          className="bg-green-600 text-white px-2 py-1 rounded text-xs"
-                        >
-                          Activate
-                        </button>
-                      )}
+                <button
+                  onClick={() => deductUnits(u._id)}
+                  className="bg-gray-800 text-white px-3 py-1 rounded text-xs"
+                >
+                  -Units
+                </button>
 
+                {/* ROLE CONTROL (ONLY SUPER ADMIN) */}
+                {isSuperAdmin && (
+                  <>
+                    {u.role === "user" ? (
                       <button
-                        onClick={() => deleteUser(u._id)}
-                        className="bg-red-600 text-white px-2 py-1 rounded text-xs"
+                        onClick={() => makeAdmin(u._id)}
+                        className="bg-purple-600 text-white px-3 py-1 rounded text-xs"
                       >
-                        Delete
+                        Make Admin
                       </button>
-
-                      {/* 🔥 UNITS BUTTONS */}
+                    ) : (
                       <button
-                        onClick={() => addUnits(u._id)}
-                        className="bg-blue-600 text-white px-2 py-1 rounded text-xs"
+                        onClick={() => removeAdmin(u._id)}
+                        className="bg-orange-500 text-white px-3 py-1 rounded text-xs"
                       >
-                        +Units
+                        Remove Admin
                       </button>
+                    )}
+                  </>
+                )}
 
-                      <button
-                        onClick={() => deductUnits(u._id)}
-                        className="bg-gray-800 text-white px-2 py-1 rounded text-xs"
-                      >
-                        -Units
-                      </button>
-                    </>
-                  )}
+                {/* DELETE (ONLY SUPER ADMIN) */}
+                {isSuperAdmin && (
+                  <button
+                    onClick={() => deleteUser(u._id)}
+                    className="bg-red-600 text-white px-3 py-1 rounded text-xs"
+                  >
+                    Delete
+                  </button>
+                )}
 
-                </td>
+              </div>
+            )}
 
-              </tr>
-            ))}
-          </tbody>
+          </div>
+        ))}
 
-        </table>
       </div>
 
-      {/* USER ACTIVITY */}
+      {/* ================= MODAL ================= */}
       {selectedUser && (
-        <div className="bg-white p-6 rounded shadow">
+        <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50">
 
-          <h2 className="font-bold mb-4">
-            Activity for {selectedUser.email}
-          </h2>
+          <div className="bg-white w-full max-w-2xl p-6 rounded-2xl max-h-[90vh] overflow-y-auto">
 
-          <table className="w-full text-sm">
+            <h2 className="text-xl font-bold mb-4">
+              {selectedUser.email}
+            </h2>
 
-            <thead>
-              <tr>
-                <th>Type</th>
-                <th>Units</th>
-                <th>Status</th>
-                <th>Date</th>
-              </tr>
-            </thead>
+            <h3 className="font-semibold mb-2">User Activity</h3>
 
-            <tbody>
-              {userActivity.map(tx => (
-                <tr key={tx._id}>
-                  <td>{tx.type}</td>
-                  <td>{tx.units || tx.unitsUsed || 0}</td>
-                  <td>{tx.status}</td>
-                  <td>{new Date(tx.createdAt).toLocaleString()}</td>
-                </tr>
+            <div className="space-y-2 max-h-60 overflow-y-auto">
+
+              {userActivity.map((tx) => (
+                <div key={tx._id} className="bg-gray-100 p-3 rounded text-sm">
+
+                  <div className="flex justify-between">
+                    <p className="font-medium">{tx.type}</p>
+                    <p className="text-xs text-gray-500">
+                      {new Date(tx.createdAt).toLocaleString()}
+                    </p>
+                  </div>
+
+                  <p>Units: {tx.units || 0}</p>
+                  <p>Status: {tx.status}</p>
+
+                </div>
               ))}
-            </tbody>
 
-          </table>
+            </div>
 
+            <button
+              onClick={() => setSelectedUser(null)}
+              className="mt-4 text-red-500"
+            >
+              Close
+            </button>
+
+          </div>
         </div>
       )}
 

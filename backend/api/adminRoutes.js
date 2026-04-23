@@ -6,53 +6,136 @@ const Transaction = require("../models/Transaction");
 const AuditLog = require("../models/AuditLog");
 const Pricing = require("../models/Pricing");
 
-// ==============================
-// 🔐 ADMIN CHECK
-// ==============================
-function isAdmin(req, res, next) {
-  const email = req.headers["email"];
-
-  if (!email) return res.status(401).json({ message: "Unauthorized" });
-
-  if (email !== "washingtonamedu@gmail.com") {
-    return res.status(403).json({ message: "Access denied" });
-  }
-
-  next();
-}
-
-const ADMIN_EMAIL = "washingtonamedu@gmail.com";
+const SUPER_ADMIN_EMAIL = "washingtonamedu@gmail.com";
 
 // ==============================
-// 🔍 SEARCH USERS
+// 🔐 AUTH MIDDLEWARE
 // ==============================
-router.get("/users/search", isAdmin, async (req, res) => {
+const isAdmin = async (req, res, next) => {
   try {
-    const { query } = req.query;
+    const email = req.headers["email"];
+    if (!email) return res.status(401).json({ message: "Unauthorized" });
 
-    const users = await User.find({
-      $or: [
-        { email: { $regex: query, $options: "i" } },
-        { firstName: { $regex: query, $options: "i" } },
-        { lastName: { $regex: query, $options: "i" } },
-      ],
-    }).select("-password");
+    const user = await User.findOne({ email });
+    if (!user) return res.status(401).json({ message: "User not found" });
 
-    res.json(users);
-  } catch (error) {
-    res.status(500).json({ message: "Search failed" });
+    if (!["admin", "super_admin"].includes(user.role)) {
+      return res.status(403).json({ message: "Access denied" });
+    }
+
+    req.user = user;
+    next();
+
+  } catch {
+    res.status(500).json({ message: "Auth failed" });
+  }
+};
+
+const isSuperAdmin = async (req, res, next) => {
+  if (req.user.role !== "super_admin") {
+    return res.status(403).json({ message: "Super admin only" });
+  }
+  next();
+};
+
+// ==============================
+// 👥 GET USERS (PAGINATED)
+// ==============================
+router.get("/users", isAdmin, async (req, res) => {
+  try {
+    let { page = 1, limit = 20, search = "" } = req.query;
+
+    page = parseInt(page);
+    limit = parseInt(limit);
+
+    const query = search
+      ? {
+          $or: [
+            { email: { $regex: search, $options: "i" } },
+            { firstName: { $regex: search, $options: "i" } },
+            { lastName: { $regex: search, $options: "i" } },
+          ],
+        }
+      : {};
+
+    const total = await User.countDocuments(query);
+
+    const users = await User.find(query)
+      .select("-password")
+      .sort({ createdAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(limit)
+      .lean();
+
+    res.json({
+      data: users,
+      pagination: {
+        total,
+        page,
+        pages: Math.ceil(total / limit),
+      },
+    });
+
+  } catch (err) {
+    res.status(500).json({ message: "Error fetching users" });
   }
 });
 
 // ==============================
-// 👥 GET ALL USERS
+// 🔥 MAKE ADMIN (SUPER ADMIN ONLY)
 // ==============================
-router.get("/users", isAdmin, async (req, res) => {
+router.put("/user/:id/make-admin", isAdmin, isSuperAdmin, async (req, res) => {
   try {
-    const users = await User.find().select("-password");
-    res.json(users);
+    const user = await User.findById(req.params.id);
+
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    if (user.email === SUPER_ADMIN_EMAIL) {
+      return res.status(400).json({ message: "Already super admin" });
+    }
+
+    user.role = "admin";
+    await user.save();
+
+    await AuditLog.create({
+      action: "MAKE_ADMIN",
+      performedBy: req.user.email,
+      userId: user._id,
+    });
+
+    res.json({ message: "User promoted to admin" });
+
   } catch {
-    res.status(500).json({ message: "Error fetching users" });
+    res.status(500).json({ message: "Failed to promote user" });
+  }
+});
+
+// ==============================
+// 🔥 REMOVE ADMIN (SUPER ADMIN ONLY)
+// ==============================
+router.put("/user/:id/remove-admin", isAdmin, isSuperAdmin, async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    if (user.email === SUPER_ADMIN_EMAIL) {
+      return res.status(400).json({ message: "Cannot modify super admin" });
+    }
+
+    user.role = "user";
+    await user.save();
+
+    await AuditLog.create({
+      action: "REMOVE_ADMIN",
+      performedBy: req.user.email,
+      userId: user._id,
+    });
+
+    res.json({ message: "Admin removed" });
+
+  } catch {
+    res.status(500).json({ message: "Failed to remove admin" });
   }
 });
 
@@ -63,8 +146,8 @@ router.put("/user/:id/suspend", isAdmin, async (req, res) => {
   try {
     const user = await User.findById(req.params.id);
 
-    if (user.email === ADMIN_EMAIL) {
-      return res.status(400).json({ message: "Cannot suspend admin" });
+    if (user.role === "super_admin") {
+      return res.status(400).json({ message: "Cannot suspend super admin" });
     }
 
     user.status = "suspended";
@@ -72,11 +155,12 @@ router.put("/user/:id/suspend", isAdmin, async (req, res) => {
 
     await AuditLog.create({
       action: "SUSPEND_USER",
-      performedBy: req.headers["email"],
+      performedBy: req.user.email,
       userId: user._id,
     });
 
-    res.json({ message: "User suspended", user });
+    res.json({ message: "User suspended" });
+
   } catch {
     res.status(500).json({ message: "Failed to suspend user" });
   }
@@ -94,25 +178,26 @@ router.put("/user/:id/activate", isAdmin, async (req, res) => {
 
     await AuditLog.create({
       action: "ACTIVATE_USER",
-      performedBy: req.headers["email"],
+      performedBy: req.user.email,
       userId: user._id,
     });
 
-    res.json({ message: "User activated", user });
+    res.json({ message: "User activated" });
+
   } catch {
     res.status(500).json({ message: "Failed to activate user" });
   }
 });
 
 // ==============================
-// 🗑 DELETE USER
+// 🗑 DELETE USER (SUPER ADMIN ONLY)
 // ==============================
-router.delete("/user/:id", isAdmin, async (req, res) => {
+router.delete("/user/:id", isAdmin, isSuperAdmin, async (req, res) => {
   try {
     const user = await User.findById(req.params.id);
 
-    if (user.email === ADMIN_EMAIL) {
-      return res.status(400).json({ message: "Cannot delete admin" });
+    if (user.role === "super_admin") {
+      return res.status(400).json({ message: "Cannot delete super admin" });
     }
 
     await User.findByIdAndDelete(req.params.id);
@@ -120,26 +205,23 @@ router.delete("/user/:id", isAdmin, async (req, res) => {
 
     await AuditLog.create({
       action: "DELETE_USER",
-      performedBy: req.headers["email"],
+      performedBy: req.user.email,
       userId: req.params.id,
     });
 
-    res.json({ message: "User deleted successfully" });
+    res.json({ message: "User deleted" });
+
   } catch {
     res.status(500).json({ message: "Failed to delete user" });
   }
 });
 
 // ==============================
-// 🔥 UNIT CONTROL (REPLACES WALLET)
+// 🔥 UNIT CONTROL
 // ==============================
 router.post("/user/:id/units", isAdmin, async (req, res) => {
   try {
     const { units, action } = req.body;
-
-    if (!units || !action) {
-      return res.status(400).json({ message: "Units and action required" });
-    }
 
     const user = await User.findById(req.params.id);
     if (!user) return res.status(404).json({ message: "User not found" });
@@ -166,7 +248,7 @@ router.post("/user/:id/units", isAdmin, async (req, res) => {
 
     await AuditLog.create({
       action: action === "add" ? "ADD_UNITS" : "DEDUCT_UNITS",
-      performedBy: req.headers["email"],
+      performedBy: req.user.email,
       userId: user._id,
       before,
       after: user.units,
@@ -174,83 +256,35 @@ router.post("/user/:id/units", isAdmin, async (req, res) => {
 
     res.json({ message: "Units updated", units: user.units });
 
-  } catch (error) {
+  } catch {
     res.status(500).json({ message: "Error updating units" });
   }
 });
 
 // ==============================
-// 💰 UPDATE PRICING + MODE
+// 💰 UPDATE PRICING
 // ==============================
 router.put("/pricing", isAdmin, async (req, res) => {
   try {
-    const {
-      unitPrice,
-      agentPrice,
-      mode,
-
-      validation,
-      ipe,
-      modification,
-      slipPrice
-    } = req.body;
-
     let pricing = await Pricing.findOne();
+    if (!pricing) pricing = new Pricing({});
 
-    if (!pricing) {
-      pricing = new Pricing({});
-    }
+    Object.assign(pricing.nin, {
+      unitPrice: req.body.unitPrice ?? pricing.nin.unitPrice,
+      agentPrice: req.body.agentPrice ?? pricing.nin.agentPrice,
+      mode: req.body.mode ?? pricing.nin.mode,
+    });
 
-    // =========================
-    // 🔢 UNIT PRICING
-    // =========================
-    if (unitPrice !== undefined) pricing.nin.unitPrice = unitPrice;
-    if (agentPrice !== undefined) pricing.nin.agentPrice = agentPrice;
-    if (mode) pricing.nin.mode = mode;
-
-    // =========================
-    // 🔍 VALIDATION
-    // =========================
-    if (validation) {
-      Object.keys(validation).forEach(key => {
-        pricing.ninServices.validation[key] = validation[key];
-      });
-    }
-
-    // =========================
-    // 🧾 IPE
-    // =========================
-    if (ipe) {
-      Object.keys(ipe).forEach(key => {
-        pricing.ninServices.ipe[key] = ipe[key];
-      });
-    }
-
-    // =========================
-    // 🔧 MODIFICATION
-    // =========================
-    if (modification) {
-      Object.keys(modification).forEach(key => {
-        pricing.ninServices.modification[key] = modification[key];
-      });
-    }
-
-    // =========================
-    // 📄 SLIP PRICE
-    // =========================
-    if (slipPrice !== undefined) {
-      pricing.ninServices.slipPrice = slipPrice;
-    }
+    if (req.body.validation) Object.assign(pricing.ninServices.validation, req.body.validation);
+    if (req.body.ipe) Object.assign(pricing.ninServices.ipe, req.body.ipe);
+    if (req.body.modification) Object.assign(pricing.ninServices.modification, req.body.modification);
+    if (req.body.slipPrice !== undefined) pricing.ninServices.slipPrice = req.body.slipPrice;
 
     await pricing.save();
 
-    res.json({
-      message: "Full pricing updated successfully",
-      pricing,
-    });
+    res.json({ message: "Pricing updated", pricing });
 
-  } catch (error) {
-    console.error("PRICING UPDATE ERROR:", error);
+  } catch {
     res.status(500).json({ message: "Failed to update pricing" });
   }
 });
@@ -264,23 +298,6 @@ router.get("/transactions", isAdmin, async (req, res) => {
     res.json(transactions);
   } catch {
     res.status(500).json({ message: "Error fetching transactions" });
-  }
-});
-
-// ==============================
-// 👤 USER DETAILS
-// ==============================
-router.get("/user/:id", isAdmin, async (req, res) => {
-  try {
-    const user = await User.findById(req.params.id).select("-password");
-
-    const transactions = await Transaction.find({
-      userId: user._id,
-    }).sort({ createdAt: -1 });
-
-    res.json({ user, transactions });
-  } catch {
-    res.status(500).json({ message: "Error fetching user data" });
   }
 });
 

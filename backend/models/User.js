@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 
-const ADMIN_EMAIL = "washingtonamedu@gmail.com";
+const SUPER_ADMIN_EMAIL = "washingtonamedu@gmail.com";
 
 const userSchema = new mongoose.Schema({
   // ==============================
@@ -30,7 +30,7 @@ const userSchema = new mongoose.Schema({
   email: {
     type: String,
     required: true,
-    unique: true, // ✅ keep this
+    unique: true,
     lowercase: true,
     trim: true,
   },
@@ -49,7 +49,7 @@ const userSchema = new mongoose.Schema({
     min: 0,
   },
 
-  // 🔁 legacy support (optional)
+  // 🔁 legacy support
   balance: {
     type: Number,
     default: 0,
@@ -66,32 +66,78 @@ const userSchema = new mongoose.Schema({
   },
 
   // ==============================
-  // 🔥 ROLE SYSTEM (UPGRADE)
+  // 🔥 ROLE SYSTEM (FINAL)
   // ==============================
   role: {
     type: String,
-    enum: ["user", "admin"],
+    enum: ["user", "admin", "super_admin"],
     default: "user",
+  },
+
+  // ==============================
+  // 📊 TRACKING
+  // ==============================
+  lastLogin: {
+    type: Date,
+    default: null,
   },
 
 }, {
   timestamps: true,
 });
 
-// ❌ REMOVE DUPLICATE INDEX (IMPORTANT)
-// userSchema.index({ email: 1 }, { unique: true });
 
 // ==============================
-// 🔥 AUTO-SET ADMIN ROLE
+// 🔥 FORCE SUPER ADMIN (IMMUTABLE)
 // ==============================
-userSchema.pre("save", function () {
-  if (
-    this.email &&
-    this.email.toLowerCase().trim() === ADMIN_EMAIL
-  ) {
-    this.role = "admin";
+userSchema.pre("save", function (next) {
+
+  if (this.email && this.email.toLowerCase().trim() === SUPER_ADMIN_EMAIL) {
+    this.role = "super_admin"; // 🔒 ALWAYS SUPER ADMIN
+    this.status = "active";    // 🔒 CANNOT BE SUSPENDED
   }
+
+  next();
 });
 
-// ✅ FIX: PREVENT MODEL DUPLICATION (VERY IMPORTANT)
-module.exports = mongoose.models.User || mongoose.model("User", userSchema);
+
+// ==============================
+// 🚫 PROTECT SUPER ADMIN FROM DELETE
+// ==============================
+userSchema.pre("findOneAndDelete", async function (next) {
+  const doc = await this.model.findOne(this.getFilter());
+
+  if (doc && doc.email === SUPER_ADMIN_EMAIL) {
+    throw new Error("Cannot delete super admin");
+  }
+
+  next();
+});
+
+
+// ==============================
+// 🚫 PROTECT SUPER ADMIN FROM UPDATE
+// ==============================
+userSchema.pre("findOneAndUpdate", async function (next) {
+  const doc = await this.model.findOne(this.getFilter());
+
+  if (doc && doc.email === SUPER_ADMIN_EMAIL) {
+    if (this._update?.role && this._update.role !== "super_admin") {
+      throw new Error("Cannot change super admin role");
+    }
+
+    if (this._update?.status === "suspended") {
+      throw new Error("Cannot suspend super admin");
+    }
+  }
+
+  next();
+});
+
+
+// ==============================
+// ✅ SAFE EXPORT
+// ==============================
+module.exports =
+  mongoose.models.User ||
+  mongoose.model("User", userSchema);
