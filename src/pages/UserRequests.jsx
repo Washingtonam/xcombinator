@@ -12,9 +12,6 @@ export default function UserRequests() {
 
   const user = JSON.parse(localStorage.getItem("user"));
 
-  // =========================
-  // FETCH (PAGINATED)
-  // =========================
   const fetchRequests = async (pageNum = 1, append = false) => {
     try {
       const res = await axios.get(
@@ -29,34 +26,31 @@ export default function UserRequests() {
         setRequests(newData);
       }
 
-      const currentPage = res.data?.pagination?.page;
-      const totalPages = res.data?.pagination?.pages;
+      const currentPage = res.data?.pagination?.page || 1;
+      const totalPages = res.data?.pagination?.pages || 1;
 
       setHasMore(currentPage < totalPages);
 
     } catch (err) {
       console.error(err);
+      setRequests([]);
     }
 
     setLoading(false);
   };
 
   useEffect(() => {
-    if (user?.id) fetchRequests(1);
+    if (user?.id) {
+      fetchRequests(1);
+    }
   }, []);
 
-  // =========================
-  // LOAD MORE
-  // =========================
   const loadMore = () => {
     const nextPage = page + 1;
     setPage(nextPage);
     fetchRequests(nextPage, true);
   };
 
-  // =========================
-  // STATUS STYLE
-  // =========================
   const statusStyle = (status) => {
     switch (status) {
       case "pending":
@@ -72,9 +66,6 @@ export default function UserRequests() {
     }
   };
 
-  // =========================
-  // STATUS TEXT (HUMANIZED)
-  // =========================
   const statusText = (status) => {
     switch (status) {
       case "pending":
@@ -90,30 +81,28 @@ export default function UserRequests() {
     }
   };
 
-  // =========================
-  // LOADING
-  // =========================
   if (loading) {
-    return <div className="p-6 text-center text-gray-500">Loading...</div>;
+    return (
+      <div className="p-6 text-center text-gray-500">
+        Loading your requests...
+      </div>
+    );
   }
 
   return (
     <div className="p-6 max-w-6xl mx-auto">
 
-      {/* HEADER */}
       <h1 className="text-2xl font-bold mb-2">My Requests</h1>
       <p className="text-gray-500 mb-6">
         Track your payments, processing, and completed services
       </p>
 
-      {/* EMPTY */}
       {requests.length === 0 && (
         <div className="bg-white p-6 rounded-xl text-center shadow">
           No requests yet
         </div>
       )}
 
-      {/* LIST */}
       <div className="space-y-4">
 
         {requests.map((r) => (
@@ -123,7 +112,6 @@ export default function UserRequests() {
             className="bg-white p-5 rounded-2xl shadow hover:shadow-lg transition cursor-pointer flex justify-between items-center"
           >
 
-            {/* LEFT */}
             <div>
               <p className="font-semibold text-gray-800">
                 {r.service?.toUpperCase()} • {r.type}
@@ -138,7 +126,6 @@ export default function UserRequests() {
               </p>
             </div>
 
-            {/* RIGHT */}
             <div className="text-right">
 
               <p className="font-bold text-lg">
@@ -156,7 +143,6 @@ export default function UserRequests() {
 
       </div>
 
-      {/* LOAD MORE */}
       {hasMore && (
         <div className="mt-6 text-center">
           <button
@@ -168,13 +154,11 @@ export default function UserRequests() {
         </div>
       )}
 
-      {/* ================= MODAL ================= */}
       {active && (
         <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50">
 
           <div className="bg-white w-full max-w-2xl rounded-2xl p-6 max-h-[90vh] overflow-y-auto">
 
-            {/* HEADER */}
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-lg font-bold">
                 Request Details
@@ -183,7 +167,6 @@ export default function UserRequests() {
               <button onClick={() => setActive(null)}>✕</button>
             </div>
 
-            {/* BASIC */}
             <div className="space-y-1 text-sm mb-4">
               <p><b>Service:</b> {active.service}</p>
               <p><b>Type:</b> {active.type}</p>
@@ -191,14 +174,12 @@ export default function UserRequests() {
               <p><b>Amount:</b> ₦{active.amount}</p>
             </div>
 
-            {/* STATUS */}
             <div className="mb-4">
               <span className={`px-3 py-1 rounded-full text-xs ${statusStyle(active.status)}`}>
                 {statusText(active.status)}
               </span>
             </div>
 
-            {/* TIMELINE */}
             <div className="mb-6">
               <h3 className="font-semibold mb-2">Progress</h3>
 
@@ -218,7 +199,6 @@ export default function UserRequests() {
               </div>
             </div>
 
-            {/* COMMENTS */}
             <div className="mb-6">
               <h3 className="font-semibold mb-2">Conversation</h3>
 
@@ -239,7 +219,6 @@ export default function UserRequests() {
               </div>
             </div>
 
-            {/* PROOF */}
             {active.proof && (
               <img
                 src={active.proof}
@@ -247,7 +226,6 @@ export default function UserRequests() {
               />
             )}
 
-            {/* DOWNLOAD */}
             {active.status === "completed" && active.resultSlip && (
               <a
                 href={active.resultSlip}
@@ -258,7 +236,6 @@ export default function UserRequests() {
               </a>
             )}
 
-            {/* TRUST */}
             <div className="mt-6 text-xs text-gray-500 space-y-1">
               <p>✔ Secure processing</p>
               <p>✔ Admin verified</p>
