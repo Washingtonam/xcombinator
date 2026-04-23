@@ -7,27 +7,52 @@ export default function UserRequests() {
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [active, setActive] = useState(null);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
 
   const user = JSON.parse(localStorage.getItem("user"));
 
   // =========================
-  // FETCH
+  // FETCH (PAGINATED)
   // =========================
-  const fetchRequests = async () => {
+  const fetchRequests = async (pageNum = 1, append = false) => {
     try {
       const res = await axios.get(
-        `${API_BASE}/api/user/requests/${user?.id}`
+        `${API_BASE}/api/user/requests/${user?.id}?page=${pageNum}&limit=10`
       );
-      setRequests(res.data || []);
+
+      const newData = res.data?.data || [];
+
+      if (append) {
+        setRequests(prev => [...prev, ...newData]);
+      } else {
+        setRequests(newData);
+      }
+
+      const currentPage = res.data?.pagination?.page;
+      const totalPages = res.data?.pagination?.pages;
+
+      setHasMore(currentPage < totalPages);
+
     } catch (err) {
       console.error(err);
     }
+
     setLoading(false);
   };
 
   useEffect(() => {
-    if (user?.id) fetchRequests();
+    if (user?.id) fetchRequests(1);
   }, []);
+
+  // =========================
+  // LOAD MORE
+  // =========================
+  const loadMore = () => {
+    const nextPage = page + 1;
+    setPage(nextPage);
+    fetchRequests(nextPage, true);
+  };
 
   // =========================
   // STATUS STYLE
@@ -48,10 +73,28 @@ export default function UserRequests() {
   };
 
   // =========================
+  // STATUS TEXT (HUMANIZED)
+  // =========================
+  const statusText = (status) => {
+    switch (status) {
+      case "pending":
+        return "⏳ Waiting for review";
+      case "approved":
+        return "⚙️ Processing";
+      case "completed":
+        return "✅ Completed";
+      case "rejected":
+        return "❌ Issue found";
+      default:
+        return status;
+    }
+  };
+
+  // =========================
   // LOADING
   // =========================
   if (loading) {
-    return <div className="p-6 text-center">Loading...</div>;
+    return <div className="p-6 text-center text-gray-500">Loading...</div>;
   }
 
   return (
@@ -70,41 +113,60 @@ export default function UserRequests() {
         </div>
       )}
 
-      {/* GRID */}
-      <div className="grid md:grid-cols-2 gap-5">
+      {/* LIST */}
+      <div className="space-y-4">
 
         {requests.map((r) => (
           <div
             key={r._id}
             onClick={() => setActive(r)}
-            className="bg-white p-5 rounded-2xl shadow hover:shadow-lg transition cursor-pointer"
+            className="bg-white p-5 rounded-2xl shadow hover:shadow-lg transition cursor-pointer flex justify-between items-center"
           >
 
-            {/* TOP */}
-            <div className="flex justify-between items-center mb-3">
-              <div className="font-semibold text-sm">
-                {r.service?.toUpperCase()}
-              </div>
+            {/* LEFT */}
+            <div>
+              <p className="font-semibold text-gray-800">
+                {r.service?.toUpperCase()} • {r.type}
+              </p>
 
-              <span className={`px-3 py-1 text-xs rounded-full ${statusStyle(r.status)}`}>
-                {r.status}
+              <p className="text-sm text-gray-500">
+                {new Date(r.createdAt).toLocaleString()}
+              </p>
+
+              <p className="text-xs text-gray-400">
+                NIN: {r.nin}
+              </p>
+            </div>
+
+            {/* RIGHT */}
+            <div className="text-right">
+
+              <p className="font-bold text-lg">
+                ₦{r.amount}
+              </p>
+
+              <span className={`text-xs px-3 py-1 rounded-full ${statusStyle(r.status)}`}>
+                {statusText(r.status)}
               </span>
-            </div>
 
-            {/* AMOUNT */}
-            <div className="text-xl font-bold mb-2">
-              ₦{r.amount}
-            </div>
-
-            {/* DETAILS */}
-            <div className="text-sm text-gray-600">
-              {r.type} • {r.nin}
             </div>
 
           </div>
         ))}
 
       </div>
+
+      {/* LOAD MORE */}
+      {hasMore && (
+        <div className="mt-6 text-center">
+          <button
+            onClick={loadMore}
+            className="bg-black text-white px-6 py-2 rounded-lg"
+          >
+            Load More
+          </button>
+        </div>
+      )}
 
       {/* ================= MODAL ================= */}
       {active && (
@@ -129,7 +191,14 @@ export default function UserRequests() {
               <p><b>Amount:</b> ₦{active.amount}</p>
             </div>
 
-            {/* ================= STATUS TIMELINE ================= */}
+            {/* STATUS */}
+            <div className="mb-4">
+              <span className={`px-3 py-1 rounded-full text-xs ${statusStyle(active.status)}`}>
+                {statusText(active.status)}
+              </span>
+            </div>
+
+            {/* TIMELINE */}
             <div className="mb-6">
               <h3 className="font-semibold mb-2">Progress</h3>
 
@@ -149,7 +218,7 @@ export default function UserRequests() {
               </div>
             </div>
 
-            {/* ================= COMMENTS ================= */}
+            {/* COMMENTS */}
             <div className="mb-6">
               <h3 className="font-semibold mb-2">Conversation</h3>
 
@@ -183,11 +252,18 @@ export default function UserRequests() {
               <a
                 href={active.resultSlip}
                 download="nin-slip.pdf"
-                className="block text-center bg-blue-600 text-white py-2 rounded"
+                className="block text-center bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-semibold"
               >
-                Download Result
+                📥 Download Result Slip
               </a>
             )}
+
+            {/* TRUST */}
+            <div className="mt-6 text-xs text-gray-500 space-y-1">
+              <p>✔ Secure processing</p>
+              <p>✔ Admin verified</p>
+              <p>✔ Status updates available</p>
+            </div>
 
           </div>
 
