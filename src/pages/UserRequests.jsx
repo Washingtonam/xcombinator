@@ -7,50 +7,31 @@ export default function UserRequests() {
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [active, setActive] = useState(null);
-  const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(true);
 
   const user = JSON.parse(localStorage.getItem("user"));
 
-  const fetchRequests = async (pageNum = 1, append = false) => {
+  // =========================
+  // FETCH
+  // =========================
+  const fetchRequests = async () => {
     try {
       const res = await axios.get(
-        `${API_BASE}/api/user/requests/${user?.id}?page=${pageNum}&limit=10`
+        `${API_BASE}/api/user/requests/${user?.id}`
       );
-
-      const newData = res.data?.data || [];
-
-      if (append) {
-        setRequests(prev => [...prev, ...newData]);
-      } else {
-        setRequests(newData);
-      }
-
-      const currentPage = res.data?.pagination?.page || 1;
-      const totalPages = res.data?.pagination?.pages || 1;
-
-      setHasMore(currentPage < totalPages);
-
+      setRequests(res.data || []);
     } catch (err) {
       console.error(err);
-      setRequests([]);
     }
-
     setLoading(false);
   };
 
   useEffect(() => {
-    if (user?.id) {
-      fetchRequests(1);
-    }
+    if (user?.id) fetchRequests();
   }, []);
 
-  const loadMore = () => {
-    const nextPage = page + 1;
-    setPage(nextPage);
-    fetchRequests(nextPage, true);
-  };
-
+  // =========================
+  // STATUS STYLE
+  // =========================
   const statusStyle = (status) => {
     switch (status) {
       case "pending":
@@ -66,76 +47,58 @@ export default function UserRequests() {
     }
   };
 
-  const statusText = (status) => {
-    switch (status) {
-      case "pending":
-        return "⏳ Waiting for review";
-      case "approved":
-        return "⚙️ Processing";
-      case "completed":
-        return "✅ Completed";
-      case "rejected":
-        return "❌ Issue found";
-      default:
-        return status;
-    }
-  };
-
+  // =========================
+  // LOADING
+  // =========================
   if (loading) {
-    return (
-      <div className="p-6 text-center text-gray-500">
-        Loading your requests...
-      </div>
-    );
+    return <div className="p-6 text-center">Loading...</div>;
   }
 
   return (
     <div className="p-6 max-w-6xl mx-auto">
 
+      {/* HEADER */}
       <h1 className="text-2xl font-bold mb-2">My Requests</h1>
       <p className="text-gray-500 mb-6">
         Track your payments, processing, and completed services
       </p>
 
+      {/* EMPTY */}
       {requests.length === 0 && (
         <div className="bg-white p-6 rounded-xl text-center shadow">
           No requests yet
         </div>
       )}
 
-      <div className="space-y-4">
+      {/* GRID */}
+      <div className="grid md:grid-cols-2 gap-5">
 
         {requests.map((r) => (
           <div
             key={r._id}
             onClick={() => setActive(r)}
-            className="bg-white p-5 rounded-2xl shadow hover:shadow-lg transition cursor-pointer flex justify-between items-center"
+            className="bg-white p-5 rounded-2xl shadow hover:shadow-lg transition cursor-pointer"
           >
 
-            <div>
-              <p className="font-semibold text-gray-800">
-                {r.service?.toUpperCase()} • {r.type}
-              </p>
+            {/* TOP */}
+            <div className="flex justify-between items-center mb-3">
+              <div className="font-semibold text-sm">
+                {r.service?.toUpperCase()}
+              </div>
 
-              <p className="text-sm text-gray-500">
-                {new Date(r.createdAt).toLocaleString()}
-              </p>
-
-              <p className="text-xs text-gray-400">
-                NIN: {r.nin}
-              </p>
+              <span className={`px-3 py-1 text-xs rounded-full ${statusStyle(r.status)}`}>
+                {r.status}
+              </span>
             </div>
 
-            <div className="text-right">
+            {/* AMOUNT */}
+            <div className="text-xl font-bold mb-2">
+              ₦{r.amount}
+            </div>
 
-              <p className="font-bold text-lg">
-                ₦{r.amount}
-              </p>
-
-              <span className={`text-xs px-3 py-1 rounded-full ${statusStyle(r.status)}`}>
-                {statusText(r.status)}
-              </span>
-
+            {/* DETAILS */}
+            <div className="text-sm text-gray-600">
+              {r.type} • {r.nin}
             </div>
 
           </div>
@@ -143,22 +106,13 @@ export default function UserRequests() {
 
       </div>
 
-      {hasMore && (
-        <div className="mt-6 text-center">
-          <button
-            onClick={loadMore}
-            className="bg-black text-white px-6 py-2 rounded-lg"
-          >
-            Load More
-          </button>
-        </div>
-      )}
-
+      {/* ================= MODAL ================= */}
       {active && (
         <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50">
 
           <div className="bg-white w-full max-w-2xl rounded-2xl p-6 max-h-[90vh] overflow-y-auto">
 
+            {/* HEADER */}
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-lg font-bold">
                 Request Details
@@ -167,6 +121,7 @@ export default function UserRequests() {
               <button onClick={() => setActive(null)}>✕</button>
             </div>
 
+            {/* BASIC */}
             <div className="space-y-1 text-sm mb-4">
               <p><b>Service:</b> {active.service}</p>
               <p><b>Type:</b> {active.type}</p>
@@ -174,12 +129,7 @@ export default function UserRequests() {
               <p><b>Amount:</b> ₦{active.amount}</p>
             </div>
 
-            <div className="mb-4">
-              <span className={`px-3 py-1 rounded-full text-xs ${statusStyle(active.status)}`}>
-                {statusText(active.status)}
-              </span>
-            </div>
-
+            {/* ================= STATUS TIMELINE ================= */}
             <div className="mb-6">
               <h3 className="font-semibold mb-2">Progress</h3>
 
@@ -199,6 +149,7 @@ export default function UserRequests() {
               </div>
             </div>
 
+            {/* ================= COMMENTS ================= */}
             <div className="mb-6">
               <h3 className="font-semibold mb-2">Conversation</h3>
 
@@ -219,6 +170,7 @@ export default function UserRequests() {
               </div>
             </div>
 
+            {/* PROOF */}
             {active.proof && (
               <img
                 src={active.proof}
@@ -226,21 +178,16 @@ export default function UserRequests() {
               />
             )}
 
+            {/* DOWNLOAD */}
             {active.status === "completed" && active.resultSlip && (
               <a
                 href={active.resultSlip}
                 download="nin-slip.pdf"
-                className="block text-center bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-semibold"
+                className="block text-center bg-blue-600 text-white py-2 rounded"
               >
-                📥 Download Result Slip
+                Download Result
               </a>
             )}
-
-            <div className="mt-6 text-xs text-gray-500 space-y-1">
-              <p>✔ Secure processing</p>
-              <p>✔ Admin verified</p>
-              <p>✔ Status updates available</p>
-            </div>
 
           </div>
 
