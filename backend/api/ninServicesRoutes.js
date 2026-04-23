@@ -1,5 +1,6 @@
 const express = require("express");
 const router = express.Router();
+const mongoose = require("mongoose");
 
 const ServiceRequest = require("../models/ServiceRequest");
 const Pricing = require("../models/Pricing");
@@ -91,7 +92,7 @@ router.post("/nin-services/request", async (req, res) => {
 
 
 // ==============================
-// 📥 ADMIN GET REQUESTS (🔥 UPGRADED)
+// 📥 ADMIN GET REQUESTS (PAGINATED)
 // ==============================
 router.get("/admin/requests", async (req, res) => {
   try {
@@ -102,7 +103,6 @@ router.get("/admin/requests", async (req, res) => {
 
     const query = {};
 
-    // 🔥 FILTER BY STATUS
     if (status && status !== "all") {
       query.status = status;
     }
@@ -114,7 +114,7 @@ router.get("/admin/requests", async (req, res) => {
       .sort({ createdAt: -1 })
       .skip((page - 1) * limit)
       .limit(limit)
-      .lean(); // 🔥 SPEED BOOST
+      .lean();
 
     res.json({
       data,
@@ -288,17 +288,35 @@ router.put("/admin/requests/:id/note", async (req, res) => {
 
 
 // ==============================
-// 👤 USER GET OWN REQUESTS
+// 👤 USER GET OWN REQUESTS (FIXED)
 // ==============================
 router.get("/user/requests/:userId", async (req, res) => {
   try {
-    const data = await ServiceRequest.find({
-      userId: req.params.userId
-    })
+    let { page = 1, limit = 10 } = req.query;
+
+    page = parseInt(page);
+    limit = parseInt(limit);
+
+    const query = {
+      userId: new mongoose.Types.ObjectId(req.params.userId)
+    };
+
+    const total = await ServiceRequest.countDocuments(query);
+
+    const data = await ServiceRequest.find(query)
       .sort({ createdAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(limit)
       .lean();
 
-    res.json(data);
+    res.json({
+      data,
+      pagination: {
+        total,
+        page,
+        pages: Math.ceil(total / limit),
+      },
+    });
 
   } catch (err) {
     console.error("USER REQUEST ERROR:", err);

@@ -13,12 +13,12 @@ export default function UserRequests() {
   const user = JSON.parse(localStorage.getItem("user"));
 
   // =========================
-  // FETCH (PAGINATED)
+  // FETCH (PAGINATED + FIXED)
   // =========================
   const fetchRequests = async (pageNum = 1, append = false) => {
     try {
       const res = await axios.get(
-        `${API_BASE}/api/user/requests/${user?.id}?page=${pageNum}&limit=10`
+        `${API_BASE}/api/user/requests/${user?._id}?page=${pageNum}&limit=10`
       );
 
       const newData = res.data?.data || [];
@@ -29,20 +29,20 @@ export default function UserRequests() {
         setRequests(newData);
       }
 
-      const currentPage = res.data?.pagination?.page;
-      const totalPages = res.data?.pagination?.pages;
+      const currentPage = res.data?.pagination?.page || 1;
+      const totalPages = res.data?.pagination?.pages || 1;
 
       setHasMore(currentPage < totalPages);
 
     } catch (err) {
-      console.error(err);
+      console.error("FETCH ERROR:", err);
     }
 
     setLoading(false);
   };
 
   useEffect(() => {
-    if (user?.id) fetchRequests(1);
+    if (user?._id) fetchRequests(1);
   }, []);
 
   // =========================
@@ -73,7 +73,7 @@ export default function UserRequests() {
   };
 
   // =========================
-  // STATUS TEXT (HUMANIZED)
+  // STATUS TEXT
   // =========================
   const statusText = (status) => {
     switch (status) {
@@ -94,14 +94,21 @@ export default function UserRequests() {
   // LOADING
   // =========================
   if (loading) {
-    return <div className="p-6 text-center text-gray-500">Loading...</div>;
+    return (
+      <div className="p-6 text-center text-gray-500">
+        Loading your requests...
+      </div>
+    );
   }
 
   return (
-    <div className="p-6 max-w-6xl mx-auto">
+    <div className="p-6 max-w-5xl mx-auto">
 
       {/* HEADER */}
-      <h1 className="text-2xl font-bold mb-2">My Requests</h1>
+      <h1 className="text-2xl font-bold mb-2">
+        My Requests
+      </h1>
+
       <p className="text-gray-500 mb-6">
         Track your payments, processing, and completed services
       </p>
@@ -157,11 +164,11 @@ export default function UserRequests() {
       </div>
 
       {/* LOAD MORE */}
-      {hasMore && (
+      {hasMore && requests.length > 0 && (
         <div className="mt-6 text-center">
           <button
             onClick={loadMore}
-            className="bg-black text-white px-6 py-2 rounded-lg"
+            className="bg-black hover:bg-gray-800 text-white px-6 py-2 rounded-lg"
           >
             Load More
           </button>
@@ -207,7 +214,7 @@ export default function UserRequests() {
                   <div key={i} className="flex gap-2 items-start text-sm">
                     <div className="w-2 h-2 bg-blue-500 rounded-full mt-2" />
                     <div>
-                      <p className="font-medium">{s.status}</p>
+                      <p className="font-medium capitalize">{s.status}</p>
                       <p className="text-gray-500 text-xs">{s.note}</p>
                       <p className="text-gray-400 text-xs">
                         {new Date(s.date).toLocaleString()}
@@ -243,6 +250,7 @@ export default function UserRequests() {
             {active.proof && (
               <img
                 src={active.proof}
+                alt="proof"
                 className="w-full rounded mb-4"
               />
             )}
