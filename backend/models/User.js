@@ -3,30 +3,10 @@ const mongoose = require("mongoose");
 const SUPER_ADMIN_EMAIL = "washingtonamedu@gmail.com";
 
 const userSchema = new mongoose.Schema({
-  // ==============================
-  // 👤 BASIC INFO
-  // ==============================
-  firstName: {
-    type: String,
-    default: "",
-    trim: true,
-  },
+  firstName: { type: String, default: "", trim: true },
+  lastName: { type: String, default: "", trim: true },
+  nin: { type: String, default: "", trim: true },
 
-  lastName: {
-    type: String,
-    default: "",
-    trim: true,
-  },
-
-  nin: {
-    type: String,
-    default: "",
-    trim: true,
-  },
-
-  // ==============================
-  // 📧 AUTH
-  // ==============================
   email: {
     type: String,
     required: true,
@@ -40,9 +20,6 @@ const userSchema = new mongoose.Schema({
     required: true,
   },
 
-  // ==============================
-  // 💰 WALLET
-  // ==============================
   units: {
     type: Number,
     default: 0,
@@ -55,27 +32,18 @@ const userSchema = new mongoose.Schema({
     min: 0,
   },
 
-  // ==============================
-  // 🚦 STATUS
-  // ==============================
   status: {
     type: String,
     enum: ["active", "suspended"],
     default: "active",
   },
 
-  // ==============================
-  // 🔐 ROLE SYSTEM
-  // ==============================
   role: {
     type: String,
     enum: ["user", "admin", "super_admin"],
     default: "user",
   },
 
-  // ==============================
-  // 📊 TRACKING
-  // ==============================
   lastLogin: {
     type: Date,
     default: null,
@@ -87,9 +55,9 @@ const userSchema = new mongoose.Schema({
 
 
 // ==============================
-// 🔥 FORCE SUPER ADMIN (CRITICAL)
+// 🔥 FIXED HOOK (NO next())
 // ==============================
-userSchema.pre("save", function (next) {
+userSchema.pre("save", function () {
   if (
     this.email &&
     this.email.toLowerCase().trim() === SUPER_ADMIN_EMAIL
@@ -97,55 +65,41 @@ userSchema.pre("save", function (next) {
     this.role = "super_admin";
     this.status = "active";
   }
-  next();
 });
 
 
 // ==============================
-// 🚫 BLOCK DELETE (SUPER ADMIN)
+// 🚫 PROTECT SUPER ADMIN DELETE
 // ==============================
-userSchema.pre("findOneAndDelete", async function (next) {
+userSchema.pre("findOneAndDelete", async function () {
   const doc = await this.model.findOne(this.getFilter());
 
-  if (doc?.email === SUPER_ADMIN_EMAIL) {
-    return next(new Error("Cannot delete super admin"));
+  if (doc && doc.email === SUPER_ADMIN_EMAIL) {
+    throw new Error("Cannot delete super admin");
   }
-
-  next();
 });
 
 
 // ==============================
-// 🚫 BLOCK UPDATE (SUPER ADMIN)
+// 🚫 PROTECT SUPER ADMIN UPDATE
 // ==============================
-userSchema.pre("findOneAndUpdate", async function (next) {
+userSchema.pre("findOneAndUpdate", async function () {
   const doc = await this.model.findOne(this.getFilter());
 
-  if (doc?.email === SUPER_ADMIN_EMAIL) {
-
-    // 🔒 Prevent role downgrade
+  if (doc && doc.email === SUPER_ADMIN_EMAIL) {
     if (this._update?.role && this._update.role !== "super_admin") {
-      return next(new Error("Cannot change super admin role"));
+      throw new Error("Cannot change super admin role");
     }
 
-    // 🔒 Prevent suspension
     if (this._update?.status === "suspended") {
-      return next(new Error("Cannot suspend super admin"));
+      throw new Error("Cannot suspend super admin");
     }
   }
-
-  next();
 });
 
 
 // ==============================
-// 🔥 AUTO INDEX (PERFORMANCE BOOST)
-// ==============================
-userSchema.index({ email: 1 });
-
-
-// ==============================
-// ✅ EXPORT
+// ✅ SAFE EXPORT
 // ==============================
 module.exports =
   mongoose.models.User ||
