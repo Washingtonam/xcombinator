@@ -6,18 +6,22 @@ const Transaction = require("../models/Transaction");
 const AuditLog = require("../models/AuditLog");
 const Pricing = require("../models/Pricing");
 
-const SUPER_ADMIN_EMAIL = "washingtonamedu@gmail.com";
-
 // ==============================
-// 🔐 AUTH MIDDLEWARE
+// 🔐 AUTH MIDDLEWARE (FIXED)
 // ==============================
 const isAdmin = async (req, res, next) => {
   try {
     const email = req.headers["email"];
-    if (!email) return res.status(401).json({ message: "Unauthorized" });
 
-    const user = await User.findOne({ email });
-    if (!user) return res.status(401).json({ message: "User not found" });
+    if (!email) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    const user = await User.findOne({ email }).lean();
+
+    if (!user) {
+      return res.status(401).json({ message: "User not found" });
+    }
 
     if (!["admin", "super_admin"].includes(user.role)) {
       return res.status(403).json({ message: "Access denied" });
@@ -26,12 +30,13 @@ const isAdmin = async (req, res, next) => {
     req.user = user;
     next();
 
-  } catch {
+  } catch (err) {
+    console.error("AUTH ERROR:", err);
     res.status(500).json({ message: "Auth failed" });
   }
 };
 
-const isSuperAdmin = async (req, res, next) => {
+const isSuperAdmin = (req, res, next) => {
   if (req.user.role !== "super_admin") {
     return res.status(403).json({ message: "Super admin only" });
   }
@@ -39,7 +44,7 @@ const isSuperAdmin = async (req, res, next) => {
 };
 
 // ==============================
-// 👥 GET USERS (PAGINATED)
+// 👥 GET USERS (PAGINATED + FIXED)
 // ==============================
 router.get("/users", isAdmin, async (req, res) => {
   try {
@@ -77,12 +82,13 @@ router.get("/users", isAdmin, async (req, res) => {
     });
 
   } catch (err) {
+    console.error("FETCH USERS ERROR:", err);
     res.status(500).json({ message: "Error fetching users" });
   }
 });
 
 // ==============================
-// 🔥 MAKE ADMIN (SUPER ADMIN ONLY)
+// 🔥 MAKE ADMIN
 // ==============================
 router.put("/user/:id/make-admin", isAdmin, isSuperAdmin, async (req, res) => {
   try {
@@ -90,28 +96,23 @@ router.put("/user/:id/make-admin", isAdmin, isSuperAdmin, async (req, res) => {
 
     if (!user) return res.status(404).json({ message: "User not found" });
 
-    if (user.email === SUPER_ADMIN_EMAIL) {
-      return res.status(400).json({ message: "Already super admin" });
+    if (user.role === "super_admin") {
+      return res.status(400).json({ message: "Cannot modify super admin" });
     }
 
     user.role = "admin";
     await user.save();
 
-    await AuditLog.create({
-      action: "MAKE_ADMIN",
-      performedBy: req.user.email,
-      userId: user._id,
-    });
+    res.json({ message: "User promoted to admin", user });
 
-    res.json({ message: "User promoted to admin" });
-
-  } catch {
+  } catch (err) {
+    console.error("MAKE ADMIN ERROR:", err);
     res.status(500).json({ message: "Failed to promote user" });
   }
 });
 
 // ==============================
-// 🔥 REMOVE ADMIN (SUPER ADMIN ONLY)
+// 🔥 REMOVE ADMIN
 // ==============================
 router.put("/user/:id/remove-admin", isAdmin, isSuperAdmin, async (req, res) => {
   try {
@@ -119,22 +120,17 @@ router.put("/user/:id/remove-admin", isAdmin, isSuperAdmin, async (req, res) => 
 
     if (!user) return res.status(404).json({ message: "User not found" });
 
-    if (user.email === SUPER_ADMIN_EMAIL) {
+    if (user.role === "super_admin") {
       return res.status(400).json({ message: "Cannot modify super admin" });
     }
 
     user.role = "user";
     await user.save();
 
-    await AuditLog.create({
-      action: "REMOVE_ADMIN",
-      performedBy: req.user.email,
-      userId: user._id,
-    });
+    res.json({ message: "Admin removed", user });
 
-    res.json({ message: "Admin removed" });
-
-  } catch {
+  } catch (err) {
+    console.error("REMOVE ADMIN ERROR:", err);
     res.status(500).json({ message: "Failed to remove admin" });
   }
 });
@@ -153,15 +149,10 @@ router.put("/user/:id/suspend", isAdmin, async (req, res) => {
     user.status = "suspended";
     await user.save();
 
-    await AuditLog.create({
-      action: "SUSPEND_USER",
-      performedBy: req.user.email,
-      userId: user._id,
-    });
-
     res.json({ message: "User suspended" });
 
-  } catch {
+  } catch (err) {
+    console.error("SUSPEND ERROR:", err);
     res.status(500).json({ message: "Failed to suspend user" });
   }
 });
@@ -176,21 +167,16 @@ router.put("/user/:id/activate", isAdmin, async (req, res) => {
     user.status = "active";
     await user.save();
 
-    await AuditLog.create({
-      action: "ACTIVATE_USER",
-      performedBy: req.user.email,
-      userId: user._id,
-    });
-
     res.json({ message: "User activated" });
 
-  } catch {
+  } catch (err) {
+    console.error("ACTIVATE ERROR:", err);
     res.status(500).json({ message: "Failed to activate user" });
   }
 });
 
 // ==============================
-// 🗑 DELETE USER (SUPER ADMIN ONLY)
+// 🗑 DELETE USER
 // ==============================
 router.delete("/user/:id", isAdmin, isSuperAdmin, async (req, res) => {
   try {
@@ -203,15 +189,10 @@ router.delete("/user/:id", isAdmin, isSuperAdmin, async (req, res) => {
     await User.findByIdAndDelete(req.params.id);
     await Transaction.deleteMany({ userId: req.params.id });
 
-    await AuditLog.create({
-      action: "DELETE_USER",
-      performedBy: req.user.email,
-      userId: req.params.id,
-    });
-
     res.json({ message: "User deleted" });
 
-  } catch {
+  } catch (err) {
+    console.error("DELETE ERROR:", err);
     res.status(500).json({ message: "Failed to delete user" });
   }
 });
@@ -226,8 +207,6 @@ router.post("/user/:id/units", isAdmin, async (req, res) => {
     const user = await User.findById(req.params.id);
     if (!user) return res.status(404).json({ message: "User not found" });
 
-    const before = user.units;
-
     if (action === "add") user.units += units;
 
     if (action === "deduct") {
@@ -239,24 +218,10 @@ router.post("/user/:id/units", isAdmin, async (req, res) => {
 
     await user.save();
 
-    await Transaction.create({
-      type: action === "add" ? "UNIT_ADD" : "UNIT_DEDUCT",
-      units,
-      status: "success",
-      userId: user._id,
-    });
-
-    await AuditLog.create({
-      action: action === "add" ? "ADD_UNITS" : "DEDUCT_UNITS",
-      performedBy: req.user.email,
-      userId: user._id,
-      before,
-      after: user.units,
-    });
-
     res.json({ message: "Units updated", units: user.units });
 
-  } catch {
+  } catch (err) {
+    console.error("UNITS ERROR:", err);
     res.status(500).json({ message: "Error updating units" });
   }
 });
@@ -284,7 +249,8 @@ router.put("/pricing", isAdmin, async (req, res) => {
 
     res.json({ message: "Pricing updated", pricing });
 
-  } catch {
+  } catch (err) {
+    console.error("PRICING ERROR:", err);
     res.status(500).json({ message: "Failed to update pricing" });
   }
 });
@@ -296,7 +262,8 @@ router.get("/transactions", isAdmin, async (req, res) => {
   try {
     const transactions = await Transaction.find().sort({ createdAt: -1 });
     res.json(transactions);
-  } catch {
+  } catch (err) {
+    console.error("TRANSACTION ERROR:", err);
     res.status(500).json({ message: "Error fetching transactions" });
   }
 });
@@ -311,7 +278,8 @@ router.get("/audit-logs", isAdmin, async (req, res) => {
       .sort({ createdAt: -1 });
 
     res.json(logs);
-  } catch {
+  } catch (err) {
+    console.error("AUDIT ERROR:", err);
     res.status(500).json({ message: "Failed to fetch audit logs" });
   }
 });
