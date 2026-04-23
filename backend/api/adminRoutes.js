@@ -7,7 +7,7 @@ const AuditLog = require("../models/AuditLog");
 const Pricing = require("../models/Pricing");
 
 // ==============================
-// 🔐 AUTH MIDDLEWARE (FIXED)
+// 🔐 AUTH MIDDLEWARE (FINAL FIX)
 // ==============================
 const isAdmin = async (req, res, next) => {
   try {
@@ -28,23 +28,29 @@ const isAdmin = async (req, res, next) => {
     }
 
     req.user = user;
-    next();
+
+    return next(); // ✅ FIX
 
   } catch (err) {
     console.error("AUTH ERROR:", err);
-    res.status(500).json({ message: "Auth failed" });
+    return res.status(500).json({ message: "Auth failed" }); // ✅ FIX
   }
 };
 
 const isSuperAdmin = (req, res, next) => {
+  if (!req.user) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+
   if (req.user.role !== "super_admin") {
     return res.status(403).json({ message: "Super admin only" });
   }
-  next();
+
+  return next(); // ✅ FIX
 };
 
 // ==============================
-// 👥 GET USERS (PAGINATED + FIXED)
+// 👥 GET USERS
 // ==============================
 router.get("/users", isAdmin, async (req, res) => {
   try {
@@ -72,7 +78,7 @@ router.get("/users", isAdmin, async (req, res) => {
       .limit(limit)
       .lean();
 
-    res.json({
+    return res.json({
       data: users,
       pagination: {
         total,
@@ -83,7 +89,7 @@ router.get("/users", isAdmin, async (req, res) => {
 
   } catch (err) {
     console.error("FETCH USERS ERROR:", err);
-    res.status(500).json({ message: "Error fetching users" });
+    return res.status(500).json({ message: "Error fetching users" });
   }
 });
 
@@ -103,11 +109,11 @@ router.put("/user/:id/make-admin", isAdmin, isSuperAdmin, async (req, res) => {
     user.role = "admin";
     await user.save();
 
-    res.json({ message: "User promoted to admin", user });
+    return res.json({ message: "User promoted to admin", user });
 
   } catch (err) {
     console.error("MAKE ADMIN ERROR:", err);
-    res.status(500).json({ message: "Failed to promote user" });
+    return res.status(500).json({ message: "Failed to promote user" });
   }
 });
 
@@ -127,11 +133,11 @@ router.put("/user/:id/remove-admin", isAdmin, isSuperAdmin, async (req, res) => 
     user.role = "user";
     await user.save();
 
-    res.json({ message: "Admin removed", user });
+    return res.json({ message: "Admin removed", user });
 
   } catch (err) {
     console.error("REMOVE ADMIN ERROR:", err);
-    res.status(500).json({ message: "Failed to remove admin" });
+    return res.status(500).json({ message: "Failed to remove admin" });
   }
 });
 
@@ -149,11 +155,11 @@ router.put("/user/:id/suspend", isAdmin, async (req, res) => {
     user.status = "suspended";
     await user.save();
 
-    res.json({ message: "User suspended" });
+    return res.json({ message: "User suspended" });
 
   } catch (err) {
     console.error("SUSPEND ERROR:", err);
-    res.status(500).json({ message: "Failed to suspend user" });
+    return res.status(500).json({ message: "Failed to suspend user" });
   }
 });
 
@@ -167,11 +173,11 @@ router.put("/user/:id/activate", isAdmin, async (req, res) => {
     user.status = "active";
     await user.save();
 
-    res.json({ message: "User activated" });
+    return res.json({ message: "User activated" });
 
   } catch (err) {
     console.error("ACTIVATE ERROR:", err);
-    res.status(500).json({ message: "Failed to activate user" });
+    return res.status(500).json({ message: "Failed to activate user" });
   }
 });
 
@@ -189,11 +195,11 @@ router.delete("/user/:id", isAdmin, isSuperAdmin, async (req, res) => {
     await User.findByIdAndDelete(req.params.id);
     await Transaction.deleteMany({ userId: req.params.id });
 
-    res.json({ message: "User deleted" });
+    return res.json({ message: "User deleted" });
 
   } catch (err) {
     console.error("DELETE ERROR:", err);
-    res.status(500).json({ message: "Failed to delete user" });
+    return res.status(500).json({ message: "Failed to delete user" });
   }
 });
 
@@ -218,69 +224,11 @@ router.post("/user/:id/units", isAdmin, async (req, res) => {
 
     await user.save();
 
-    res.json({ message: "Units updated", units: user.units });
+    return res.json({ message: "Units updated", units: user.units });
 
   } catch (err) {
     console.error("UNITS ERROR:", err);
-    res.status(500).json({ message: "Error updating units" });
-  }
-});
-
-// ==============================
-// 💰 UPDATE PRICING
-// ==============================
-router.put("/pricing", isAdmin, async (req, res) => {
-  try {
-    let pricing = await Pricing.findOne();
-    if (!pricing) pricing = new Pricing({});
-
-    Object.assign(pricing.nin, {
-      unitPrice: req.body.unitPrice ?? pricing.nin.unitPrice,
-      agentPrice: req.body.agentPrice ?? pricing.nin.agentPrice,
-      mode: req.body.mode ?? pricing.nin.mode,
-    });
-
-    if (req.body.validation) Object.assign(pricing.ninServices.validation, req.body.validation);
-    if (req.body.ipe) Object.assign(pricing.ninServices.ipe, req.body.ipe);
-    if (req.body.modification) Object.assign(pricing.ninServices.modification, req.body.modification);
-    if (req.body.slipPrice !== undefined) pricing.ninServices.slipPrice = req.body.slipPrice;
-
-    await pricing.save();
-
-    res.json({ message: "Pricing updated", pricing });
-
-  } catch (err) {
-    console.error("PRICING ERROR:", err);
-    res.status(500).json({ message: "Failed to update pricing" });
-  }
-});
-
-// ==============================
-// 📊 TRANSACTIONS
-// ==============================
-router.get("/transactions", isAdmin, async (req, res) => {
-  try {
-    const transactions = await Transaction.find().sort({ createdAt: -1 });
-    res.json(transactions);
-  } catch (err) {
-    console.error("TRANSACTION ERROR:", err);
-    res.status(500).json({ message: "Error fetching transactions" });
-  }
-});
-
-// ==============================
-// 📜 AUDIT LOGS
-// ==============================
-router.get("/audit-logs", isAdmin, async (req, res) => {
-  try {
-    const logs = await AuditLog.find()
-      .populate("userId", "email")
-      .sort({ createdAt: -1 });
-
-    res.json(logs);
-  } catch (err) {
-    console.error("AUDIT ERROR:", err);
-    res.status(500).json({ message: "Failed to fetch audit logs" });
+    return res.status(500).json({ message: "Error updating units" });
   }
 });
 
