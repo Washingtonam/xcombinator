@@ -5,7 +5,7 @@ const API_BASE = "https://xcombinator.onrender.com";
 
 export default function AdminRequests() {
   const [requests, setRequests] = useState([]);
-  const [filter, setFilter] = useState("pending"); // 🔥 default = pending (smart)
+  const [filter, setFilter] = useState("pending");
   const [selected, setSelected] = useState(null);
   const [note, setNote] = useState("");
   const [comment, setComment] = useState("");
@@ -17,49 +17,48 @@ export default function AdminRequests() {
   };
 
   // =========================
-  // 🚀 FETCH (OPTIMIZED)
+  // 🚀 FETCH (FIXED + FAST)
   // =========================
   const fetchRequests = async () => {
     setLoading(true);
+
     try {
-      const res = await axios.get(`${API_BASE}/api/admin/requests`, { headers });
+      const res = await axios.get(
+        `${API_BASE}/api/admin/requests?status=${filter}&page=1&limit=50`,
+        { headers }
+      );
 
-      // 🔥 PRIORITIZE PENDING FIRST
-      const sorted = res.data.sort((a, b) => {
-        if (a.status === "pending") return -1;
-        if (b.status === "pending") return 1;
-        return new Date(b.createdAt) - new Date(a.createdAt);
-      });
+      const data = res.data?.data || [];
 
-      setRequests(sorted);
+      setRequests(data);
+
     } catch (err) {
-      console.error(err);
+      console.error("FETCH ERROR:", err);
     }
+
     setLoading(false);
   };
 
   useEffect(() => {
     fetchRequests();
-  }, []);
+  }, [filter]);
 
   // =========================
-  // FILTER
-  // =========================
-  const filtered = requests.filter(r =>
-    filter === "all" ? true : r.status === filter
-  );
-
-  // =========================
-  // ACTIONS (FAST UI UPDATE)
+  // ACTIONS
   // =========================
   const approve = async (id) => {
     setActionLoading(id);
 
-    await axios.post(`${API_BASE}/api/admin/requests/${id}/approve`, {}, { headers });
+    await axios.post(
+      `${API_BASE}/api/admin/requests/${id}/approve`,
+      {},
+      { headers }
+    );
 
-    // 🔥 instant UI update (no full reload delay)
     setRequests(prev =>
-      prev.map(r => r._id === id ? { ...r, status: "approved" } : r)
+      prev.map(r =>
+        r._id === id ? { ...r, status: "approved" } : r
+      )
     );
 
     setActionLoading(null);
@@ -68,10 +67,16 @@ export default function AdminRequests() {
   const reject = async (id) => {
     setActionLoading(id);
 
-    await axios.post(`${API_BASE}/api/admin/requests/${id}/reject`, {}, { headers });
+    await axios.post(
+      `${API_BASE}/api/admin/requests/${id}/reject`,
+      {},
+      { headers }
+    );
 
     setRequests(prev =>
-      prev.map(r => r._id === id ? { ...r, status: "rejected" } : r)
+      prev.map(r =>
+        r._id === id ? { ...r, status: "rejected" } : r
+      )
     );
 
     setActionLoading(null);
@@ -97,13 +102,19 @@ export default function AdminRequests() {
 
     await axios.post(
       `${API_BASE}/api/admin/requests/${selected._id}/comment`,
-      { text: comment, by: headers.email },
+      {
+        text: comment,
+        by: headers.email,
+      },
       { headers }
     );
 
     setSelected(prev => ({
       ...prev,
-      comments: [...(prev.comments || []), { text: comment, by: headers.email }]
+      comments: [
+        ...(prev.comments || []),
+        { text: comment, by: headers.email }
+      ]
     }));
 
     setComment("");
@@ -139,7 +150,7 @@ export default function AdminRequests() {
         Manage and process all customer requests
       </p>
 
-      {/* FILTER TABS */}
+      {/* FILTER */}
       <div className="flex gap-3 mb-6 flex-wrap">
         {["pending", "approved", "completed", "rejected", "all"].map(f => (
           <button
@@ -164,7 +175,7 @@ export default function AdminRequests() {
       )}
 
       {/* EMPTY */}
-      {!loading && filtered.length === 0 && (
+      {!loading && requests.length === 0 && (
         <div className="bg-white p-6 rounded-xl shadow text-center">
           No requests found
         </div>
@@ -173,7 +184,7 @@ export default function AdminRequests() {
       {/* GRID */}
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
 
-        {filtered.map(r => (
+        {requests.map(r => (
           <div
             key={r._id}
             className="bg-white p-5 rounded-2xl shadow hover:shadow-lg transition border"
@@ -323,6 +334,7 @@ export default function AdminRequests() {
             </button>
 
           </div>
+
         </div>
       )}
 
