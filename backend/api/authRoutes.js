@@ -4,6 +4,8 @@ const User = require("../models/User");
 
 const router = express.Router();
 
+const ADMIN_EMAIL = "washingtonamedu@gmail.com"; // ✅ MUST MATCH EXACTLY
+
 // ==============================
 // 🔐 REGISTER
 // ==============================
@@ -45,10 +47,14 @@ router.post("/register", async (req, res) => {
       nin: nin || "",
       email,
       password: hashedPassword,
+
       units: 0,
       balance: 0,
       status: "active",
     });
+
+    const isAdmin =
+      email === ADMIN_EMAIL.toLowerCase().trim();
 
     res.json({
       message: "User registered successfully",
@@ -56,7 +62,7 @@ router.post("/register", async (req, res) => {
         id: newUser._id,
         email: newUser.email,
         units: newUser.units || 0,
-        role: newUser.role, // ✅ USE ROLE
+        isAdmin, // 🔥 NEW
       },
     });
 
@@ -111,11 +117,9 @@ router.post("/login", async (req, res) => {
       return res.status(403).json({ error: "Account suspended" });
     }
 
-    // ==========================
-    // UPDATE LAST LOGIN (🔥 NEW)
-    // ==========================
-    user.lastLogin = new Date();
-    await user.save();
+    const isAdmin =
+      user.email?.toLowerCase().trim() ===
+      ADMIN_EMAIL.toLowerCase().trim();
 
     res.json({
       message: "Login successful",
@@ -123,7 +127,7 @@ router.post("/login", async (req, res) => {
         id: user._id,
         email: user.email,
         units: user.units || 0,
-        role: user.role, // ✅ USE ROLE
+        isAdmin, // 🔥 NEW
       },
     });
 
