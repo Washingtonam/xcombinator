@@ -101,11 +101,36 @@ export default function Modification() {
       {/* HERO */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2">
-          NIN Modification Services
+          Fix Your NIN Details Without Stress
         </h1>
         <p className="text-gray-500">
-          Fix errors, update your details, and get it done right the first time.
+          Avoid rejection, delays, and repeated errors. Get it done right the first time.
         </p>
+      </div>
+
+      {/* WHY CHOOSE US */}
+      <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
+        {[
+          "Avoid rejection errors",
+          "Faster processing guidance",
+          "Correct documentation handling",
+          "Dedicated support"
+        ].map((item, i) => (
+          <div key={i} className="bg-white p-4 rounded-xl shadow text-sm">
+            ✅ {item}
+          </div>
+        ))}
+      </div>
+
+      {/* PROCESS FLOW */}
+      <div className="bg-blue-50 border p-5 rounded-xl mb-10">
+        <h3 className="font-semibold mb-3">How It Works</h3>
+        <div className="grid md:grid-cols-4 gap-3 text-sm">
+          <p>1️⃣ Fill Form</p>
+          <p>2️⃣ Make Payment</p>
+          <p>3️⃣ We Process</p>
+          <p>4️⃣ Get Update</p>
+        </div>
       </div>
 
       {/* SERVICES */}
@@ -114,20 +139,16 @@ export default function Modification() {
           <div
             key={s.key}
             onClick={() => setSelectedType(s.key)}
-            className={`cursor-pointer p-5 rounded-2xl border transition-all duration-200 ${
+            className={`cursor-pointer p-5 rounded-2xl border transition ${
               selectedType === s.key
-                ? "bg-blue-600 text-white shadow-lg scale-105"
-                : "bg-white hover:shadow-md hover:-translate-y-1"
+                ? "bg-blue-600 text-white scale-105"
+                : "bg-white hover:shadow-md"
             }`}
           >
-            <p className="text-xs opacity-70 mb-2">STARTING FROM</p>
-
-            <h2 className="text-xl font-bold mb-1">
-              ₦{pricing?.[s.key] || 0}
-            </h2>
-
+            <p className="text-xs mb-2 opacity-70">STARTING FROM</p>
+            <h2 className="text-xl font-bold">₦{pricing?.[s.key] || 0}</h2>
             <p className="font-semibold">{s.label}</p>
-            <p className="text-xs opacity-70 mt-1">{s.desc}</p>
+            <p className="text-xs mt-1 opacity-70">{s.desc}</p>
           </div>
         ))}
       </div>
@@ -135,10 +156,7 @@ export default function Modification() {
       {/* FORM */}
       {selectedType && (
         <div className="bg-white p-6 rounded-2xl shadow mb-6 space-y-4">
-
-          <h2 className="font-semibold text-lg mb-2">
-            Fill Details
-          </h2>
+          <h2 className="font-semibold text-lg">Fill Details</h2>
 
           <Input name="nin" placeholder="NIN" onChange={handleChange} />
           <Input name="surname" placeholder="Surname" onChange={handleChange} />
@@ -169,7 +187,6 @@ export default function Modification() {
 
           {selectedType === "dob" && (
             <div className="space-y-6">
-
               <Section title="Basic Information">
                 <Input name="gsm" placeholder="Phone Number" onChange={handleChange} />
                 <Input name="newDob" placeholder="New Date of Birth" onChange={handleChange} />
@@ -220,22 +237,20 @@ export default function Modification() {
                 <Input name="motherLga" placeholder="LGA of Origin" onChange={handleChange} />
                 <Input name="motherTown" placeholder="Village/Town" onChange={handleChange} />
               </Section>
-
             </div>
           )}
-
         </div>
       )}
 
-      {/* SUMMARY CARD */}
+      {/* SUMMARY */}
       {selectedType && (
-        <div className="bg-blue-50 border border-blue-200 p-5 rounded-xl mb-4 flex justify-between items-center">
-          <p className="font-semibold text-blue-700">Total Cost</p>
-          <p className="text-xl font-bold text-blue-900">₦{total}</p>
+        <div className="bg-blue-50 p-5 rounded-xl mb-4 flex justify-between">
+          <p className="font-semibold">Total Cost</p>
+          <p className="font-bold text-xl">₦{total}</p>
         </div>
       )}
 
-      {/* BANK */}
+      {/* PAYMENT */}
       {selectedType && (
         <div className="bg-yellow-50 p-5 rounded-xl mb-4 text-sm border">
           <p><b>Bank:</b> OPAY</p>
@@ -254,29 +269,42 @@ export default function Modification() {
         />
       )}
 
-      {/* BUTTON */}
+      {/* CTA */}
       {selectedType && (
         <button
           onClick={submit}
           disabled={loading}
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white py-4 rounded-xl font-semibold transition"
+          className="w-full bg-blue-600 text-white py-4 rounded-xl font-semibold"
         >
-          {loading ? "Submitting..." : "Submit Request"}
+          {loading ? "Submitting..." : "Submit & Start Processing"}
         </button>
       )}
+
+      {/* WHATSAPP */}
+      <div className="mt-10 text-center">
+        <p className="text-sm text-gray-500 mb-2">
+          Not sure? Talk to us directly
+        </p>
+        <a
+          href="https://wa.me/2348179736442"
+          target="_blank"
+          className="bg-green-500 text-white px-6 py-3 rounded-xl inline-block"
+        >
+          Chat on WhatsApp
+        </a>
+      </div>
 
     </div>
   );
 }
 
-// INPUT
 function Input({ name, placeholder, onChange }) {
   return (
     <input
       name={name}
       placeholder={placeholder}
       onChange={onChange}
-      className="w-full border p-3 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
+      className="w-full border p-3 rounded-xl"
     />
   );
 }
@@ -284,7 +312,7 @@ function Input({ name, placeholder, onChange }) {
 function Section({ title, children }) {
   return (
     <div className="bg-gray-50 p-4 rounded-xl border">
-      <h3 className="font-semibold mb-3 text-gray-700">{title}</h3>
+      <h3 className="font-semibold mb-3">{title}</h3>
       <div className="grid md:grid-cols-2 gap-3">
         {children}
       </div>
