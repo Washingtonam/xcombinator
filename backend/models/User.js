@@ -41,7 +41,7 @@ const userSchema = new mongoose.Schema({
   },
 
   // ==============================
-  // 💰 WALLET SYSTEM
+  // 💰 WALLET
   // ==============================
   units: {
     type: Number,
@@ -49,7 +49,6 @@ const userSchema = new mongoose.Schema({
     min: 0,
   },
 
-  // 🔁 legacy support
   balance: {
     type: Number,
     default: 0,
@@ -57,7 +56,7 @@ const userSchema = new mongoose.Schema({
   },
 
   // ==============================
-  // 🚦 ACCOUNT STATUS
+  // 🚦 STATUS
   // ==============================
   status: {
     type: String,
@@ -66,7 +65,7 @@ const userSchema = new mongoose.Schema({
   },
 
   // ==============================
-  // 🔥 ROLE SYSTEM (FINAL)
+  // 🔐 ROLE SYSTEM
   // ==============================
   role: {
     type: String,
@@ -88,27 +87,28 @@ const userSchema = new mongoose.Schema({
 
 
 // ==============================
-// 🔥 FORCE SUPER ADMIN (IMMUTABLE)
+// 🔥 FORCE SUPER ADMIN (CRITICAL)
 // ==============================
 userSchema.pre("save", function (next) {
-
-  if (this.email && this.email.toLowerCase().trim() === SUPER_ADMIN_EMAIL) {
-    this.role = "super_admin"; // 🔒 ALWAYS SUPER ADMIN
-    this.status = "active";    // 🔒 CANNOT BE SUSPENDED
+  if (
+    this.email &&
+    this.email.toLowerCase().trim() === SUPER_ADMIN_EMAIL
+  ) {
+    this.role = "super_admin";
+    this.status = "active";
   }
-
   next();
 });
 
 
 // ==============================
-// 🚫 PROTECT SUPER ADMIN FROM DELETE
+// 🚫 BLOCK DELETE (SUPER ADMIN)
 // ==============================
 userSchema.pre("findOneAndDelete", async function (next) {
   const doc = await this.model.findOne(this.getFilter());
 
-  if (doc && doc.email === SUPER_ADMIN_EMAIL) {
-    throw new Error("Cannot delete super admin");
+  if (doc?.email === SUPER_ADMIN_EMAIL) {
+    return next(new Error("Cannot delete super admin"));
   }
 
   next();
@@ -116,18 +116,21 @@ userSchema.pre("findOneAndDelete", async function (next) {
 
 
 // ==============================
-// 🚫 PROTECT SUPER ADMIN FROM UPDATE
+// 🚫 BLOCK UPDATE (SUPER ADMIN)
 // ==============================
 userSchema.pre("findOneAndUpdate", async function (next) {
   const doc = await this.model.findOne(this.getFilter());
 
-  if (doc && doc.email === SUPER_ADMIN_EMAIL) {
+  if (doc?.email === SUPER_ADMIN_EMAIL) {
+
+    // 🔒 Prevent role downgrade
     if (this._update?.role && this._update.role !== "super_admin") {
-      throw new Error("Cannot change super admin role");
+      return next(new Error("Cannot change super admin role"));
     }
 
+    // 🔒 Prevent suspension
     if (this._update?.status === "suspended") {
-      throw new Error("Cannot suspend super admin");
+      return next(new Error("Cannot suspend super admin"));
     }
   }
 
@@ -136,7 +139,13 @@ userSchema.pre("findOneAndUpdate", async function (next) {
 
 
 // ==============================
-// ✅ SAFE EXPORT
+// 🔥 AUTO INDEX (PERFORMANCE BOOST)
+// ==============================
+userSchema.index({ email: 1 });
+
+
+// ==============================
+// ✅ EXPORT
 // ==============================
 module.exports =
   mongoose.models.User ||
