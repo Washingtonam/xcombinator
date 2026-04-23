@@ -53,9 +53,6 @@ router.post("/nin-services/request", async (req, res) => {
 
     const total = basePrice + slipCost;
 
-    // =========================
-    // CREATE REQUEST
-    // =========================
     const request = await ServiceRequest.create({
       userId,
       service,
@@ -71,9 +68,6 @@ router.post("/nin-services/request", async (req, res) => {
       ]
     });
 
-    // =========================
-    // CREATE TRANSACTION
-    // =========================
     await Transaction.create({
       type: "SERVICE",
       amount: total,
@@ -95,20 +89,48 @@ router.post("/nin-services/request", async (req, res) => {
   }
 });
 
+
 // ==============================
-// 📥 ADMIN GET REQUESTS
+// 📥 ADMIN GET REQUESTS (🔥 UPGRADED)
 // ==============================
 router.get("/admin/requests", async (req, res) => {
   try {
-    const data = await ServiceRequest.find()
-      .populate("userId", "email")
-      .sort({ createdAt: -1 });
+    let { page = 1, limit = 20, status } = req.query;
 
-    res.json(data);
-  } catch {
+    page = parseInt(page);
+    limit = parseInt(limit);
+
+    const query = {};
+
+    // 🔥 FILTER BY STATUS
+    if (status && status !== "all") {
+      query.status = status;
+    }
+
+    const total = await ServiceRequest.countDocuments(query);
+
+    const data = await ServiceRequest.find(query)
+      .populate("userId", "email")
+      .sort({ createdAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(limit)
+      .lean(); // 🔥 SPEED BOOST
+
+    res.json({
+      data,
+      pagination: {
+        total,
+        page,
+        pages: Math.ceil(total / limit),
+      },
+    });
+
+  } catch (err) {
+    console.error("FETCH REQUESTS ERROR:", err);
     res.status(500).json({ message: "Failed to fetch requests" });
   }
 });
+
 
 // ==============================
 // ✅ APPROVE
@@ -137,10 +159,12 @@ router.post("/admin/requests/:id/approve", async (req, res) => {
 
     res.json({ message: "Approved" });
 
-  } catch {
+  } catch (err) {
+    console.error("APPROVE ERROR:", err);
     res.status(500).json({ message: "Approval failed" });
   }
 });
+
 
 // ==============================
 // ❌ REJECT
@@ -171,10 +195,12 @@ router.post("/admin/requests/:id/reject", async (req, res) => {
 
     res.json({ message: "Rejected" });
 
-  } catch {
+  } catch (err) {
+    console.error("REJECT ERROR:", err);
     res.status(500).json({ message: "Rejection failed" });
   }
 });
+
 
 // ==============================
 // 📤 UPLOAD RESULT SLIP
@@ -206,13 +232,15 @@ router.post("/admin/requests/:id/upload-slip", async (req, res) => {
 
     res.json({ message: "Completed" });
 
-  } catch {
+  } catch (err) {
+    console.error("UPLOAD ERROR:", err);
     res.status(500).json({ message: "Upload failed" });
   }
 });
 
+
 // ==============================
-// 💬 ADD COMMENT (VISIBLE TO USER)
+// 💬 ADD COMMENT
 // ==============================
 router.post("/admin/requests/:id/comment", async (req, res) => {
   try {
@@ -230,13 +258,15 @@ router.post("/admin/requests/:id/comment", async (req, res) => {
 
     res.json({ message: "Comment added" });
 
-  } catch {
+  } catch (err) {
+    console.error("COMMENT ERROR:", err);
     res.status(500).json({ message: "Failed to add comment" });
   }
 });
 
+
 // ==============================
-// 🧠 SAVE ADMIN NOTE (PRIVATE)
+// 🧠 SAVE ADMIN NOTE
 // ==============================
 router.put("/admin/requests/:id/note", async (req, res) => {
   try {
@@ -250,10 +280,12 @@ router.put("/admin/requests/:id/note", async (req, res) => {
 
     res.json({ message: "Note saved" });
 
-  } catch {
+  } catch (err) {
+    console.error("NOTE ERROR:", err);
     res.status(500).json({ message: "Failed to save note" });
   }
 });
+
 
 // ==============================
 // 👤 USER GET OWN REQUESTS
@@ -262,10 +294,14 @@ router.get("/user/requests/:userId", async (req, res) => {
   try {
     const data = await ServiceRequest.find({
       userId: req.params.userId
-    }).sort({ createdAt: -1 });
+    })
+      .sort({ createdAt: -1 })
+      .lean();
 
     res.json(data);
-  } catch {
+
+  } catch (err) {
+    console.error("USER REQUEST ERROR:", err);
     res.status(500).json({ message: "Failed to fetch user requests" });
   }
 });
