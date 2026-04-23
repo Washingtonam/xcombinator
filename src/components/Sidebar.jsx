@@ -14,7 +14,10 @@ export default function Sidebar() {
   const [pendingRequests, setPendingRequests] = useState(0);
 
   const user = JSON.parse(localStorage.getItem("user"));
-  const isAdmin = user?.email === "washingtonamedu@gmail.com";
+
+  // ✅ ROLE SYSTEM
+  const isAdmin = user?.role === "admin" || user?.role === "super_admin";
+  const isSuperAdmin = user?.role === "super_admin";
 
   const headers = {
     email: localStorage.getItem("email"),
@@ -34,17 +37,20 @@ export default function Sidebar() {
     const fetchData = async () => {
       try {
         const payRes = await axios.get(`${API_BASE}/api/admin/payments`, { headers });
-        setPendingPayments(payRes.data.filter(p => p.status === "pending").length);
+        const payments = payRes.data?.data || payRes.data || [];
+        setPendingPayments(payments.filter(p => p.status === "pending").length);
 
         const reqRes = await axios.get(`${API_BASE}/api/admin/requests`, { headers });
-        setPendingRequests(reqRes.data.filter(r => r.status === "pending").length);
+        const requests = reqRes.data?.data || reqRes.data || [];
+        setPendingRequests(requests.filter(r => r.status === "pending").length);
+
       } catch (err) {
         console.error(err);
       }
     };
 
     fetchData();
-  }, []);
+  }, [isAdmin]);
 
   // =========================
   // ACTIVE LINK
@@ -60,7 +66,7 @@ export default function Sidebar() {
 
   return (
     <>
-      {/* 🔥 FLOATING TOGGLE BUTTON */}
+      {/* TOGGLE */}
       <button
         onClick={() => setOpen(true)}
         className="fixed top-4 left-4 z-50 backdrop-blur-lg bg-black/70 text-white px-3 py-2 rounded-xl shadow-lg hover:scale-105 transition"
@@ -68,7 +74,7 @@ export default function Sidebar() {
         ☰
       </button>
 
-      {/* 🔥 OVERLAY */}
+      {/* OVERLAY */}
       {open && (
         <div
           onClick={() => setOpen(false)}
@@ -76,7 +82,7 @@ export default function Sidebar() {
         />
       )}
 
-      {/* 🔥 SIDEBAR */}
+      {/* SIDEBAR */}
       <div
         className={`fixed top-0 left-0 h-full w-72 z-50 transform transition-transform duration-300 ${
           open ? "translate-x-0" : "-translate-x-full"
@@ -99,7 +105,7 @@ export default function Sidebar() {
               </button>
             </div>
 
-            {/* NAV */}
+            {/* ================= USER NAV ================= */}
             <ul className="space-y-2 text-sm">
 
               <li>
@@ -138,16 +144,16 @@ export default function Sidebar() {
                 </Link>
               </li>
 
-              {/* ADMIN */}
+              {/* ================= ADMIN NAV ================= */}
               {isAdmin && (
                 <>
                   <li className="mt-6 text-xs text-white/50 uppercase tracking-wider">
-                    Admin
+                    Admin Panel
                   </li>
 
                   <li>
                     <Link to="/admin" className={linkClass("/admin")} onClick={() => setOpen(false)}>
-                      ⚙️ Dashboard
+                      ⚙️ Admin Dashboard
                     </Link>
                   </li>
 
@@ -161,7 +167,7 @@ export default function Sidebar() {
                     <Link to="/admin/payments" className={linkClass("/admin/payments")} onClick={() => setOpen(false)}>
                       <span>💳 Payments</span>
                       {pendingPayments > 0 && (
-                        <span className="bg-red-500/80 text-xs px-2 py-0.5 rounded-full">
+                        <span className="bg-red-500 text-xs px-2 py-0.5 rounded-full">
                           {pendingPayments}
                         </span>
                       )}
@@ -172,20 +178,36 @@ export default function Sidebar() {
                     <Link to="/admin/requests" className={linkClass("/admin/requests")} onClick={() => setOpen(false)}>
                       <span>📥 Requests</span>
                       {pendingRequests > 0 && (
-                        <span className="bg-yellow-500/80 text-xs px-2 py-0.5 rounded-full">
+                        <span className="bg-yellow-500 text-xs px-2 py-0.5 rounded-full">
                           {pendingRequests}
                         </span>
                       )}
                     </Link>
                   </li>
+                </>
+              )}
+
+              {/* ================= SUPER ADMIN ONLY ================= */}
+              {isSuperAdmin && (
+                <>
+                  <li className="mt-6 text-xs text-white/50 uppercase tracking-wider">
+                    Super Admin
+                  </li>
 
                   <li>
                     <Link to="/admin/pricing" className={linkClass("/admin/pricing")} onClick={() => setOpen(false)}>
-                      💲 Pricing
+                      💲 Pricing Control
+                    </Link>
+                  </li>
+
+                  <li>
+                    <Link to="/admin/audit-logs" className={linkClass("/admin/audit-logs")} onClick={() => setOpen(false)}>
+                      📜 Audit Logs
                     </Link>
                   </li>
                 </>
               )}
+
             </ul>
           </div>
 
@@ -201,7 +223,7 @@ export default function Sidebar() {
 
             <button
               onClick={handleLogout}
-              className="w-full bg-red-600/90 hover:bg-red-700 rounded-xl py-2 transition"
+              className="w-full bg-red-600 hover:bg-red-700 rounded-xl py-2 transition"
             >
               Logout
             </button>
