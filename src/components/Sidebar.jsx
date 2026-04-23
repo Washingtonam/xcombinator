@@ -15,7 +15,7 @@ export default function Sidebar() {
 
   const user = JSON.parse(localStorage.getItem("user"));
 
-  // ✅ ROLE SYSTEM
+  // ✅ ROLE SYSTEM (FIXED)
   const isAdmin = user?.role === "admin" || user?.role === "super_admin";
   const isSuperAdmin = user?.role === "super_admin";
 
@@ -37,12 +37,18 @@ export default function Sidebar() {
     const fetchData = async () => {
       try {
         const payRes = await axios.get(`${API_BASE}/api/admin/payments`, { headers });
-        const payments = payRes.data?.data || payRes.data || [];
-        setPendingPayments(payments.filter(p => p.status === "pending").length);
+
+        const paymentsData = payRes.data?.data || payRes.data || [];
+        setPendingPayments(
+          paymentsData.filter(p => p.status === "pending").length
+        );
 
         const reqRes = await axios.get(`${API_BASE}/api/admin/requests`, { headers });
-        const requests = reqRes.data?.data || reqRes.data || [];
-        setPendingRequests(requests.filter(r => r.status === "pending").length);
+
+        const requestsData = reqRes.data?.data || reqRes.data || [];
+        setPendingRequests(
+          requestsData.filter(r => r.status === "pending").length
+        );
 
       } catch (err) {
         console.error(err);
@@ -50,7 +56,7 @@ export default function Sidebar() {
     };
 
     fetchData();
-  }, [isAdmin]);
+  }, []);
 
   // =========================
   // ACTIVE LINK
@@ -105,7 +111,7 @@ export default function Sidebar() {
               </button>
             </div>
 
-            {/* ================= USER NAV ================= */}
+            {/* NAV */}
             <ul className="space-y-2 text-sm">
 
               <li>
@@ -144,7 +150,7 @@ export default function Sidebar() {
                 </Link>
               </li>
 
-              {/* ================= ADMIN NAV ================= */}
+              {/* ================= ADMIN ================= */}
               {isAdmin && (
                 <>
                   <li className="mt-6 text-xs text-white/50 uppercase tracking-wider">
@@ -153,7 +159,7 @@ export default function Sidebar() {
 
                   <li>
                     <Link to="/admin" className={linkClass("/admin")} onClick={() => setOpen(false)}>
-                      ⚙️ Admin Dashboard
+                      ⚙️ Dashboard
                     </Link>
                   </li>
 
@@ -167,7 +173,7 @@ export default function Sidebar() {
                     <Link to="/admin/payments" className={linkClass("/admin/payments")} onClick={() => setOpen(false)}>
                       <span>💳 Payments</span>
                       {pendingPayments > 0 && (
-                        <span className="bg-red-500 text-xs px-2 py-0.5 rounded-full">
+                        <span className="bg-red-500/80 text-xs px-2 py-0.5 rounded-full">
                           {pendingPayments}
                         </span>
                       )}
@@ -178,36 +184,23 @@ export default function Sidebar() {
                     <Link to="/admin/requests" className={linkClass("/admin/requests")} onClick={() => setOpen(false)}>
                       <span>📥 Requests</span>
                       {pendingRequests > 0 && (
-                        <span className="bg-yellow-500 text-xs px-2 py-0.5 rounded-full">
+                        <span className="bg-yellow-500/80 text-xs px-2 py-0.5 rounded-full">
                           {pendingRequests}
                         </span>
                       )}
                     </Link>
                   </li>
+
+                  {/* 🔒 SUPER ADMIN ONLY */}
+                  {isSuperAdmin && (
+                    <li>
+                      <Link to="/admin/pricing" className={linkClass("/admin/pricing")} onClick={() => setOpen(false)}>
+                        💲 Pricing
+                      </Link>
+                    </li>
+                  )}
                 </>
               )}
-
-              {/* ================= SUPER ADMIN ONLY ================= */}
-              {isSuperAdmin && (
-                <>
-                  <li className="mt-6 text-xs text-white/50 uppercase tracking-wider">
-                    Super Admin
-                  </li>
-
-                  <li>
-                    <Link to="/admin/pricing" className={linkClass("/admin/pricing")} onClick={() => setOpen(false)}>
-                      💲 Pricing Control
-                    </Link>
-                  </li>
-
-                  <li>
-                    <Link to="/admin/audit-logs" className={linkClass("/admin/audit-logs")} onClick={() => setOpen(false)}>
-                      📜 Audit Logs
-                    </Link>
-                  </li>
-                </>
-              )}
-
             </ul>
           </div>
 
@@ -223,7 +216,7 @@ export default function Sidebar() {
 
             <button
               onClick={handleLogout}
-              className="w-full bg-red-600 hover:bg-red-700 rounded-xl py-2 transition"
+              className="w-full bg-red-600/90 hover:bg-red-700 rounded-xl py-2 transition"
             >
               Logout
             </button>
