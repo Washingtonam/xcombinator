@@ -32,15 +32,31 @@ import { ThemeProvider } from "./context/ThemeContext";
 // ==============================
 // 🔐 AUTH
 // ==============================
+function getUser() {
+  try {
+    return JSON.parse(localStorage.getItem("user"));
+  } catch {
+    return null;
+  }
+}
+
 function isAuthenticated() {
   return !!localStorage.getItem("user");
 }
 
 function isAdmin() {
-  const user = JSON.parse(localStorage.getItem("user"));
-  return user?.email === "washingtonamedu@gmail.com";
+  const user = getUser();
+  return user?.role === "admin" || user?.role === "super_admin";
 }
 
+function isSuperAdmin() {
+  const user = getUser();
+  return user?.role === "super_admin";
+}
+
+// ==============================
+// 🔐 ROUTE GUARDS
+// ==============================
 function ProtectedRoute({ children }) {
   if (!isAuthenticated()) return <Navigate to="/login" />;
   return children;
@@ -49,6 +65,12 @@ function ProtectedRoute({ children }) {
 function AdminRoute({ children }) {
   if (!isAuthenticated()) return <Navigate to="/login" />;
   if (!isAdmin()) return <Navigate to="/dashboard" />;
+  return children;
+}
+
+function SuperAdminRoute({ children }) {
+  if (!isAuthenticated()) return <Navigate to="/login" />;
+  if (!isSuperAdmin()) return <Navigate to="/dashboard" />;
   return children;
 }
 
@@ -65,7 +87,7 @@ function Layout() {
 
         <Routes>
 
-          {/* MAIN */}
+          {/* ================= MAIN ================= */}
           <Route path="/dashboard" element={<Dashboard />} />
 
           <Route path="/verify-nin" element={<VerifyNIN />} />
@@ -73,24 +95,49 @@ function Layout() {
           <Route path="/verify-result" element={<VerifyResult />} />
           <Route path="/my-requests" element={<UserRequests />} />
 
-          {/* NIN SERVICES */}
+          {/* ================= SERVICES ================= */}
           <Route path="/nin-services" element={<NINServices />} />
           <Route path="/nin-services/validation" element={<Validation />} />
           <Route path="/nin-services/ipe-clearance" element={<IPEClearance />} />
           <Route path="/nin-services/modification" element={<Modification />} />
 
-          {/* WALLET */}
+          {/* ================= WALLET ================= */}
           <Route path="/transactions" element={<Transactions />} />
           <Route path="/wallet" element={<Wallet />} />
 
-          {/* ADMIN */}
-          <Route path="/admin" element={<AdminRoute><Admin /></AdminRoute>} />
-          <Route path="/admin/users" element={<AdminRoute><AdminUsers /></AdminRoute>} />
-          <Route path="/admin/payments" element={<AdminRoute><AdminPayments /></AdminRoute>} />
-          <Route path="/admin/pricing" element={<AdminRoute><AdminPricing /></AdminRoute>} />
-          <Route path="/admin/requests" element={<AdminRoute><AdminRequests /></AdminRoute>} />
+          {/* ================= ADMIN ================= */}
+          <Route path="/admin" element={
+            <AdminRoute>
+              <Admin />
+            </AdminRoute>
+          } />
 
-          {/* 🔥 FALLBACK */}
+          <Route path="/admin/users" element={
+            <AdminRoute>
+              <AdminUsers />
+            </AdminRoute>
+          } />
+
+          <Route path="/admin/payments" element={
+            <AdminRoute>
+              <AdminPayments />
+            </AdminRoute>
+          } />
+
+          <Route path="/admin/requests" element={
+            <AdminRoute>
+              <AdminRequests />
+            </AdminRoute>
+          } />
+
+          {/* 🔒 ONLY SUPER ADMIN CAN ACCESS */}
+          <Route path="/admin/pricing" element={
+            <SuperAdminRoute>
+              <AdminPricing />
+            </SuperAdminRoute>
+          } />
+
+          {/* ================= FALLBACK ================= */}
           <Route path="*" element={<Navigate to="/dashboard" />} />
 
         </Routes>
@@ -101,13 +148,13 @@ function Layout() {
 }
 
 // ==============================
-// 🔥 ROUTE CONTROLLER
+// 🚀 ROUTE CONTROLLER
 // ==============================
 function AppRoutes() {
   const location = useLocation();
   const loggedIn = isAuthenticated();
 
-  // 🔥 ROOT FIX
+  // ROOT
   if (location.pathname === "/") {
     return loggedIn
       ? <Navigate to="/dashboard" />
