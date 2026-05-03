@@ -6,6 +6,9 @@ const ServiceRequest = require("../models/ServiceRequest");
 const Pricing = require("../models/Pricing");
 const Transaction = require("../models/Transaction");
 
+// 🔥 ADD THIS
+const { addToSheets } = require("../utils/googleSheets");
+
 // ==============================
 // 📤 CREATE REQUEST
 // ==============================
@@ -13,6 +16,7 @@ router.post("/nin-services/request", async (req, res) => {
   try {
     const {
       userId,
+      email, // 🔥 NEW
       service,
       type,
       nin,
@@ -78,6 +82,29 @@ router.post("/nin-services/request", async (req, res) => {
       proof,
       requestId: request._id,
     });
+
+    // ==============================
+    // 📊 GOOGLE SHEETS (NON-BLOCKING)
+    // ==============================
+    addToSheets({
+      summary: [
+        new Date().toLocaleString(),
+        email || "N/A",
+        nin,
+        service,
+        type,
+        total,
+        "pending"
+      ],
+
+      fullData: [
+        new Date().toLocaleString(),
+        email || "N/A",
+        service,
+        type,
+        JSON.stringify(formData || {}, null, 2)
+      ]
+    }).catch(console.error);
 
     res.json({
       message: "Request submitted successfully",
@@ -288,7 +315,7 @@ router.put("/admin/requests/:id/note", async (req, res) => {
 
 
 // ==============================
-// 👤 USER GET OWN REQUESTS (FIXED)
+// 👤 USER GET OWN REQUESTS
 // ==============================
 router.get("/user/requests/:userId", async (req, res) => {
   try {

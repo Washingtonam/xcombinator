@@ -11,6 +11,9 @@ export default function Modification() {
   const [proof, setProof] = useState(null);
   const [loading, setLoading] = useState(false);
 
+  // 🔥 GET USER (IMPORTANT)
+  const user = JSON.parse(localStorage.getItem("user"));
+
   useEffect(() => {
     fetch(`${API}/api/pricing`)
       .then(res => res.json())
@@ -19,11 +22,24 @@ export default function Modification() {
       });
   }, []);
 
+  // 🔥 AUTO PREFILL EMAIL
+  useEffect(() => {
+    if (user?.email) {
+      setFormData(prev => ({
+        ...prev,
+        email: user.email
+      }));
+    }
+  }, []);
+
   const total = pricing?.[selectedType] || 0;
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
   };
 
   const handleFile = (e) => {
@@ -60,7 +76,8 @@ export default function Modification() {
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          userId: JSON.parse(localStorage.getItem("user")).id,
+          userId: user?.id,
+          email: user?.email, // 🔥 REQUIRED FOR GOOGLE SHEETS
           service: "modification",
           type: selectedType,
           nin: formData.nin,
@@ -76,7 +93,9 @@ export default function Modification() {
       alert("✅ Request submitted. Await admin approval.");
 
       setSelectedType(null);
-      setFormData({});
+      setFormData({
+        email: user?.email || "" // 🔥 keep email after reset
+      });
       setProof(null);
 
     } catch (err) {
@@ -162,7 +181,13 @@ export default function Modification() {
           <Input name="surname" placeholder="Surname" onChange={handleChange} />
           <Input name="firstname" placeholder="First Name" onChange={handleChange} />
           <Input name="middlename" placeholder="Middle Name (Optional)" onChange={handleChange} />
-          <Input name="email" placeholder="Email" onChange={handleChange} />
+
+          {/* 🔥 LOCKED EMAIL */}
+          <input
+            value={formData.email || ""}
+            disabled
+            className="w-full border p-3 rounded-xl bg-gray-100"
+          />
 
           {selectedType === "name" && (
             <>
@@ -242,33 +267,6 @@ export default function Modification() {
         </div>
       )}
 
-      {/* SUMMARY */}
-      {selectedType && (
-        <div className="bg-blue-50 p-5 rounded-xl mb-4 flex justify-between">
-          <p className="font-semibold">Total Cost</p>
-          <p className="font-bold text-xl">₦{total}</p>
-        </div>
-      )}
-
-      {/* PAYMENT */}
-      {selectedType && (
-        <div className="bg-yellow-50 p-5 rounded-xl mb-4 text-sm border">
-          <p><b>Bank:</b> OPAY</p>
-          <p><b>Account Number:</b> 6104102697</p>
-          <p><b>Account Name:</b> WASHINGTON AMEDU</p>
-        </div>
-      )}
-
-      {/* FILE */}
-      {selectedType && (
-        <input
-          type="file"
-          accept="image/*,application/pdf"
-          onChange={handleFile}
-          className="mb-4"
-        />
-      )}
-
       {/* CTA */}
       {selectedType && (
         <button
@@ -280,24 +278,11 @@ export default function Modification() {
         </button>
       )}
 
-      {/* WHATSAPP */}
-      <div className="mt-10 text-center">
-        <p className="text-sm text-gray-500 mb-2">
-          Not sure? Talk to us directly
-        </p>
-        <a
-          href="https://wa.me/2348179736442"
-          target="_blank"
-          className="bg-green-500 text-white px-6 py-3 rounded-xl inline-block"
-        >
-          Chat on WhatsApp
-        </a>
-      </div>
-
     </div>
   );
 }
 
+// INPUT
 function Input({ name, placeholder, onChange }) {
   return (
     <input
