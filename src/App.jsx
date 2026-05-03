@@ -29,6 +29,9 @@ import Modification from "./pages/services/Modification";
 import Transactions from "./pages/transactions/Transactions";
 import Wallet from "./pages/wallet/Wallet";
 
+// ✅ ADD THIS
+import Profile from "./pages/Profile";
+
 import { ThemeProvider } from "./context/ThemeContext";
 
 // ==============================
@@ -92,6 +95,9 @@ function Layout() {
           {/* ================= MAIN ================= */}
           <Route path="/dashboard" element={<Dashboard />} />
 
+          {/* ✅ FIXED PROFILE ROUTE */}
+          <Route path="/profile" element={<Profile />} />
+
           <Route path="/verify-nin" element={<VerifyNIN />} />
           <Route path="/verify-bvn" element={<VerifyBVN />} />
           <Route path="/verify-result" element={<VerifyResult />} />
@@ -132,7 +138,6 @@ function Layout() {
             </AdminRoute>
           } />
 
-          {/* 🔒 ONLY SUPER ADMIN CAN ACCESS */}
           <Route path="/admin/pricing" element={
             <SuperAdminRoute>
               <AdminPricing />
@@ -156,14 +161,12 @@ function AppRoutes() {
   const location = useLocation();
   const loggedIn = isAuthenticated();
 
-  // ROOT
   if (location.pathname === "/") {
     return loggedIn
       ? <Navigate to="/dashboard" />
       : <Home />;
   }
 
-  // PUBLIC
   if (location.pathname === "/login") {
     return loggedIn ? <Navigate to="/dashboard" /> : <Login />;
   }
@@ -180,7 +183,6 @@ function AppRoutes() {
     return <ResetPassword />;
   }
 
-  // PROTECTED
   return (
     <ProtectedRoute>
       <Layout />

@@ -6,7 +6,7 @@ const ServiceRequest = require("../models/ServiceRequest");
 const Pricing = require("../models/Pricing");
 const Transaction = require("../models/Transaction");
 
-// 🔥 ADD THIS
+// ✅ GOOGLE SHEETS
 const { addToSheets } = require("../utils/googleSheets");
 
 // ==============================
@@ -16,12 +16,13 @@ router.post("/nin-services/request", async (req, res) => {
   try {
     const {
       userId,
-      email, // 🔥 NEW
+      email,
       service,
       type,
       nin,
       slipType,
       proof,
+      passport, // ✅ NEW
       formData
     } = req.body;
 
@@ -58,6 +59,9 @@ router.post("/nin-services/request", async (req, res) => {
 
     const total = basePrice + slipCost;
 
+    // ==============================
+    // 🧾 CREATE REQUEST
+    // ==============================
     const request = await ServiceRequest.create({
       userId,
       service,
@@ -66,6 +70,7 @@ router.post("/nin-services/request", async (req, res) => {
       slipType: slipType || "none",
       amount: total,
       proof,
+      passport, // ✅ SAVED
       formData: formData || {},
       status: "pending",
       statusHistory: [
@@ -73,6 +78,9 @@ router.post("/nin-services/request", async (req, res) => {
       ]
     });
 
+    // ==============================
+    // 💰 CREATE TRANSACTION
+    // ==============================
     await Transaction.create({
       type: "SERVICE",
       amount: total,
@@ -84,15 +92,15 @@ router.post("/nin-services/request", async (req, res) => {
     });
 
     // ==============================
-    // 📊 GOOGLE SHEETS (NON-BLOCKING)
+    // 📊 GOOGLE SHEETS (SAFE)
     // ==============================
     addToSheets({
       summary: [
         new Date().toLocaleString(),
         email || "N/A",
-        nin,
         service,
         type,
+        nin,
         total,
         "pending"
       ],
@@ -102,9 +110,12 @@ router.post("/nin-services/request", async (req, res) => {
         email || "N/A",
         service,
         type,
+        nin,
         JSON.stringify(formData || {}, null, 2)
       ]
-    }).catch(console.error);
+    })
+      .then(() => console.log("✅ Sheets updated"))
+      .catch(err => console.error("❌ SHEETS ERROR:", err.message));
 
     res.json({
       message: "Request submitted successfully",
@@ -119,7 +130,7 @@ router.post("/nin-services/request", async (req, res) => {
 
 
 // ==============================
-// 📥 ADMIN GET REQUESTS (PAGINATED)
+// 📥 ADMIN GET REQUESTS
 // ==============================
 router.get("/admin/requests", async (req, res) => {
   try {
