@@ -3,10 +3,16 @@ const mongoose = require("mongoose");
 const SUPER_ADMIN_EMAIL = "washingtonamedu@gmail.com";
 
 const userSchema = new mongoose.Schema({
+  // ==============================
+  // 👤 BASIC INFO
+  // ==============================
   firstName: { type: String, default: "", trim: true },
   lastName: { type: String, default: "", trim: true },
   nin: { type: String, default: "", trim: true },
 
+  // ==============================
+  // 📧 AUTH
+  // ==============================
   email: {
     type: String,
     required: true,
@@ -20,6 +26,9 @@ const userSchema = new mongoose.Schema({
     required: true,
   },
 
+  // ==============================
+  // 💰 WALLET
+  // ==============================
   units: {
     type: Number,
     default: 0,
@@ -32,19 +41,41 @@ const userSchema = new mongoose.Schema({
     min: 0,
   },
 
+  // ==============================
+  // 🚦 STATUS
+  // ==============================
   status: {
     type: String,
     enum: ["active", "suspended"],
     default: "active",
   },
 
+  // ==============================
+  // 🔥 ROLE SYSTEM
+  // ==============================
   role: {
     type: String,
     enum: ["user", "admin", "super_admin"],
     default: "user",
   },
 
+  // ==============================
+  // 📊 TRACKING
+  // ==============================
   lastLogin: {
+    type: Date,
+    default: null,
+  },
+
+  // ==============================
+  // 🔐 PASSWORD RESET SYSTEM
+  // ==============================
+  resetToken: {
+    type: String,
+    default: null,
+  },
+
+  resetTokenExpiry: {
     type: Date,
     default: null,
   },
@@ -55,7 +86,7 @@ const userSchema = new mongoose.Schema({
 
 
 // ==============================
-// 🔥 FIXED HOOK (NO next())
+// 🔥 FORCE SUPER ADMIN (SAFE)
 // ==============================
 userSchema.pre("save", function () {
   if (
@@ -87,15 +118,24 @@ userSchema.pre("findOneAndUpdate", async function () {
   const doc = await this.model.findOne(this.getFilter());
 
   if (doc && doc.email === SUPER_ADMIN_EMAIL) {
+
+    // ❌ Block role downgrade
     if (this._update?.role && this._update.role !== "super_admin") {
       throw new Error("Cannot change super admin role");
     }
 
+    // ❌ Block suspension
     if (this._update?.status === "suspended") {
       throw new Error("Cannot suspend super admin");
     }
   }
 });
+
+
+// ==============================
+// 🚀 INDEX OPTIMIZATION (SAFE)
+// ==============================
+userSchema.index({ email: 1 });
 
 
 // ==============================

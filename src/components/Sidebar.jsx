@@ -15,7 +15,6 @@ export default function Sidebar() {
 
   const user = JSON.parse(localStorage.getItem("user"));
 
-  // ✅ ROLE SYSTEM (FIXED)
   const isAdmin = user?.role === "admin" || user?.role === "super_admin";
   const isSuperAdmin = user?.role === "super_admin";
 
@@ -28,23 +27,18 @@ export default function Sidebar() {
     window.location.href = "/login";
   };
 
-  // =========================
-  // FETCH ADMIN DATA
-  // =========================
   useEffect(() => {
     if (!isAdmin) return;
 
     const fetchData = async () => {
       try {
         const payRes = await axios.get(`${API_BASE}/api/admin/payments`, { headers });
-
         const paymentsData = payRes.data?.data || payRes.data || [];
         setPendingPayments(
           paymentsData.filter(p => p.status === "pending").length
         );
 
         const reqRes = await axios.get(`${API_BASE}/api/admin/requests`, { headers });
-
         const requestsData = reqRes.data?.data || reqRes.data || [];
         setPendingRequests(
           requestsData.filter(r => r.status === "pending").length
@@ -58,9 +52,6 @@ export default function Sidebar() {
     fetchData();
   }, []);
 
-  // =========================
-  // ACTIVE LINK
-  // =========================
   const isActive = (path) => location.pathname === path;
 
   const linkClass = (path) =>
@@ -96,9 +87,11 @@ export default function Sidebar() {
       >
         <div className="h-full bg-gradient-to-b from-blue-900/95 to-blue-800/90 backdrop-blur-xl text-white p-6 flex flex-col justify-between shadow-2xl">
 
-          {/* HEADER */}
+          {/* HEADER + PROFILE */}
           <div>
-            <div className="flex justify-between items-center mb-10">
+
+            {/* HEADER */}
+            <div className="flex justify-between items-center mb-6">
               <h1 className="text-xl font-semibold tracking-tight">
                 Xcombinator
               </h1>
@@ -109,6 +102,25 @@ export default function Sidebar() {
               >
                 ✕
               </button>
+            </div>
+
+            {/* 🔥 USER PROFILE BLOCK */}
+            <div className="bg-white/10 p-3 rounded-xl mb-6">
+              <p className="text-sm font-medium truncate">
+                {user?.email}
+              </p>
+
+              <p className="text-xs text-white/60">
+                {user?.role?.replace("_", " ") || "user"}
+              </p>
+
+              <Link
+                to="/profile"
+                onClick={() => setOpen(false)}
+                className="mt-2 inline-block text-xs text-blue-200 hover:underline"
+              >
+                View Profile →
+              </Link>
             </div>
 
             {/* NAV */}
@@ -191,7 +203,6 @@ export default function Sidebar() {
                     </Link>
                   </li>
 
-                  {/* 🔒 SUPER ADMIN ONLY */}
                   {isSuperAdmin && (
                     <li>
                       <Link to="/admin/pricing" className={linkClass("/admin/pricing")} onClick={() => setOpen(false)}>

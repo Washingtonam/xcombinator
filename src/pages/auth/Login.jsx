@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -9,11 +9,15 @@ export default function Login() {
   const navigate = useNavigate();
 
   const handleLogin = async () => {
+    if (!email || !password) {
+      return alert("Enter email and password");
+    }
+
     setLoading(true);
 
     try {
       const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 20000); // 20s timeout
+      const timeout = setTimeout(() => controller.abort(), 20000);
 
       const res = await fetch("https://xcombinator.onrender.com/api/login", {
         method: "POST",
@@ -28,23 +32,21 @@ export default function Login() {
 
       const data = await res.json();
 
-      if (data.error) {
-        alert(data.error);
-        setLoading(false);
-        return;
+      if (!res.ok) {
+        throw new Error(data.error || "Login failed");
       }
 
       localStorage.setItem("user", JSON.stringify(data.user));
       localStorage.setItem("email", data.user.email);
       localStorage.setItem("userId", data.user.id);
 
-      navigate("/");
+      navigate("/dashboard");
 
     } catch (error) {
       if (error.name === "AbortError") {
         alert("Server is taking too long. Try again.");
       } else {
-        alert("Network error. Try again.");
+        alert(error.message || "Network error. Try again.");
       }
     }
 
@@ -52,41 +54,71 @@ export default function Login() {
   };
 
   return (
-    <div className="flex justify-center items-center h-screen">
-      <div className="bg-white p-6 rounded shadow w-80">
-        <h2 className="text-xl font-bold mb-4">Login</h2>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-900 to-blue-600 px-4">
 
-        <input
-          type="email"
-          placeholder="Email"
-          className="w-full border p-2 mb-3"
-          onChange={(e) => setEmail(e.target.value)}
-        />
+      <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl p-8">
 
-        <input
-          type="password"
-          placeholder="Password"
-          className="w-full border p-2 mb-3"
-          onChange={(e) => setPassword(e.target.value)}
-        />
+        {/* HEADER */}
+        <div className="text-center mb-6">
+          <h1 className="text-2xl font-bold">
+            Welcome Back 👋
+          </h1>
 
-        <button
-          onClick={handleLogin}
-          disabled={loading}
-          className="bg-blue-600 text-white w-full py-2 rounded"
-        >
-          {loading ? "Processing..." : "Login"}
-        </button>
+          <p className="text-gray-500 text-sm mt-1">
+            Login to continue to your dashboard
+          </p>
+        </div>
 
-        <p className="text-sm mt-4 text-center">
+        {/* FORM */}
+        <div className="space-y-4">
+
+          <input
+            type="email"
+            placeholder="Email Address"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="w-full border p-3 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
+          />
+
+          <input
+            type="password"
+            placeholder="Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="w-full border p-3 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
+          />
+
+          {/* 🔥 FORGOT PASSWORD */}
+          <div className="text-right text-sm">
+            <Link
+              to="/forgot-password"
+              className="text-blue-600 hover:underline"
+            >
+              Forgot Password?
+            </Link>
+          </div>
+
+          <button
+            onClick={handleLogin}
+            disabled={loading}
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-semibold transition"
+          >
+            {loading ? "Processing..." : "Login"}
+          </button>
+
+        </div>
+
+        {/* FOOTER */}
+        <p className="text-center text-sm text-gray-500 mt-6">
           Don’t have an account?{" "}
           <span
-            className="text-blue-600 cursor-pointer"
             onClick={() => navigate("/register")}
+            className="text-blue-600 font-medium cursor-pointer"
           >
             Register
           </span>
         </p>
+
       </div>
     </div>
   );

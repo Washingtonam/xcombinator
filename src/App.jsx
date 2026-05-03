@@ -5,6 +5,8 @@ import Sidebar from "./components/Sidebar";
 import Home from "./pages/public/Home";
 import Login from "./pages/auth/Login";
 import Register from "./pages/auth/Register";
+import ForgotPassword from "./pages/auth/ForgotPassword";
+import ResetPassword from "./pages/auth/ResetPassword";
 
 import Admin from "./pages/admin/Admin";
 import AdminUsers from "./pages/admin/AdminUsers";
@@ -168,6 +170,14 @@ function AppRoutes() {
 
   if (location.pathname === "/register") {
     return loggedIn ? <Navigate to="/dashboard" /> : <Register />;
+  }
+
+  if (location.pathname === "/forgot-password") {
+    return <ForgotPassword />;
+  }
+
+  if (location.pathname === "/reset-password") {
+    return <ResetPassword />;
   }
 
   // PROTECTED
