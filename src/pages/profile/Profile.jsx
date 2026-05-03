@@ -1,10 +1,27 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 const API = "https://xcombinator.onrender.com";
 
 export default function Profile() {
 
-  const user = JSON.parse(localStorage.getItem("user"));
+  const navigate = useNavigate();
+
+  // ✅ SAFE USER PARSE
+  let storedUser = null;
+  try {
+    storedUser = JSON.parse(localStorage.getItem("user"));
+  } catch {
+    storedUser = null;
+  }
+
+  // 🔥 AUTO REDIRECT IF NO USER
+  if (!storedUser) {
+    window.location.href = "/login";
+    return null;
+  }
+
+  const user = storedUser;
 
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -48,7 +65,7 @@ export default function Profile() {
       setNewPassword("");
 
     } catch (err) {
-      alert(err.message);
+      alert(err.message || "Failed to update password");
     }
 
     setLoading(false);
@@ -62,9 +79,8 @@ export default function Profile() {
         My Profile
       </h1>
 
-      {/* ================= USER INFO ================= */}
+      {/* USER INFO */}
       <div className="bg-white p-6 rounded-2xl shadow mb-6">
-
         <h2 className="font-semibold mb-4">
           Account Information
         </h2>
@@ -74,39 +90,35 @@ export default function Profile() {
           <p><b>Role:</b> {user?.role}</p>
           <p><b>Units:</b> {user?.units || 0}</p>
         </div>
-
       </div>
 
-      {/* ================= QUICK ACTIONS ================= */}
+      {/* QUICK ACTIONS */}
       <div className="bg-white p-6 rounded-2xl shadow mb-6">
-
         <h2 className="font-semibold mb-4">
           Quick Actions
         </h2>
 
         <div className="grid md:grid-cols-2 gap-4">
 
-          <a
-            href="/wallet"
-            className="bg-blue-600 text-white p-4 rounded-xl text-center font-medium hover:bg-blue-700 transition"
+          <button
+            onClick={() => navigate("/wallet")}
+            className="bg-blue-600 text-white p-4 rounded-xl font-medium hover:bg-blue-700 transition"
           >
             💳 Fund Wallet
-          </a>
+          </button>
 
-          <a
-            href="/transactions"
-            className="bg-gray-800 text-white p-4 rounded-xl text-center font-medium hover:bg-gray-900 transition"
+          <button
+            onClick={() => navigate("/transactions")}
+            className="bg-gray-800 text-white p-4 rounded-xl font-medium hover:bg-gray-900 transition"
           >
             📜 View Transactions
-          </a>
+          </button>
 
         </div>
-
       </div>
 
-      {/* ================= CHANGE PASSWORD ================= */}
+      {/* CHANGE PASSWORD */}
       <div className="bg-white p-6 rounded-2xl shadow">
-
         <h2 className="font-semibold mb-4">
           Change Password
         </h2>
@@ -138,7 +150,6 @@ export default function Profile() {
           </button>
 
         </div>
-
       </div>
 
     </div>
