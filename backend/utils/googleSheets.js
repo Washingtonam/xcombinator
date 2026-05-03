@@ -1,13 +1,17 @@
 const { google } = require("googleapis");
-const path = require("path");
 
 // ==============================
-// 🔐 AUTH SETUP
+// 🔐 AUTH (ENV-BASED - SAFE)
 // ==============================
 const auth = new google.auth.GoogleAuth({
-  keyFile: path.join(__dirname, "../google-credentials.json"),
+  credentials: {
+    client_email: process.env.GOOGLE_CLIENT_EMAIL,
+    private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n"),
+  },
   scopes: ["https://www.googleapis.com/auth/spreadsheets"],
 });
+
+const sheets = google.sheets({ version: "v4", auth });
 
 // ==============================
 // 📊 SHEET ID
@@ -19,15 +23,12 @@ const SPREADSHEET_ID = process.env.GOOGLE_SHEET_ID;
 // ==============================
 async function addToSheets({ summary, fullData }) {
   try {
-    const client = await auth.getClient();
-    const sheets = google.sheets({ version: "v4", auth: client });
-
     // ======================
     // 📄 SUMMARY SHEET
     // ======================
     await sheets.spreadsheets.values.append({
       spreadsheetId: SPREADSHEET_ID,
-      range: "Summary!A:G",
+      range: "Summary!A:H",
       valueInputOption: "USER_ENTERED",
       requestBody: {
         values: [summary],
@@ -39,7 +40,7 @@ async function addToSheets({ summary, fullData }) {
     // ======================
     await sheets.spreadsheets.values.append({
       spreadsheetId: SPREADSHEET_ID,
-      range: "FullData!A:E",
+      range: "FullData!A:B",
       valueInputOption: "USER_ENTERED",
       requestBody: {
         values: [fullData],
