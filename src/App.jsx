@@ -29,8 +29,8 @@ import Modification from "./pages/services/Modification";
 import Transactions from "./pages/transactions/Transactions";
 import Wallet from "./pages/wallet/Wallet";
 
-// ✅ ADD THIS
-import Profile from "./pages/Profile";
+// ✅ FIXED PROFILE IMPORT (MAKE SURE FILE MATCHES THIS PATH)
+import Profile from "./pages/profile/Profile";
 
 import { ThemeProvider } from "./context/ThemeContext";
 
@@ -95,7 +95,7 @@ function Layout() {
           {/* ================= MAIN ================= */}
           <Route path="/dashboard" element={<Dashboard />} />
 
-          {/* ✅ FIXED PROFILE ROUTE */}
+          {/* ✅ PROFILE (FIXED) */}
           <Route path="/profile" element={<Profile />} />
 
           <Route path="/verify-nin" element={<VerifyNIN />} />
