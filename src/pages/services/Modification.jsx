@@ -9,9 +9,9 @@ export default function Modification() {
   const [selectedType, setSelectedType] = useState(null);
   const [formData, setFormData] = useState({});
   const [proof, setProof] = useState(null);
+  const [passport, setPassport] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  // 🔥 GET USER (IMPORTANT)
   const user = JSON.parse(localStorage.getItem("user"));
 
   useEffect(() => {
@@ -22,7 +22,6 @@ export default function Modification() {
       });
   }, []);
 
-  // 🔥 AUTO PREFILL EMAIL
   useEffect(() => {
     if (user?.email) {
       setFormData(prev => ({
@@ -42,7 +41,8 @@ export default function Modification() {
     }));
   };
 
-  const handleFile = (e) => {
+  // 🔥 HANDLE FILES (PROOF + PASSPORT)
+  const handleFile = (e, type) => {
     const file = e.target.files[0];
     if (!file) return;
 
@@ -54,7 +54,8 @@ export default function Modification() {
     reader.readAsDataURL(file);
 
     reader.onloadend = () => {
-      setProof(reader.result);
+      if (type === "proof") setProof(reader.result);
+      if (type === "passport") setPassport(reader.result);
     };
   };
 
@@ -64,7 +65,11 @@ export default function Modification() {
     }
 
     if (!proof) {
-      return alert("Upload payment proof");
+      return alert("Upload payment receipt");
+    }
+
+    if (!passport) {
+      return alert("Upload passport photograph");
     }
 
     setLoading(true);
@@ -77,12 +82,13 @@ export default function Modification() {
         },
         body: JSON.stringify({
           userId: user?.id,
-          email: user?.email, // 🔥 REQUIRED FOR GOOGLE SHEETS
+          email: user?.email,
           service: "modification",
           type: selectedType,
           nin: formData.nin,
           slipType: "none",
           proof,
+          passport,
           formData
         })
       });
@@ -94,9 +100,10 @@ export default function Modification() {
 
       setSelectedType(null);
       setFormData({
-        email: user?.email || "" // 🔥 keep email after reset
+        email: user?.email || ""
       });
       setProof(null);
+      setPassport(null);
 
     } catch (err) {
       alert(err.message);
@@ -125,31 +132,6 @@ export default function Modification() {
         <p className="text-gray-500">
           Avoid rejection, delays, and repeated errors. Get it done right the first time.
         </p>
-      </div>
-
-      {/* WHY CHOOSE US */}
-      <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
-        {[
-          "Avoid rejection errors",
-          "Faster processing guidance",
-          "Correct documentation handling",
-          "Dedicated support"
-        ].map((item, i) => (
-          <div key={i} className="bg-white p-4 rounded-xl shadow text-sm">
-            ✅ {item}
-          </div>
-        ))}
-      </div>
-
-      {/* PROCESS FLOW */}
-      <div className="bg-blue-50 border p-5 rounded-xl mb-10">
-        <h3 className="font-semibold mb-3">How It Works</h3>
-        <div className="grid md:grid-cols-4 gap-3 text-sm">
-          <p>1️⃣ Fill Form</p>
-          <p>2️⃣ Make Payment</p>
-          <p>3️⃣ We Process</p>
-          <p>4️⃣ Get Update</p>
-        </div>
       </div>
 
       {/* SERVICES */}
@@ -182,7 +164,6 @@ export default function Modification() {
           <Input name="firstname" placeholder="First Name" onChange={handleChange} />
           <Input name="middlename" placeholder="Middle Name (Optional)" onChange={handleChange} />
 
-          {/* 🔥 LOCKED EMAIL */}
           <input
             value={formData.email || ""}
             disabled
@@ -264,6 +245,28 @@ export default function Modification() {
               </Section>
             </div>
           )}
+
+          {/* 🔥 FILE UPLOADS */}
+          <div>
+            <p className="text-sm font-medium mb-1">Upload Payment Receipt</p>
+            <input
+              type="file"
+              accept="image/*,application/pdf"
+              onChange={(e) => handleFile(e, "proof")}
+              className="w-full border p-2 rounded"
+            />
+          </div>
+
+          <div>
+            <p className="text-sm font-medium mb-1">Upload Passport Photograph</p>
+            <input
+              type="file"
+              accept="image/*"
+              onChange={(e) => handleFile(e, "passport")}
+              className="w-full border p-2 rounded"
+            />
+          </div>
+
         </div>
       )}
 
