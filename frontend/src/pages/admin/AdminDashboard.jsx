@@ -296,7 +296,7 @@ export default function AdminDashboard() {
   }, []);
 
   return (
-    <div className="max-w-7xl mx-auto pt-4">
+    <div className="max-w-7xl mx-auto pt-2">
       {/* Header */}
       <Section
         title="Admin Control Center"
@@ -308,7 +308,7 @@ export default function AdminDashboard() {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="rounded-3xl bg-gradient-to-r from-slate-900 via-blue-800 to-blue-600 text-white p-6 mb-8 shadow-lg"
+        className="rounded-3xl bg-gradient-to-r from-slate-800 to-slate-900 text-white p-6 mb-8 shadow-lg"
       >
         <div className="flex items-center justify-between gap-4">
           <div>

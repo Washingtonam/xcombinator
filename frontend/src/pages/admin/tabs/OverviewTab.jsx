@@ -5,15 +5,15 @@ import Grid from '../../../components/ui/Grid';
 /**
  * OverviewTab - Summary statistics and key metrics
  */
-export default function OverviewTab({ stats, pipelineRequests, pendingPaymentsList, overview }) {
+export default function OverviewTab({ stats, pipelineRequests, pendingPaymentsList }) {
   return (
     <div className="space-y-6">
-      <Grid cols="4" gap="5">
-        <Card variant="default">
+      <Grid cols="4" gap="6">
+        <Card variant="default" elevated={false} className="border border-slate-200 shadow-sm">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <p className="text-gray-400 text-xs font-semibold tracking-wider uppercase mb-2">Total Registered Users</p>
-              <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100">{stats.totalUsers ?? 0}</h2>
+              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Total Registered Users</p>
+              <h2 className="text-3xl font-bold text-slate-800 dark:text-slate-100">{stats.totalUsers ?? 0}</h2>
             </div>
             <div className="rounded-2xl border border-blue-100 dark:border-blue-900/30 p-2.5 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400">
               <Users size={18} />
@@ -21,11 +21,11 @@ export default function OverviewTab({ stats, pipelineRequests, pendingPaymentsLi
           </div>
         </Card>
 
-        <Card variant="default">
+        <Card variant="default" elevated={false} className="border border-slate-200 shadow-sm">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <p className="text-gray-400 text-xs font-semibold tracking-wider uppercase mb-2">Pending Payments</p>
-              <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100">{pendingPaymentsList.length || stats.pendingPayments || 0}</h2>
+              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Pending Payments</p>
+              <h2 className="text-3xl font-bold text-slate-800 dark:text-slate-100">{pendingPaymentsList.length || stats.pendingPayments || 0}</h2>
             </div>
             <div className="rounded-2xl border border-amber-100 dark:border-amber-900/30 p-2.5 bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400">
               <CreditCard size={18} />
@@ -33,11 +33,11 @@ export default function OverviewTab({ stats, pipelineRequests, pendingPaymentsLi
           </div>
         </Card>
 
-        <Card variant="default">
+        <Card variant="default" elevated={false} className="border border-slate-200 shadow-sm">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <p className="text-gray-400 text-xs font-semibold tracking-wider uppercase mb-2">Pending Approvals</p>
-              <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100">{pipelineRequests.length || 0}</h2>
+              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Pending Approvals</p>
+              <h2 className="text-3xl font-bold text-slate-800 dark:text-slate-100">{pipelineRequests.length || 0}</h2>
             </div>
             <div className="rounded-2xl border border-violet-100 dark:border-violet-900/30 p-2.5 bg-violet-50 dark:bg-violet-900/30 text-violet-700 dark:text-violet-400">
               <FileText size={18} />
@@ -45,11 +45,11 @@ export default function OverviewTab({ stats, pipelineRequests, pendingPaymentsLi
           </div>
         </Card>
 
-        <Card variant="default">
+        <Card variant="default" elevated={false} className="border border-slate-200 shadow-sm">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <p className="text-gray-400 text-xs font-semibold tracking-wider uppercase mb-2">Aggregated Liability</p>
-              <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100">₦{stats.totalBalance || 0}</h2>
+              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Aggregated Liability</p>
+              <h2 className="text-3xl font-bold text-slate-800 dark:text-slate-100">₦{stats.totalBalance || 0}</h2>
             </div>
             <div className="rounded-2xl border border-emerald-100 dark:border-emerald-900/30 p-2.5 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400">
               <Wallet size={18} />

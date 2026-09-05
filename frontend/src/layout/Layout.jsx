@@ -24,7 +24,7 @@ export default function Layout({ children }) {
 
       {/* MAIN VIEWPORT WORKSPACE — FORCED VIA INLINE STYLE MARGINS */}
       <main 
-        className="min-h-screen flex-1 transition-all duration-300"
+        className="min-h-screen flex flex-1 flex-col transition-all duration-300"
         style={{
           paddingLeft: window.innerWidth >= 1024 ? (sidebarOpen ? "310px" : "85px") : "0px"
         }}
@@ -49,12 +49,12 @@ export default function Layout({ children }) {
         </div>
 
         {/* INJECTED PAGE BODY */}
-        <div className="p-4 md:p-6 lg:p-8 animate-fadeIn">
+        <div className="flex-1 p-4 md:p-6 lg:p-8 animate-fadeIn">
           {children}
         </div>
 
         {/* FOOTER */}
-        <Footer />
+        <Footer className="mt-auto" />
       </main>
 
       {/* Floating WhatsApp Contact Button */}

@@ -1,9 +1,9 @@
 import { Mail, MessageCircle, Phone, Shield, Lock, Heart } from "lucide-react";
 import { Link } from "react-router-dom";
 
-export default function Footer() {
+export default function Footer({ className = "" }) {
   return (
-    <footer className="bg-gray-900 dark:bg-black text-white py-12 px-6 border-t border-gray-800">
+    <footer className={`bg-gray-900 dark:bg-black text-white py-12 px-6 border-t border-gray-800 ${className}`}>
       <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-8">
         {/* Company Info */}
         <div>
