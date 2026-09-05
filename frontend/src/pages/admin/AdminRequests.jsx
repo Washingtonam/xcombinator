@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import api from "../../lib/axios";
 import { nimcSubServices, cacSubServices } from "../../config/serviceTypes";
 import {
@@ -46,6 +47,7 @@ const getStatusIcon = (status) => {
 };
 
 export default function AdminRequests() {
+  const [searchParams] = useSearchParams();
   const { success, error: toastError, info } = useToast();
   const [activeTab, setActiveTab] = useState("nimc");
   const [activeSubService, setActiveSubService] = useState("All");
@@ -139,6 +141,13 @@ export default function AdminRequests() {
       setModalComment("");
     }
   }, [selected]);
+
+  useEffect(() => {
+    const requestId = searchParams.get("request");
+    if (!requestId || selected) return;
+    const matchingRequest = requests.find((request) => String(request._id) === requestId);
+    if (matchingRequest) setSelected(matchingRequest);
+  }, [requests, searchParams, selected]);
 
   const handleStatusUpdate = async (id, status, note = '') => {
     if (!id) return;

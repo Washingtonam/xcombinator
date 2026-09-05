@@ -246,7 +246,7 @@ router.get("/stats", isSuperAdmin, async (req, res) => {
     const [totalUsers, totalTransactions, pendingPayments, balanceData] = await Promise.all([
       User.countDocuments(),
       Transaction.countDocuments(),
-      Transaction.countDocuments({ status: "pending" }),
+      Transaction.countDocuments({ status: "pending", type: { $in: ["UNIT_ADD", "credit", "admin_credit"] } }),
       User.aggregate([
         { $group: { _id: null, total: { $sum: { $ifNull: ["$walletBalance", 0] } } } }
       ])

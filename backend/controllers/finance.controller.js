@@ -4,6 +4,7 @@ const Transaction = require("../models/transaction.model");
 const User = require("../models/User.model");
 const Payment = require("../models/Payment.model");
 const PaymentRequest = require("../models/PaymentRequest.model");
+const AuditLog = require("../models/AuditLog.model");
 const { ensureUploaded } = require("../shared/cloudinary");
 
 const flw = new Flutterwave(
@@ -282,5 +283,36 @@ exports.verifyFlutterwaveTransaction = async (req, res) => {
             message: "Failed to verify payment.",
             error: error.message,
         });
+    }
+};
+
+// Reject pending payment without changing the user's wallet balance.
+exports.rejectPayment = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const payment = await Transaction.findById(id);
+
+        if (!payment) return res.status(404).json({ message: "Transaction not found" });
+        if (payment.status !== "pending") return res.status(400).json({ message: "Transaction already processed" });
+
+        payment.status = "rejected";
+        await payment.save();
+
+        try {
+            await AuditLog.create({
+                action: "REJECT_PAYMENT",
+                performedBy: req.user.email,
+                userId: payment.userId,
+                amount: payment.amount,
+                note: `Admin rejected payment transaction: ${payment._id}`
+            });
+        } catch (auditError) {
+            console.warn("Payment rejection audit log skipped:", auditError.message);
+        }
+
+        return res.status(200).json({ message: "Payment rejected successfully" });
+    } catch (error) {
+        console.error("Error rejecting payment:", error.message);
+        return res.status(500).json({ message: "Error rejecting payment", error: error.message });
     }
 };

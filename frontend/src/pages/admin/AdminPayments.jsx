@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Search, ChevronLeft, ChevronRight, Clock3, CheckCircle2, XCircle, Zap, FileText, BadgeDollarSign, UserCheck } from "lucide-react";
 import { useToast } from "../../context/ToastContext";
 import { adminGetPaymentsLedger, adminApprovePayment, adminRejectPayment } from "../../services/api";
+import { useNavigate } from "react-router-dom";
 
 const STATUS_FILTERS = ["all", "pending", "approved", "rejected"];
 const STATUS_BADGES = {
@@ -17,6 +18,7 @@ const formatCurrency = (value) => `₦${Number(value || 0).toLocaleString(undefi
 const formatDate = (value) => new Date(value).toLocaleString();
 
 export default function AdminPayments() {
+  const navigate = useNavigate();
   const [ledger, setLedger] = useState([]);
   const [summary, setSummary] = useState({
     totalVolume: 0,
@@ -239,7 +241,20 @@ export default function AdminPayments() {
                     >
                       <td className="whitespace-nowrap px-4 py-4 text-sm text-slate-600">{formatDate(payment.createdAt)}</td>
                       <td className="px-4 py-4 text-sm text-slate-800">
-                        <div className="font-semibold">{payment.userEmail || "Unknown"}</div>
+                        {payment.userId ? (
+                          <button
+                            type="button"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              navigate(`/admin/user/${payment.userId}/details`);
+                            }}
+                            className="font-semibold text-left text-blue-700 hover:text-blue-900 hover:underline"
+                          >
+                            {payment.userEmail || "Unknown"}
+                          </button>
+                        ) : (
+                          <div className="font-semibold">{payment.userEmail || "Unknown"}</div>
+                        )}
                         <div className="text-xs text-slate-500">{payment.userRole || "user"}</div>
                       </td>
                       <td className="px-4 py-4 text-sm font-semibold text-slate-900">{formatCurrency(payment.amount)}</td>

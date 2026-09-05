@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../../lib/axios";
 import { toast } from "sonner";
-import { CreditCard, FileText, Users, Wallet, Clock3, ShieldCheck, Zap } from 'lucide-react';
+import { CreditCard, FileText, Users, Wallet, Clock3, ShieldCheck, Zap, ArrowRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 import Tabs from "../../components/ui/Tabs";
@@ -365,17 +365,44 @@ export default function AdminDashboard() {
               badge: pipelineRequests.length,
               content: (
                 <Card variant="default">
-                  <div className="text-center py-8 text-slate-500 dark:text-slate-400">
-                    <p className="mb-4">
-                      View and manage pending service requests
-                    </p>
+                  <div className="flex items-center justify-between gap-4 mb-4">
+                    <div>
+                      <h3 className="font-semibold text-slate-900 dark:text-white">Pending service requests</h3>
+                      <p className="text-sm text-slate-500 dark:text-slate-400">The next requests requiring attention.</p>
+                    </div>
                     <button
                       onClick={() => navigate("/admin/requests")}
-                      className="text-blue-600 hover:text-blue-700 font-semibold"
+                      className="inline-flex items-center gap-2 text-sm font-semibold text-blue-600 hover:text-blue-700"
                     >
-                      Open Requests Dashboard →
+                      View all <ArrowRight size={16} />
                     </button>
                   </div>
+                  {pipelineRequests.length ? (
+                    <div className="divide-y divide-slate-200 dark:divide-slate-700">
+                      {pipelineRequests.slice(0, 5).map((request) => (
+                        <button
+                          key={request._id}
+                          type="button"
+                          onClick={() => navigate(`/admin/requests?request=${request._id}`)}
+                          className="flex w-full items-center justify-between gap-4 py-3 text-left hover:bg-slate-50 dark:hover:bg-slate-800/60"
+                        >
+                          <span className="min-w-0">
+                            <span className="block truncate font-medium text-slate-800 dark:text-slate-100">
+                              {request.service || request.serviceType || request.type || "Service request"}
+                            </span>
+                            <span className="block truncate text-xs text-slate-500 dark:text-slate-400">
+                              {request.userId?.email || request.email || "User unavailable"}
+                            </span>
+                          </span>
+                          <span className="shrink-0 text-xs text-slate-500">
+                            {request.createdAt ? new Date(request.createdAt).toLocaleDateString() : "New"}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="py-6 text-center text-sm text-slate-500 dark:text-slate-400">No pending service requests.</p>
+                  )}
                 </Card>
               ),
             },
